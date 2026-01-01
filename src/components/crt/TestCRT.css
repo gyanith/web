@@ -1,0 +1,57 @@
+/* Custom CSS for CRT Monitor Effects */
+
+/* Keyframes for the main text glow effect */
+@keyframes textGlow {
+  0% {
+    text-shadow: 
+      /* Inner intense glow (Merged layer) */ 0 0 25px
+        rgba(212, 165, 116, 1),
+      /* Outer ambient glow (Merged layer) */ 0 0 70px rgba(212, 165, 116, 0.6),
+      /* Hard drop shadow (Unchanged) */ 3px 3px 0px rgba(0, 0, 0, 0.8);
+  }
+  100% {
+    text-shadow: 
+      /* Expanded inner glow */ 0 0 35px rgba(212, 165, 116, 1),
+      /* Expanded outer glow */ 0 0 90px rgba(212, 165, 116, 0.6),
+      /* Hard drop shadow */ 3px 3px 0px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Keyframes for the subtle text flicker effect */
+@keyframes flicker {
+  0% {
+    opacity: 0.95;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.97;
+  }
+}
+
+/* Keyframes for the scanline movement effect */
+@keyframes scanline {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(12px);
+  }
+}
+
+/* Apply animations to the relevant elements */
+
+.main-text-display {
+  /* Promotes the element to its own GPU layer to prevent page re-paints */
+  transform: translateZ(0);
+  will-change: text-shadow, opacity;
+  font-family: "Montserrat";
+
+  /* Your original animation timings */
+  animation: textGlow 2s ease-in-out infinite alternate, flicker 0.15s infinite;
+}
+
+.scanline-effect {
+  animation: scanline 1.5s linear infinite;
+}
