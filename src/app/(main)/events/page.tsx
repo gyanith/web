@@ -26,19 +26,22 @@ const Page = () => {
       {columns.map((col, index) => (
         <motion.div
           key={index}
-          className="relative w-full h-full flex-1 border-r border-white/10 last:border-r-0"
+          className="relative w-full h-full flex-1 border-r border-white/10 last:border-r-0 group cursor-pointer"
+          onClick={() => {
+            router.push(col.href);
+          }}
         >
           {/* Gradient */}
           <div className="absolute inset-0 bg-linear-to-r md:from-transparent md:via-transparent md:to-black from-black via-transparent to-transparent h-full w-full z-10" />
 
           {/* Background Image */}
-          <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 z-0 overflow-hidden">
             <Image
               src={col.img}
               alt={col.title}
               fill
               objectPosition="top"
-              className="object-cover opacity-60 hover:opacity-100 transition-opacity duration-500"
+              className="object-cover brightness-60 group-hover:brightness-90 group-hover:scale-105 transform-all ease-in-out duration-300"
               priority
             />
           </div>
@@ -61,14 +64,11 @@ const Page = () => {
               lg:top-auto lg:bottom-0 lg:right-0
               lg:p-8
 
-              hover:tracking-tight
+              group-hover:tracking-tight
               transition-all
               duration-300
 
             "
-            onClick={() => {
-              router.push(col.href);
-            }}
             style={{
               fontSize: "clamp(3rem, 5vw, 6rem)",
             }}

@@ -130,7 +130,7 @@ const Navbar: React.FC = () => {
             router.push("/");
             setSelected("HOME");
           }}
-          className=" rounded-full cursor-pointer group"
+          className="rounded-full cursor-pointer "
         >
           <GlassSurface
             width={60}
@@ -138,15 +138,14 @@ const Navbar: React.FC = () => {
             borderRadius={30}
             brightness={65}
             blur={8}
-            backgroundOpacity={10}
-            mixBlendMode="darken"
+            backgroundOpacity={0.4}
             redOffset={50}
-            className="shadow-2xl shadow-amber-100  cursor-pointer border border-amber-700/30  transition-all duration-300"
+            className="  cursor-pointer border border-amber-700/30  transition-all duration-300"
           >
             <Image
               src={gyLogo}
               alt="Gyanith Logo"
-              className="scale-70  transition-colors duration-300"
+              className="scale-75  transition-colors duration-300"
             />
           </GlassSurface>
         </div>
@@ -155,7 +154,7 @@ const Navbar: React.FC = () => {
           borderRadius={50}
           brightness={65}
           blur={8}
-          backgroundOpacity={0}
+          backgroundOpacity={0.4}
           mixBlendMode="hard-light"
           redOffset={1}
           className="w-full  rounded-full p-0 shadow-2xl shadow-amber-100 cursor-pointer border border-amber-700/30"
@@ -195,7 +194,7 @@ const Navbar: React.FC = () => {
                 />
 
                 <span
-                  className="relative text-white/75 font-bold  text-md sm:text-base tracking-wide whitespace-nowrap group-hover:text-amber-50 transition-colors duration-100"
+                  className="relative text-white font-bold  text-md sm:text-base tracking-wide whitespace-nowrap group-hover:text-amber-50 transition-colors duration-100"
                   style={{
                     fontFamily: "Montserrat",
                   }}
@@ -210,7 +209,13 @@ const Navbar: React.FC = () => {
         {/* Icon Buttons */}
         <div className="flex items-center gap-2 ">
           {["bag", "phone", "user"].map((icon) => (
-            <GlassSurface key={icon} width={60} height={60} borderRadius={30}>
+            <GlassSurface
+              key={icon}
+              width={60}
+              height={60}
+              borderRadius={30}
+              backgroundOpacity={0.4}
+            >
               <button
                 onMouseEnter={() => setHoveredIcon(icon)}
                 onMouseLeave={() => setHoveredIcon(null)}
@@ -237,7 +242,7 @@ const Navbar: React.FC = () => {
                 {/* Glare effect */}
                 {hoveredIcon === icon && (
                   <div
-                    className="absolute inset-0 rounded-full animate-pulse"
+                    className="absolute inset-0 -z-10 rounded-full animate-pulse"
                     style={{
                       background:
                         "radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.4) 0%, transparent 70%)",
@@ -264,15 +269,15 @@ const Navbar: React.FC = () => {
             borderRadius={30}
             brightness={65}
             blur={8}
-            backgroundOpacity={0}
+            backgroundOpacity={0.4}
             mixBlendMode="hard-light"
             redOffset={50}
-            className="shadow-2xl shadow-amber-100  cursor-pointer border border-amber-700/30 group-hover:border-amber-700/50 transition-all duration-300"
+            className="shadow-2xl  cursor-pointer border border-amber-700/30 group-hover:border-amber-700/50 transition-all duration-300"
           >
             <Image
               src={gyLogo}
               alt="Gyanith Logo"
-              className="scale-70 brightness-75 group-hover:brightness-100 transition-colors duration-300"
+              className="scale-70 transition-colors duration-300"
             />
           </GlassSurface>
         </div>
@@ -283,7 +288,7 @@ const Navbar: React.FC = () => {
             borderRadius={30}
             brightness={65}
             blur={8}
-            backgroundOpacity={0}
+            backgroundOpacity={0.4}
             mixBlendMode="hard-light"
             redOffset={1}
             className="shadow-xl cursor-pointer border border-amber-700/30"
@@ -325,7 +330,7 @@ const Navbar: React.FC = () => {
                 borderRadius={30}
                 brightness={65}
                 blur={8}
-                backgroundOpacity={0}
+                backgroundOpacity={0.4}
                 mixBlendMode="hard-light"
                 redOffset={50}
                 className="shadow-2xl shadow-amber-100  cursor-pointer border border-amber-700/30"
@@ -346,9 +351,46 @@ const Navbar: React.FC = () => {
               <div className="grid grid-cols-2 grid-rows-4 gap-2 w-screen h-full p-5">
                 <motion.div
                   variants={itemVariants}
-                  className="row-span-1 w-full h-full col-span-2"
+                  className="row-span-1 w-full h-full col-span-2 flex items-center justify-center p-1 md:p-2 bg-[#D5812A]/5 shadow-lg shadow-black backdrop-blur-[5px] rounded-2xl"
                 >
-                  {/* Gyanith Footer here */}
+                  {/* Icon Buttons */}
+                  <div className="flex items-center gap-2 ">
+                    {["bag", "phone", "user"].map((icon) => (
+                      <GlassSurface
+                        key={icon}
+                        width={60}
+                        height={60}
+                        borderRadius={30}
+                        backgroundOpacity={0.4}
+                      >
+                        {/* Icons */}
+                        <div
+                          className="relative w-6 h-6 sm:w-7 sm:h-7 bg-linear-to-br  rounded transition-transform duration-150"
+                          onClick={() => {
+                            if (icon === "phone") {
+                              navigate("/contacts");
+                            } else if (icon === "user") {
+                              navigate("/user/account");
+                            } else {
+                              navigate("/user/cart");
+                            }
+
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          {icon === "phone" && (
+                            <Image src={phoneIcon} alt="Phone Icon" />
+                          )}
+                          {icon === "user" && (
+                            <Image src={userIcon} alt="User Icon" />
+                          )}
+                          {icon === "bag" && (
+                            <Image src={bagIcon} alt="Bag Icon" />
+                          )}
+                        </div>
+                      </GlassSurface>
+                    ))}
+                  </div>
                 </motion.div>
 
                 <motion.div

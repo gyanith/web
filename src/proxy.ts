@@ -12,8 +12,8 @@ export function proxy(request: NextRequest) {
     // ----- PROTECTED ROUTES -----
     const protectedRoutes = [
         "/residence",
-
-        "/cart",
+        "/merch",
+        "/user",
     ];
 
     const isProtectedBaseRoute = protectedRoutes.some(
