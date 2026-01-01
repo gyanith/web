@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-
 import { useNavigate } from "@/hooks/useNavigate";
 
 const page = () => {

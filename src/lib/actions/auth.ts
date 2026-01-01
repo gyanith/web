@@ -1,6 +1,7 @@
 'use server';
-
-import { cookies } from 'next/headers';
+import { createAdminClient, createSessionClient } from "@/lib/appwrite/appwrite.server"
+import { ID, OAuthProvider, Query } from "node-appwrite";
+import { cookies } from "next/headers";
 
 
 // --- Types ---
@@ -21,152 +22,266 @@ interface SignUpData {
     isNITPY: boolean;
 }
 
+interface OAuthSignupData {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    gender?: string;
+    collegeName?: string;
+    isNITPY?: boolean;
+}
+
 // --- Appwrite Clients ---
 
-// 1. Admin Client: Used for Database writes (bypassing permissions) and Admin tasks
-const createAdminClient = () => {
-    const client = new Client()
-        .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-        .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT!)
-        .setKey(process.env.APPWRITE_API_KEY!); // Ensure this exists in your .env.local
-
-    return {
-        getDatabases: () => new Databases(client),
-        getAccount: () => new Account(client),
-        getUsers: () => new Users(client),
-    };
-};
-
-// 2. Session Client: Used for creating sessions (login)
-const createSessionClient = () => {
-    const client = new Client()
-        .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-        .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT!);
-
-    return {
-        getAccount: () => new Account(client),
-    };
-};
-
-// --- Cookie Helper (The Fix for Localhost) ---
-
-async function setSessionCookie(secret: string, expire: string) {
+export async function setSessionCookie(secret: string, expire: string) {
     const cookieStore = await cookies();
 
     // CRITICAL: Next.js treats "localhost" as insecure (http).
     // If we set 'secure: true' on localhost, the browser blocks the cookie.
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = process.env.NODE_ENV === "production";
 
     cookieStore.set({
-        name: `a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`,
+        name: `a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`,
         value: secret,
         httpOnly: true,
-        path: '/',
+        path: "/",
         // If production, use Secure/None. If localhost, use Not-Secure/Lax.
         secure: isProduction,
-        sameSite: 'lax',
+        sameSite: "lax",
         expires: new Date(expire),
-        // domain: isProduction ? '.yourdomain.com' : undefined, // Optional: share across subdomains
     });
 }
-
-// --- Server Actions ---
 
 export async function loginWithEmail(data: LoginData) {
     try {
         const { email, password } = data;
-        const { getAccount } = createSessionClient();
-        const account = getAccount();
 
-        // 1. Create Session via Appwrite
-        const session = await account.createEmailPasswordSession(email, password);
+        // Use Session Client for login
+        const { getUsers } = createAdminClient();
+        const users = getUsers();
 
-        // 2. Set the HTTP-only cookie manually
+        // First, find the user by email to get their userId
+        const userList = await users.list({ queries: [Query.equal("email", email)] });
+
+        if (userList.total === 0) {
+            return { success: false, error: "Invalid email or password" };
+        }
+
+        const user = userList.users[0];
+
+        const session = await users.createSession({ userId: user.$id });
+
+        console.log("📦 Session object:", JSON.stringify(session, null, 2));
+        console.log("🔑 Session secret:", session.secret);
+
+        // Set the HTTP-only cookie
         await setSessionCookie(session.secret, session.expire);
+
+        // Debug: Verify cookie was set
+        const cookieStore2 = await cookies();
+        const verifyCookie = cookieStore2.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`);
+        console.log("🍪 Cookie after setting:", verifyCookie ? "EXISTS" : "MISSING", " Value: ", verifyCookie?.value);
 
         return { success: true };
     } catch (error: any) {
-        console.error('Login Error:', error);
-        return { success: false, error: error.message || 'Login failed' };
+        console.error("Login Error:", error);
+        return { success: false, error: error.message || "Login failed" };
     }
 }
 
 export async function signUpWithEmail(data: SignUpData) {
     try {
-        const { email, password, firstName, lastName, phone, gender, collegeName, isNITPY } = data;
+        const {
+            email,
+            password,
+            firstName,
+            lastName,
+            phone,
+            gender,
+            collegeName,
+            isNITPY,
+        } = data;
         const name = `${firstName} ${lastName}`;
 
         // 0. Check if User Already Exists (Requires Admin Client)
         const { getUsers } = createAdminClient();
         const users = getUsers();
 
-        const existingUsers = await users.list([
-            Query.equal('email', email)
-        ]);
+        const existingUsers = await users.list({ queries: [Query.equal("email", email)] });
 
         if (existingUsers.total > 0) {
-            return { success: false, error: 'A user with this email already exists.' };
+            return {
+                success: false,
+                error: "A user with this email already exists.",
+            };
         }
-
-        // 1. Create User (Using Session Client so it mimics a public registration)
-        // Note: If you want to bypass IP rate limits, you could use the AdminClient here instead.
-        const { getAccount } = createSessionClient();
-        const account = getAccount();
-
+        // 1. Create User using Admin Client
         const userId = ID.unique();
-        await account.create(userId, email, password, name);
+        await users.createBcryptUser({
+            userId,
+            email,
+            password,
+            name,
+        });
 
-        // 2. Create Session (Login immediately after signup)
-        const session = await account.createEmailPasswordSession(email, password);
+        console.log("✅ User created:", userId);
+
+        // 2. Create Session using Admin API (this returns a proper secret)
+        const session = await users.createSession({ userId });
+
+        console.log("📦 Session object:", JSON.stringify(session, null, 2));
+        console.log("🔑 Session secret:", session.secret);
 
         // 3. Set Cookie
         await setSessionCookie(session.secret, session.expire);
 
         // 4. Create Database Document
-        // Use Admin Client here to ensure we have permission to write to the collection
-        const { getDatabases } = createAdminClient();
-        const databases = getDatabases();
+        const { getTablesDB } = createAdminClient();
+        const tablesDB = getTablesDB();
 
-        await databases.createDocument(
-            process.env.NEXT_PUBLIC_DATABASE_ID!,
-            process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
-            userId, // Use same ID as Auth User for easy lookup later
-            {
+        await tablesDB.createRow({
+            databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+            tableId: process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
+            rowId: userId,
+            data: {
                 email,
-                phone: parseInt(phone), // Ensure schema in Appwrite matches 'integer'
+                phone: parseInt(phone),
                 gender,
                 is_nitpy: isNITPY,
                 college_name: collegeName,
-            }
-        );
+            },
+        });
 
         return { success: true };
     } catch (error: any) {
-        console.error('Signup Error:', error);
+        console.error("Signup Error:", error);
         // Fallback: If the race condition hits and Appwrite throws 409
         if (error.code === 409) {
-            return { success: false, error: 'A user with this email already exists.' };
+            return {
+                success: false,
+                error: "A user with this email already exists.",
+            };
         }
-        return { success: false, error: error.message || 'Signup failed' };
+        return { success: false, error: error.message || "Signup failed" };
     }
+
 }
 
-export async function getOAuthUrl(provider: 'google' | 'github') {
+export async function getOAuthUrl(
+    provider: "google" | "github",
+    signUpData?: OAuthSignupData // Make this optional for login flow
+) {
     try {
         const { getAccount } = createSessionClient();
         const account = getAccount();
 
-        // This returns a URL string. 
-        // The frontend should redirect window.location.href to this URL.
-        const redirectUrl = await account.createOAuth2Token(
-            provider === 'google' ? OAuthProvider.Google : OAuthProvider.Github,
-            `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback?status=success`, // Callback URL on success
-            `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback?status=failure`  // Callback URL on failure
-        );
+        // 1. If this is a signup, store the extra data in a temporary cookie
+        // We will read this cookie in the /auth/success route
+        if (signUpData) {
+            const cookieStore = await cookies();
+            cookieStore.set("oauth_signup_data", JSON.stringify(signUpData), {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                path: "/",
+                maxAge: 60 * 5, // 5 minutes expiration
+            });
+        }
+
+        // 2. Generate the OAuth URL
+        // NOTICE: We point success to a Route Handler, not a Page
+        const redirectUrl = await account.createOAuth2Token({
+            provider: provider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
+        });
 
         return redirectUrl;
     } catch (error: any) {
-        console.error('OAuth Error:', error);
-        throw new Error('Failed to initiate OAuth');
+        console.error("OAuth Error:", error);
+        throw new Error("Failed to initiate OAuth");
+    }
+}
+
+export async function signOut() {
+    try {
+        const { getAccount, getClient } = createSessionClient();
+        const account = getAccount();
+        const client = getClient();
+
+        // FIX: Read the cookie and authenticate the client
+        const cookieStore = await cookies();
+        const cookieName = `a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
+        const sessionCookie = cookieStore.get(cookieName);
+
+        if (sessionCookie) {
+            // Manually set the session on the SDK so it knows who is making the request
+            client.setSession(sessionCookie.value);
+
+            try {
+                await account.deleteSession({ sessionId: 'current' });
+            } catch (error) {
+                // Ignore error if session is already invalid
+            }
+
+            // FIX: Overwrite the cookie with an immediate expiration date (Epoch 0)
+            // This forces the browser to remove the cookie entry completely.
+            cookieStore.set({
+                name: cookieName,
+                value: "",
+                httpOnly: true,
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+                maxAge: 0,
+                expires: new Date(0),
+            });
+
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Logout Error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function getLoggedInUser() {
+    try {
+        const { getAccount, getClient } = createSessionClient();
+        const account = getAccount();
+        const client = getClient();
+
+        const cookieStore = await cookies();
+        const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+
+        if (!projectId) {
+            console.error("❌ getLoggedInUser: Project ID is undefined");
+            return null;
+        }
+
+        const cookieName = `a_session_${projectId}`;
+        const sessionCookie = cookieStore.get(cookieName);
+
+        // Debug: Verify cookie was set
+        /* const cookieStore2 = await cookies();
+        const verifyCookie = cookieStore2.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`);
+        console.log("🍪 Cookie after setting:", verifyCookie ? "EXISTS" : "MISSING", " Value: ", verifyCookie?.value); */
+
+        // LOGGING FOR DEBUGGING
+        if (!sessionCookie || !sessionCookie.value) {
+            console.log("⚠️ getLoggedInUser: No session cookie found with name:", cookieName);
+            return null;
+        }
+
+        client.setSession(sessionCookie.value);
+
+        const user = await account.get();
+        console.log("✅ getLoggedInUser: Success", user.$id); // Uncomment for verbose logs
+        return user;
+
+    } catch (error: any) {
+        // If error is 401 (Unauthorized), it just means token expired/invalid
+        if (error.code !== 401) {
+            console.error("❌ getLoggedInUser Error:", error.message);
+        }
+        return null;
     }
 }

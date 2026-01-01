@@ -5,12 +5,13 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 import {
-  account,
-  ID,
-  tablesDB,
-  databases,
-} from "@/lib/appwrite/appwrite.client";
+  loginWithEmail,
+  signUpWithEmail,
+  getOAuthUrl,
+} from "@/lib/actions/auth";
+
 import { z } from "zod";
 
 import GlowButton from "@/components/GlowButton";
@@ -21,8 +22,6 @@ import FormField from "@/components/FormField";
 import GenderDropdown from "@/components/Dropdown";
 
 import { useNavigate } from "@/hooks/useNavigate";
-import { signUpWithEmail } from "@/lib/actions/auth";
-import { OAuthProvider } from "appwrite";
 
 // Zod Schemas
 const step1Schema = z.object({
@@ -49,6 +48,10 @@ const Page = () => {
   const [isNITPY, setIsStudent] = useState(false);
 
   const navigate = useNavigate();
+  const searchParams = useSearchParams();
+
+  // Get redirect URL from query params, default to home
+  const redirectUrl = searchParams.get("redirect") || "/";
 
   // Form data
   const [formData, setFormData] = useState({
@@ -145,8 +148,7 @@ const Page = () => {
         }
 
         // Login with email
-        // FIX: Pass arguments directly (email, password), not an object
-        const session = await account.createEmailPasswordSession({
+        const result = await loginWithEmail({
           email: formData.email,
           password: formData.password,
         });
@@ -154,7 +156,7 @@ const Page = () => {
         console.log("Logged in successfully");
         // Redirect or update UI (e.g., router.push('/dashboard'))
 
-        navigate("/");
+        navigate(redirectUrl);
       } else {
         if (signupStep === 1) {
           // Validate step 1
@@ -186,7 +188,7 @@ const Page = () => {
           }
 
           // Redirect or update UI
-          navigate("/");
+          navigate(redirectUrl);
         }
       }
     } catch (error: any) {
@@ -200,38 +202,29 @@ const Page = () => {
 
   // Handle OAuth Authentication
   const handleOAuth = async (provider: "google" | "github") => {
-    const appWriteProvider =
-      provider === "google" ? OAuthProvider.Google : OAuthProvider.Github;
     try {
       if (isLogin || signupStep === 1) {
         // OAuth for login or step 1 signup
-        account.createOAuth2Session({
-          provider: appWriteProvider,
-          success: `${window.location.origin}/auth/success`,
-          failure: `${window.location.origin}/auth/failure`,
-        });
+        // Store redirect URL in session/localStorage before OAuth redirect
+        if (redirectUrl !== "/") {
+          sessionStorage.setItem("authRedirect", redirectUrl);
+        }
+
+        const oAuthUrl = await getOAuthUrl(provider);
+        window.location.href = oAuthUrl;
       } else {
         // Step 2: Validate before OAuth
         if (!validateStep2()) {
           return;
         }
 
-        // Store data in sessionStorage temporarily
-        sessionStorage.setItem(
-          "additionalUserData",
-          JSON.stringify({
-            phone: formData.phone,
-            gender: formData.gender,
-            collegeName: formData.collegeName,
-            isNITPY,
-          })
-        );
+        // Store redirect URL before OAuth
+        if (redirectUrl !== "/") {
+          sessionStorage.setItem("authRedirect", redirectUrl);
+        }
 
-        account.createOAuth2Session(
-          provider as any,
-          `${window.location.origin}/auth/success`,
-          `${window.location.origin}/auth/failure`
-        );
+        const oAuthUrl = await getOAuthUrl(provider);
+        window.location.href = oAuthUrl;
       }
     } catch (error) {
       console.error("OAuth error:", error);
@@ -261,7 +254,7 @@ const Page = () => {
   };
 
   const slideVariants = {
-    enter: (direction: number) => ({
+    enter: () => ({
       x: 1000,
       opacity: 0,
     }),
