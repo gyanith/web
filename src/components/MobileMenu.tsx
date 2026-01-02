@@ -323,7 +323,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
               <li key={item.label} className="relative overflow-hidden">
                 <button
                   onClick={() => handleItemClick(item.link)}
-                  className="mm-panel-item relative text-white cursor-pointer font-bold text-5xl sm:text-6xl uppercase tracking-tight w-full text-left hover:text-amber-300 transition-colors duration-300 pr-20"
+                  className="mm-panel-item relative text-white cursor-pointer font-bold text-3xl sm:text-5xl uppercase tracking-tight w-full text-left hover:text-amber-300 transition-colors duration-300 pr-20"
                   data-index={idx + 1}
                   style={{ fontFamily: "Montserrat" }}
                 >

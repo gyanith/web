@@ -29,3 +29,34 @@ export const pixel = localFont({
     variable: '--font-pixel',
     display: "swap"
 })
+
+export const montserrat = localFont({
+    src: [{
+        path: "./Montserrat.ttf",
+        weight: "400",
+        style: "normal",
+    }],
+    variable: '--font-montserrat',
+    display: "swap"
+})
+
+export const unispace = localFont({
+    src: [{
+        path: "./UnispaceRg.otf",
+        weight: "400",
+        style: "normal",
+    }],
+    variable: '--font-unispace',
+    display: "swap"
+})
+
+export const blueScreen = localFont({
+    src: [{
+        path: "./BlueScreen.ttf",
+        weight: "400",
+        style: "normal",
+    }],
+    variable: '--font-blueScreen',
+    display: "swap"
+})
+

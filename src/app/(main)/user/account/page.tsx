@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
+import { pressStart2P } from "@/fonts/fonts";
+
 import { signOut, getLoggedInUser } from "@/lib/actions/auth";
 
 const Page = () => {
@@ -38,7 +40,7 @@ const Page = () => {
 
   if (loading) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-zinc-900">
+      <div className="w-screen h-screen flex items-center justify-center ">
         <span className="text-white/50 animate-pulse font-mono">
           Loading...
         </span>
@@ -51,7 +53,7 @@ const Page = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 2, ease: "circInOut" }}
-      className="w-screen h-screen flex items-center justify-center relative overflow-hidden"
+      className="w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden"
     >
       <div className="absolute inset-0 w-screen h-screen -z-10 bg-zinc-900">
         <div className="w-full h-full opacity-50 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-zinc-800 to-black"></div>
@@ -77,6 +79,22 @@ const Page = () => {
             LOG IN
           </button>
         )}
+      </div>
+      <div className="flex flex-col items-center justify-center">
+        <span className="flex  mt-2">
+          <button
+            className={`hover:bg-[#D4A574]  hover:text-black cursor-pointer text-right text-[#D4A574] border-[#D4A574] border p-2 rounded-lg text-[12px] ${pressStart2P.className}`}
+          >
+            Privacy Policy
+          </button>
+        </span>
+        <span className="flex  mt-2">
+          <button
+            className={`hover:bg-[#D4A574]  hover:text-black cursor-pointer text-right text-[#D4A574] border-[#D4A574] border p-2 rounded-lg text-[12px] ${pressStart2P.className}`}
+          >
+            Terms & Conditions
+          </button>
+        </span>
       </div>
     </motion.div>
   );

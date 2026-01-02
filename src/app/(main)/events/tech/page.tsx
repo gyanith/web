@@ -4,6 +4,9 @@ import FloatingLines from "@/components/FloatingLines";
 import Image from "next/image";
 import searchIcon from "@/assets/searchIcon.svg";
 
+import EventCard from "@/components/EventCard";
+import Footer from "@/components/Footer";
+
 function page() {
   return (
     <div>
@@ -40,6 +43,82 @@ function page() {
         </div>
         <div className="absolute inset-0 bg-linear-to-b from-black/10 via-black/30 to-black " />
       </div>
+
+      {/* Event Cards */}
+      <div className="w-full h-fit flex items-center justify-center  p-7">
+        <div
+          className="
+            w-full
+            grid
+            gap-3
+            place-content-center
+
+            grid-cols-[repeat(auto-fit,minmax(280px,1fr))]
+            md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]
+            lg:grid-cols-[repeat(auto-fit,minmax(500px,1fr))]
+          "
+        >
+          <EventCard
+            eventName="Dance Off"
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+            day="DAY 1"
+            location="ScB FF5"
+            prizePool="5,000"
+          />
+
+          <EventCard
+            eventName="Event Name"
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+            day="DAY 1"
+            location="ScB FF5"
+            prizePool="5,000"
+          />
+
+          <EventCard
+            eventName="Event Name"
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+            day="DAY 1"
+            location="ScB FF5"
+            prizePool="5,000"
+          />
+
+          <EventCard
+            eventName="Event Name"
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+            day="DAY 1"
+            location="ScB FF5"
+            prizePool="5,000"
+          />
+
+          <EventCard
+            eventName="Event Name"
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+            day="DAY 2"
+            location="LOC"
+            prizePool="5,000"
+          />
+
+          <EventCard
+            eventName="Event Name"
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+            day="DAY 1"
+            location="LOC"
+            prizePool="5,000"
+          />
+
+          <EventCard
+            eventName="Event Name"
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit..."
+            day="DAY 1"
+            location="LOC"
+            prizePool="5,000"
+          />
+        </div>
+      </div>
+
+      {/* Footer */}
+
+      <Footer />
     </div>
   );
 }

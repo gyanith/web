@@ -64,7 +64,7 @@ const Page = () => {
               lg:top-auto lg:bottom-0 lg:right-0
               lg:p-8
 
-              group-hover:tracking-tight
+              
               transition-all
               duration-300
 
