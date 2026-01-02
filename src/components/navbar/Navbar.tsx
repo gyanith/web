@@ -14,6 +14,7 @@ import menuIcon from "@/assets/menu.svg";
 import gyLogo from "@/assets/gyanith-logo.svg";
 
 import { useNavigate } from "@/hooks/useNavigate";
+import MobileMenu from "../MobileMenu";
 
 type NavItem =
   | "HOME"
@@ -23,6 +24,18 @@ type NavItem =
   | "PARTNERS"
   | "CORE"
   | "";
+
+const menuItems = [
+  { label: "About", ariaLabel: "Learn about us", link: "/about" },
+  { label: "Services", ariaLabel: "View our services", link: "/services" },
+  { label: "Contact", ariaLabel: "Get in touch", link: "/contact" },
+];
+
+const socialItems = [
+  { label: "Twitter", link: "https://twitter.com" },
+  { label: "GitHub", link: "https://github.com" },
+  { label: "LinkedIn", link: "https://linkedin.com" },
+];
 
 const Navbar: React.FC = () => {
   const router = useRouter();
@@ -303,229 +316,12 @@ const Navbar: React.FC = () => {
 
       <AnimatePresence mode="wait">
         {mobileMenuOpen && (
-          <motion.div
-            key="retro-menu"
-            variants={containerVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="fixed inset-0 z-100 flex flex-col items-center justify-center bg-[#1a0f00] overflow-hidden"
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(217, 119, 6, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(217, 119, 6, 0.1) 1px, transparent 1px)
-              `,
-              backgroundSize: "40px 40px",
-            }}
-          >
-            {/* Animated Close Button */}
-            <motion.button
-              onClick={() => setMobileMenuOpen(false)}
-              className="absolute top-8 right-8 text-amber-500 font-mono text-xl z-20 hover:text-amber-300 transition-colors"
-              whileTap={{ scale: 0.9 }}
-            >
-              <GlassSurface
-                width={60}
-                height={60}
-                borderRadius={30}
-                brightness={65}
-                blur={8}
-                backgroundOpacity={0.4}
-                mixBlendMode="hard-light"
-                redOffset={50}
-                className="shadow-2xl shadow-amber-100  cursor-pointer border border-amber-700/30"
-              >
-                [X]
-              </GlassSurface>
-            </motion.button>
-
-            {/* Menu Items Container */}
-            <div className="flex flex-col items-center gap-6 z-10 w-full h-full max-w-md px-6">
-              <motion.div
-                variants={itemVariants}
-                className="text-amber-700/50 font-mono font-bold text-xs mb-4 tracking-tighter"
-              >
-                SYSTEM NAVIGATION // V.1.0
-              </motion.div>
-
-              <div className="grid grid-cols-2 grid-rows-4 gap-2 w-screen h-full p-5">
-                <motion.div
-                  variants={itemVariants}
-                  className="row-span-1 w-full h-full col-span-2 flex items-center justify-center p-1 md:p-2 bg-[#D5812A]/5 shadow-lg shadow-black backdrop-blur-[5px] rounded-2xl"
-                >
-                  {/* Icon Buttons */}
-                  <div className="flex items-center gap-2 ">
-                    {["bag", "phone", "user"].map((icon) => (
-                      <GlassSurface
-                        key={icon}
-                        width={60}
-                        height={60}
-                        borderRadius={30}
-                        backgroundOpacity={0.4}
-                      >
-                        {/* Icons */}
-                        <div
-                          className="relative w-6 h-6 sm:w-7 sm:h-7 bg-linear-to-br  rounded transition-transform duration-150"
-                          onClick={() => {
-                            if (icon === "phone") {
-                              navigate("/contacts");
-                            } else if (icon === "user") {
-                              navigate("/user/account");
-                            } else {
-                              navigate("/user/cart");
-                            }
-
-                            setMobileMenuOpen(false);
-                          }}
-                        >
-                          {icon === "phone" && (
-                            <Image src={phoneIcon} alt="Phone Icon" />
-                          )}
-                          {icon === "user" && (
-                            <Image src={userIcon} alt="User Icon" />
-                          )}
-                          {icon === "bag" && (
-                            <Image src={bagIcon} alt="Bag Icon" />
-                          )}
-                        </div>
-                      </GlassSurface>
-                    ))}
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  variants={itemVariants}
-                  whileTap={{ scale: 0.98 }}
-                  className="row-span-1 w-full h-full col-span-2 p-1 md:p-2 bg-[#D5812A]/5 shadow-lg shadow-black backdrop-blur-[5px] rounded-2xl"
-                  onClick={() => {
-                    goToPage("EVENTS");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <div className="relative w-full overflow-hidden h-full rounded-xl flex items-end justify-left md:justify-center cursor-pointer">
-                    <motion.span className="text-white/75 z-10 m-5 text-xl md:text-3xl transition-all duration-300 font-extrabold mix-blend-difference">
-                      EVENTS
-                    </motion.span>
-                    <Image
-                      className="object-cover"
-                      objectPosition="center"
-                      layout="fill"
-                      objectFit="cover"
-                      src="https://picsum.photos/300/400?random=3"
-                      alt=""
-                    />
-                    <div className="absolute inset-0 bg-linear-to-b from-transparent to-black" />
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  variants={itemVariants}
-                  className="row-span-1 grid grid-cols-2 gap-2 w-full h-full col-span-2"
-                >
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    className="col-span-1 w-full h-full p-1 md:p-2 bg-[#D5812A]/5 shadow-lg shadow-black backdrop-blur-[5px] rounded-2xl"
-                    onClick={() => {
-                      goToPage("RESIDENCE");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <div className="relative w-full overflow-hidden h-full rounded-xl flex items-end justify-center cursor-pointer">
-                      <motion.span className="text-white/75 z-10 m-3 text-xl md:text-3xl transition-all duration-300 font-extrabold mix-blend-exclusion">
-                        RESIDENCE
-                      </motion.span>
-                      <Image
-                        className="object-cover"
-                        objectPosition="center"
-                        layout="fill"
-                        objectFit="cover"
-                        src="https://picsum.photos/300/400?random=4"
-                        alt=""
-                      />
-                      <div className="absolute inset-0 bg-linear-to-b from-transparent to-black" />
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    className="col-span-1 w-full h-full p-1 md:p-2 bg-[#D5812A]/5 shadow-lg shadow-black backdrop-blur-[5px] rounded-2xl"
-                    onClick={() => {
-                      goToPage("MERCH");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <div className="relative w-full overflow-hidden h-full rounded-xl flex items-end justify-center cursor-pointer">
-                      <motion.span className="text-white/75 z-10 m-3 text-xl md:text-3xl transition-all duration-300 font-extrabold mix-blend-exclusion">
-                        DROPS
-                      </motion.span>
-                      <Image
-                        className="object-cover"
-                        objectPosition="center"
-                        layout="fill"
-                        objectFit="cover"
-                        src="https://picsum.photos/300/400?random=50"
-                        alt=""
-                      />
-                      <div className="absolute inset-0 bg-linear-to-b from-transparent to-black" />
-                    </div>
-                  </motion.div>
-                </motion.div>
-
-                <motion.div
-                  variants={itemVariants}
-                  className="row-span-1 grid grid-cols-2 gap-2 w-full h-full col-span-2"
-                >
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    className="col-span-1 w-full h-full p-1 md:p-2 bg-[#D5812A]/5 shadow-lg shadow-black backdrop-blur-[5px] rounded-2xl"
-                    onClick={() => {
-                      goToPage("PARTNERS");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <div className="relative w-full overflow-hidden h-full rounded-xl flex items-end justify-center cursor-pointer">
-                      <motion.span className="text-white/75 z-10 m-3 text-xl md:text-3xl transition-all duration-300 font-extrabold mix-blend-exclusion">
-                        PARTNERS
-                      </motion.span>
-                      <Image
-                        className="object-cover"
-                        objectPosition="center"
-                        layout="fill"
-                        objectFit="cover"
-                        src="https://picsum.photos/300/400?random=10"
-                        alt=""
-                      />
-                      <div className="absolute inset-0 bg-linear-to-b from-transparent to-black" />
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    whileTap={{ scale: 0.98 }}
-                    className="col-span-1 w-full h-full p-1 md:p-2 bg-[#D5812A]/5 shadow-lg shadow-black backdrop-blur-[5px] rounded-2xl"
-                    onClick={() => {
-                      goToPage("CORE");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <div className="relative w-full overflow-hidden h-full rounded-xl flex items-end justify-center cursor-pointer">
-                      <motion.span className="text-white/75 z-10 m-3 text-xl md:text-3xl transition-all duration-300 font-extrabold mix-blend-exclusion">
-                        CORE
-                      </motion.span>
-                      <Image
-                        className="object-cover"
-                        objectPosition="center"
-                        layout="fill"
-                        objectFit="cover"
-                        src="https://picsum.photos/300/400?random=40"
-                        alt=""
-                      />
-                      <div className="absolute inset-0 bg-linear-to-b from-transparent to-black" />
-                    </div>
-                  </motion.div>
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
+          <div>
+            <MobileMenu
+              isOpen={mobileMenuOpen}
+              onClose={() => setMobileMenuOpen(false)}
+            />
+          </div>
         )}
       </AnimatePresence>
     </motion.nav>

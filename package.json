@@ -1,6 +1,6 @@
 {
-  "name": "sample-app",
-  "version": "0.1.0",
+  "name": "gyanith-web",
+  "version": "0.1.5",
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
@@ -14,6 +14,9 @@
     "@react-three/postprocessing": "^3.0.4",
     "@splinetool/react-spline": "^4.1.0",
     "@studio-freight/lenis": "^1.0.42",
+    "@tsparticles/engine": "^3.9.1",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.9.1",
     "@types/locomotive-scroll": "^4.1.4",
     "appwrite": "^21.5.0",
     "class-variance-authority": "^0.7.1",

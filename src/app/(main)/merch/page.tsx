@@ -26,9 +26,9 @@ const page = () => {
       </div>
 
       {/* Product Description */}
-      <div className="w-screen h-screen flex flex-col lg:flex-row overflow-hidden  items-center justify-center bg-white">
+      <div className="w-screen min-h-screen sm:h-screen flex flex-col lg:flex-row overflow-hidden  items-center justify-center bg-white">
         {/* Image Container */}
-        <div className="flex h-3/5  z-10 w-full lg:h-full lg:w-2/3 ">
+        <div className="flex h-[60vh]  z-10 w-full lg:h-full lg:w-2/3 ">
           {/* Showcase */}
           <div className="w-full h-full relative overflow-x-auto">
             <div className="flex h-full">
@@ -57,19 +57,14 @@ const page = () => {
           <span className="text-3xl text-justify lg:text-6xl font-bold tracking-tighter">
             PRODUCT NAME
           </span>
-          <ScrollFloat
-            animationDuration={2}
-            ease="back.inOut(2)"
-            scrollStart="center bottom+=50%"
-            scrollEnd="bottom bottom-=40%"
-            stagger={0.01}
-            textClassName="text-sm font-normal"
-          >
+          <p>
             This is a detailed description of the product, highlighting its
             features, materials used, and any other relevant information that
             would entice customers to make a purchase.
-          </ScrollFloat>
-          <span className="font-semibold text-lg mt-1 lg:mt-5">$49.99</span>
+          </p>
+          <span className="font-semibold md:font-bold text-[clamp(1.5rem,2vw,2rem)] mt-1 lg:mt-5">
+            $49.99
+          </span>
 
           {/* Sizes */}
           <div className="mt-4">

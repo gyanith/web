@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ledLight } from "@/fonts/fonts";
 import "./globals.css";
 import Noise from "@/components/Noise";
 
@@ -27,7 +28,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gyantith 2026",
+  title: "Gyanith 2026",
   description: "NIT Puducherry",
 };
 
@@ -37,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={ledLight.variable}>
       <body
         className={` ${montserrat.variable} bg-[#070a10]  antialiased flex flex-col items-center`}
       >

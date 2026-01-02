@@ -1,5 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
+import { ledLight } from "@/fonts/fonts";
 
 const page = () => {
   return (
@@ -8,7 +9,7 @@ const page = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 2, ease: "circInOut" }}
     >
-      <span className=" text-6xl text-white">CART</span>
+      <span className={` text-6xl text-white ${ledLight.className}`}>CART</span>
     </motion.div>
   );
 };

@@ -31,9 +31,25 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
 
   const splitText = useMemo(() => {
     const text = typeof children === "string" ? children : "";
-    return text.split("").map((char, index) => (
-      <span className="inline-block word" key={index}>
-        {char === " " ? "\u00A0" : char}
+    // Split by space to get words first
+    const words = text.split(" ");
+
+    return words.map((word, wordIndex) => (
+      // Wrap each word in a span.
+      // whitespace-nowrap ensures the word itself doesn't break.
+      // inline-block allows the browser to wrap words naturally.
+      <span
+        key={wordIndex}
+        className="inline-block whitespace-nowrap mr-[0.25em] last:mr-0"
+      >
+        {word.split("").map((char, charIndex) => (
+          <span
+            key={charIndex}
+            className="inline-block split-char" // Added a specific class for GSAP
+          >
+            {char}
+          </span>
+        ))}
       </span>
     ));
   }, [children]);
@@ -47,7 +63,8 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
         ? scrollContainerRef.current
         : window;
 
-    const charElements = el.querySelectorAll(".inline-block");
+    // TARGET UPDATE: Select only the characters, not the word wrappers
+    const charElements = el.querySelectorAll(".split-char");
 
     gsap.fromTo(
       charElements,
@@ -86,12 +103,10 @@ const ScrollFloat: React.FC<ScrollFloatProps> = ({
   ]);
 
   return (
-    <h2
-      ref={containerRef}
-      className={`my-5 overflow-hidden ${containerClassName}`}
-    >
+    <h2 ref={containerRef} className={`my-2 md:my-5 ${containerClassName}`}>
+      {/* Removed 'nowrap' class from here so lines can break */}
       <span
-        className={`inline-block text-[clamp(1rem,2vw,2rem)] leading-normal wrap-break-word ${textClassName}`}
+        className={`inline-block text-[clamp(1rem,2vw,1.5rem)] leading-normal ${textClassName}`}
       >
         {splitText}
       </span>
