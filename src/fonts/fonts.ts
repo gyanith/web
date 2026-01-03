@@ -60,3 +60,23 @@ export const blueScreen = localFont({
     display: "swap"
 })
 
+export const garetBook = localFont({
+    src: [{
+        path: "./Garet-Book.otf",
+        weight: "400",
+        style: "normal",
+    }],
+    variable: '--font-garetBook',
+    display: "swap"
+})
+
+
+export const creatoDisplay = localFont({
+    src: [{
+        path: "./CreatoDisplay-Regular.otf",
+        weight: "400",
+        style: "normal",
+    }],
+    variable: '--font-creatoDisplay',
+    display: "swap"
+})

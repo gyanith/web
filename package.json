@@ -1,9 +1,9 @@
 {
   "name": "gyanith-web",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 0.0.0.0",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
         hostname: 'picsum.photos',
         pathname: '**',
       },
+      {
+        protocol: 'https',
+        hostname: 'console.gyanith.org',
+        port: '',
+        pathname: '/v1/storage/**',
+      },
     ],
   },
 

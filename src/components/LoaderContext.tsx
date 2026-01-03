@@ -1,38 +1,78 @@
+// components/LoaderContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+import { usePathname } from "next/navigation";
 import TerminalLoader from "./TerminalLoader";
 
 type LoaderContextType = {
   start: (text?: string) => void;
   ready: boolean;
+  isNavigating: boolean;
 };
 
 const LoaderContext = createContext<LoaderContextType | null>(null);
 
 export const LoaderProvider = ({ children }: { children: React.ReactNode }) => {
   const [visible, setVisible] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(true);
   const [text, setText] = useState("Loading...");
+  const [isNavigating, setIsNavigating] = useState(false);
 
-  const start = (t = "Loading...") => {
+  const pathname = usePathname();
+  const previousPathname = useRef(pathname);
+  const navigationStartTime = useRef<number | null>(null);
+  const minLoadTime = 2000;
+
+  // Detect actual route changes
+  useEffect(() => {
+    if (previousPathname.current !== pathname && isNavigating) {
+      const navigationTime = navigationStartTime.current
+        ? Date.now() - navigationStartTime.current
+        : 0;
+
+      const remainingTime = Math.max(0, minLoadTime - navigationTime);
+
+      setTimeout(() => {
+        finish();
+        previousPathname.current = pathname;
+        navigationStartTime.current = null;
+        setIsNavigating(false);
+      }, remainingTime);
+    }
+  }, [pathname, isNavigating]);
+
+  const start = useCallback((t = "Loading...") => {
     setText(t);
-    setReady(false); // ⬅ hide page
+    setReady(false);
     setVisible(true);
-  };
+    setIsNavigating(true);
+    navigationStartTime.current = Date.now();
+    document.documentElement.classList.add("loader-active");
+  }, []);
 
   const finish = useCallback(() => {
     setVisible(false);
     setTimeout(() => {
       document.documentElement.classList.remove("loader-active");
-    }, 2200);
-    setReady(true); // ⬅ reveal page
+    }, 500);
+    setReady(true);
   }, []);
 
   return (
-    <LoaderContext.Provider value={{ start, ready }}>
+    <LoaderContext.Provider value={{ start, ready, isNavigating }}>
       <TerminalLoader visible={visible} text={text} onDone={finish} />
-      {children}
+      {/* Only show children when ready */}
+      <div style={{ opacity: ready ? 1 : 0, transition: "opacity 0.3s" }}>
+        {children}
+      </div>
     </LoaderContext.Provider>
   );
 };

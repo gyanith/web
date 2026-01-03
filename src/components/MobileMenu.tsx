@@ -268,7 +268,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
   if (!isOpen && !open) return null;
 
   return (
-    <div className="fixed inset-0 z-100 pointer-events-none">
+    <div className="fixed inset-0 z-1000 pointer-events-none">
       <div className="relative w-full h-full">
         {/* Background Layers */}
         <div

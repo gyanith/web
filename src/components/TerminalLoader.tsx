@@ -93,7 +93,7 @@ export default function TerminalLoader({
   return (
     <div
       ref={screenRef}
-      className="fixed inset-0 z-10000 flex w-screen h-screen bg-slate-950 font-mono text-sm"
+      className="fixed inset-0 z-10000 flex w-screen h-screen bg-slate-950 text-sm "
       style={{ color: ACCENT }}
     >
       {/* Scanline overlay */}

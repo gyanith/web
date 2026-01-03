@@ -1,0 +1,36 @@
+// app/api/events/route.ts
+import { NextResponse } from 'next/server';
+import { createAdminClient } from "@/lib/appwrite/appwrite.server"
+import { getImageUrl } from '@/lib/helpers/imageStorage.helper';
+
+export async function GET() {
+
+    const client = createAdminClient();
+    const tablesDB = client.getTablesDB();
+
+    try {
+        const response = await tablesDB.listRows({
+            databaseId: process.env.APPWRITE_DATABASE_ID!,
+            tableId: process.env.APPWRITE_EVENTS_COLLECTION_ID!
+        });
+
+        // Transform data to only return necessary fields
+        const events = response.rows.map(row => ({
+            eventId: row.$id,
+            eventName: row.name,
+            eventType: row.type,
+            description: row.description,
+            day: row.day,
+            location: row.location,
+            prizePool: row.prize_pool,
+            imageUrl: getImageUrl(row.image_id),
+        }));
+
+        return NextResponse.json(events);
+    } catch (error) {
+        return NextResponse.json(
+            { error: 'Failed to fetch events' },
+            { status: 500 }
+        );
+    }
+}

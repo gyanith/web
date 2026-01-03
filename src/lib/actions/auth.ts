@@ -1,3 +1,5 @@
+// @/lib/actions/auth.ts
+
 'use server';
 import { createAdminClient, createSessionClient } from "@/lib/appwrite/appwrite.server"
 import { ID, OAuthProvider, Query } from "node-appwrite";
@@ -167,12 +169,12 @@ export async function signUpWithEmail(data: SignUpData) {
 
 }
 
-export async function getOAuthUrl(
+/* export async function getOAuthUrl(
     provider: "google" | "github",
     signUpData?: OAuthSignupData // Make this optional for login flow
 ) {
     try {
-        const { getAccount } = createSessionClient();
+        const { getAccount } = await createSessionClient();
         const account = getAccount();
 
         // 1. If this is a signup, store the extra data in a temporary cookie
@@ -198,11 +200,11 @@ export async function getOAuthUrl(
         console.error("OAuth Error:", error);
         throw new Error("Failed to initiate OAuth");
     }
-}
+} */
 
 export async function signOut() {
     try {
-        const { getAccount, getClient } = createSessionClient();
+        const { getAccount, getClient } = await createSessionClient();
         const account = getAccount();
         const client = getClient();
 
@@ -245,43 +247,128 @@ export async function signOut() {
 
 export async function getLoggedInUser() {
     try {
-        const { getAccount, getClient } = createSessionClient();
+        const { getAccount } = await createSessionClient(); // Add await here
         const account = getAccount();
-        const client = getClient();
-
-        const cookieStore = await cookies();
-        const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-
-        if (!projectId) {
-            console.error("❌ getLoggedInUser: Project ID is undefined");
-            return null;
-        }
-
-        const cookieName = `a_session_${projectId}`;
-        const sessionCookie = cookieStore.get(cookieName);
-
-        // Debug: Verify cookie was set
-        /* const cookieStore2 = await cookies();
-        const verifyCookie = cookieStore2.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`);
-        console.log("🍪 Cookie after setting:", verifyCookie ? "EXISTS" : "MISSING", " Value: ", verifyCookie?.value); */
-
-        // LOGGING FOR DEBUGGING
-        if (!sessionCookie || !sessionCookie.value) {
-            console.log("⚠️ getLoggedInUser: No session cookie found with name:", cookieName);
-            return null;
-        }
-
-        client.setSession(sessionCookie.value);
 
         const user = await account.get();
-        console.log("✅ getLoggedInUser: Success", user.$id); // Uncomment for verbose logs
+        console.log("✅ getLoggedInUser: Success", user.$id);
         return user;
 
     } catch (error: any) {
-        // If error is 401 (Unauthorized), it just means token expired/invalid
         if (error.code !== 401) {
             console.error("❌ getLoggedInUser Error:", error.message);
         }
         return null;
+    }
+}
+
+export async function getOAuthUrl(
+    provider: "google" | "github",
+    isSignup: boolean = false
+) {
+    try {
+        const { getAccount } = await createSessionClient();
+        const account = getAccount();
+
+        const cookieStore = await cookies();
+
+        if (isSignup) {
+            cookieStore.set("oauth_is_signup", "true", {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                path: "/",
+                maxAge: 60 * 10,
+            });
+        }
+
+        const redirectUrl = await account.createOAuth2Token({
+            provider: provider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
+            success: `${process.env.NEXT_PUBLIC_APP_URL}/auth/oauth/callback`,
+            failure: `${process.env.NEXT_PUBLIC_APP_URL}/auth?error=oauth_failed`,
+        }); // <-- This should be the closing brace, not a comma with {
+
+        return redirectUrl;
+    } catch (error: any) {
+        console.error("OAuth Error:", error);
+        throw new Error("Failed to initiate OAuth");
+    }
+}
+
+// Complete OAuth signup
+export async function completeOAuthSignup(data: {
+    phone: string;
+    gender: string;
+    collegeName: string;
+    isNITPY: boolean;
+}) {
+    try {
+        const cookieStore = await cookies();
+        const sessionCookie = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`);
+
+        if (!sessionCookie) {
+            return { success: false, error: "No active session" };
+        }
+
+
+        const oauthUserId = cookieStore.get("oauth_user_id")?.value;
+
+        if (!oauthUserId) {
+            return { success: false, error: "OAuth user not found" };
+        }
+
+        const { getUsers } = createAdminClient();
+        const users = getUsers();
+
+        const user = await users.get({ userId: oauthUserId });
+
+        console.log('OAuth user:', user.$id, user.email);
+
+        const { getTablesDB } = createAdminClient();
+        const tablesDB = getTablesDB();
+
+        await tablesDB.createRow({
+            databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+            tableId: process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
+            rowId: user.$id,
+            data: {
+                email: user.email,
+                phone: parseInt(data.phone),
+                gender: data.gender,
+                is_nitpy: data.isNITPY,
+                college_name: data.collegeName,
+            },
+        });
+
+        console.log('Profile created for:', user.$id);
+
+        // Clear cookies
+        cookieStore.delete("oauth_is_signup");
+        cookieStore.delete("oauth_needs_profile");
+
+        return { success: true }; // Don't include redirect here
+    } catch (error: any) {
+        console.error("Complete OAuth Signup Error:", error);
+        return { success: false, error: error.message || "Failed to complete profile" };
+    }
+}
+
+// Check if user profile exists
+export async function checkUserProfile(userId: string) {
+    try {
+        const { getTablesDB } = createAdminClient();
+        const tablesDB = getTablesDB();
+
+        const profile = await tablesDB.getRow({
+            databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+            tableId: process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
+            rowId: userId,
+        });
+
+        return { exists: true, profile };
+    } catch (error: any) {
+        if (error.code === 404) {
+            return { exists: false };
+        }
+        throw error;
     }
 }

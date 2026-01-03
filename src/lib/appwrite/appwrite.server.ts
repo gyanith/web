@@ -1,6 +1,6 @@
 
 import { Client, Account, TablesDB, Users } from 'node-appwrite';
-
+import { cookies } from 'next/headers';
 
 
 // 1. Admin Client
@@ -17,20 +17,35 @@ export const createAdminClient = () => {
         getTablesDB: () => new TablesDB(client),
         getAccount: () => new Account(client),
         getUsers: () => new Users(client),
+        getStorage: () => new Storage(),
     };
 };
 
 // 2. Session Client
 // Used for: Operations acting as the specific user (e.g., logging in, creating a session).
 // Does NOT use the API Key.
-export const createSessionClient = () => {
+export async function createSessionClient() {
     const client = new Client()
         .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
         .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+
+    // Read the session cookie
+    const cookieStore = await cookies();
+    const session = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`);
+
+    // Set session if it exists
+    if (session?.value) {
+        client.setSession(session.value);
+    }
 
     return {
         getClient: () => client,
         getAccount: () => new Account(client),
         getTablesDB: () => new TablesDB(client),
     };
-};
+}
+
+
+export { Query } from "node-appwrite"
+
+

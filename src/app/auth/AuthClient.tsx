@@ -1,10 +1,6 @@
 "use client";
 
-// /auth endpoint
-
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
@@ -12,7 +8,10 @@ import {
   loginWithEmail,
   signUpWithEmail,
   getOAuthUrl,
+  completeOAuthSignup, // ADD THIS IMPORT
 } from "@/lib/actions/auth";
+
+import { useRouter } from "next/navigation";
 
 import { z } from "zod";
 
@@ -44,16 +43,38 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const AuthClient = () => {
+// ADD PROPS TYPE
+type AuthClientProps = {
+  oauthCompleteMode?: boolean;
+  userName?: string;
+  userEmail?: string;
+};
+
+const AuthClient = ({
+  oauthCompleteMode = false,
+  userName,
+  userEmail,
+}: AuthClientProps) => {
   const [isLogin, setIsLogin] = useState(false);
   const [signupStep, setSignupStep] = useState(1);
   const [isNITPY, setIsStudent] = useState(false);
+  const [isOAuthComplete, setIsOAuthComplete] = useState(oauthCompleteMode); // ADD THIS
 
+  const router = useRouter();
   const navigate = useNavigate();
   const searchParams = useSearchParams();
 
-  // Get redirect URL from query params, default to home
   const redirectUrl = searchParams.get("redirect") || "/";
+  const mode = searchParams.get("mode"); // ADD THIS
+
+  // ADD THIS EFFECT - Check if we need to show OAuth completion
+  useEffect(() => {
+    if (mode === "oauth_complete" || oauthCompleteMode) {
+      setIsLogin(false);
+      setSignupStep(2); // Go directly to Step 2
+      setIsOAuthComplete(true);
+    }
+  }, [mode, oauthCompleteMode]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -73,7 +94,6 @@ const AuthClient = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -140,92 +160,123 @@ const AuthClient = () => {
     }
   };
 
-  // Handle Email/Password Authentication
+  // MODIFIED - Handle Email/Password Authentication
   const handleEmailAuth = async () => {
     try {
       if (isLogin) {
-        // Validate login form
         if (!validateLogin()) {
           return;
         }
 
-        // Login with email
         const result = await loginWithEmail({
           email: formData.email,
           password: formData.password,
         });
 
-        console.log("Logged in successfully");
-        // Redirect or update UI (e.g., router.push('/dashboard'))
+        if (!result.success) {
+          setErrors({ general: result.error || "Login failed" });
+          return;
+        }
 
+        console.log("Logged in successfully");
         navigate(redirectUrl);
       } else {
-        if (signupStep === 1) {
-          // Validate step 1
+        if (signupStep === 1 && !isOAuthComplete) {
           if (!validateStep1()) {
             return;
           }
-          // Move to step 2
           setSignupStep(2);
         } else {
-          // Validate step 2
           if (!validateStep2()) {
             return;
           }
 
-          // Complete signup
-          const user = await signUpWithEmail({
-            email: formData.email,
-            password: formData.password,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            phone: formData.phone,
-            gender: formData.gender,
-            collegeName: formData.collegeName,
-            isNITPY,
-          });
+          if (isOAuthComplete) {
+            // COMPLETE OAUTH SIGNUP
+            const result = await completeOAuthSignup({
+              phone: formData.phone,
+              gender: formData.gender,
+              collegeName: formData.collegeName,
+              isNITPY,
+            });
 
-          if (user.success) {
-            console.log("User created and profile saved:", user);
+            if (!result.success) {
+              setErrors({
+                general: result.error || "Failed to complete profile",
+              });
+              return;
+            }
+
+            // Clear sessionStorage and navigate
+            const storedRedirect = sessionStorage.getItem("authRedirect");
+            sessionStorage.removeItem("authRedirect");
+
+            // Use navigate hook instead of direct redirect
+            // navigate(storedRedirect || "/");
+            router.push(storedRedirect || "/");
+          } else {
+            // Regular email signup
+            const user = await signUpWithEmail({
+              email: formData.email,
+              password: formData.password,
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              phone: formData.phone,
+              gender: formData.gender,
+              collegeName: formData.collegeName,
+              isNITPY,
+            });
+
+            if (user.success) {
+              console.log("User created and profile saved:", user);
+            } else {
+              setErrors({ general: user.error || "Signup failed" });
+              return;
+            }
+
+            navigate(redirectUrl);
           }
-
-          // Redirect or update UI
-          navigate(redirectUrl);
         }
       }
     } catch (error: any) {
       console.error("Authentication error:", error);
-      // Handle error (show message to user)
       setErrors({
         general: error.message || "Authentication failed. Please try again.",
       });
     }
   };
-
-  // Handle OAuth Authentication
+  // MODIFIED - Handle OAuth Authentication
   const handleOAuth = async (provider: "google" | "github") => {
     try {
-      if (isLogin || signupStep === 1) {
-        // OAuth for login or step 1 signup
-        // Store redirect URL in session/localStorage before OAuth redirect
-        if (redirectUrl !== "/") {
-          sessionStorage.setItem("authRedirect", redirectUrl);
-        }
-
-        const oAuthUrl = await getOAuthUrl(provider);
-        window.location.href = oAuthUrl;
-      } else {
-        // Step 2: Validate before OAuth
+      if (isOAuthComplete) {
+        // Already in OAuth completion mode - shouldn't happen
+        // but handle it anyway by completing the profile
         if (!validateStep2()) {
           return;
         }
 
-        // Store redirect URL before OAuth
+        const result = await completeOAuthSignup({
+          phone: formData.phone,
+          gender: formData.gender,
+          collegeName: formData.collegeName,
+          isNITPY,
+        });
+
+        if (!result.success) {
+          setErrors({ general: result.error || "Failed to complete profile" });
+          return;
+        }
+
+        const storedRedirect = sessionStorage.getItem("authRedirect") || "/";
+        sessionStorage.removeItem("authRedirect");
+        navigate(storedRedirect);
+      } else {
+        // Starting OAuth flow
         if (redirectUrl !== "/") {
           sessionStorage.setItem("authRedirect", redirectUrl);
         }
 
-        const oAuthUrl = await getOAuthUrl(provider);
+        const oAuthUrl = await getOAuthUrl(provider, !isLogin); // Pass isSignup flag
         window.location.href = oAuthUrl;
       }
     } catch (error) {
@@ -244,7 +295,12 @@ const AuthClient = () => {
     }
   };
 
+  // MODIFIED - Handle back button
   const handleBack = () => {
+    if (isOAuthComplete) {
+      // Can't go back from OAuth completion
+      return;
+    }
     setSignupStep(1);
     setErrors({});
   };
@@ -300,23 +356,43 @@ const AuthClient = () => {
         }}
       ></div>
 
-      <div className="w-full h-full p-5 sm:p-7 lg:p-[5vw] flex flex-col items-center justify-center sm:justify-end bg-black/30 backdrop-blur-2xl md:backdrop-blur-lg lg:backdrop-blur-md z-10 col-span-full sm:col-span-3 lg:col-span-2 transition-all duration-300">
+      <div className="w-full h-full p-5 sm:p-7  flex flex-col items-center justify-center sm:justify-end bg-black/30 backdrop-blur-2xl md:backdrop-blur-lg lg:backdrop-blur-md z-10 col-span-full sm:col-span-3 lg:col-span-2 transition-all duration-300">
         {/* Auth Form */}
         <motion.div
-          className="w-full flex flex-col gap-5 pt-40 md:pt-20 items-center justify-center h-full"
+          className="w-full flex flex-col gap-5 pt-5 md:pt-40 items-center justify-center h-full"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 2, ease: "circInOut" }}
         >
+          {/* MODIFIED - Dynamic title based on mode */}
           <motion.span
-            key={isLogin ? "login" : `signup-${signupStep}`}
+            key={
+              isLogin
+                ? "login"
+                : isOAuthComplete
+                ? "oauth-complete"
+                : `signup-${signupStep}`
+            }
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="text-[#FFFFFF] text-4xl text-center w-full mb-7 font-extrabold uppercase"
           >
-            {isLogin ? "Log In" : signupStep === 1 ? "Sign Up" : "Almost There"}
+            {isLogin
+              ? "Log In"
+              : isOAuthComplete
+              ? `Complete Your Profile${
+                  userName ? `, ${userName.split(" ")[0]}` : ""
+                }`
+              : signupStep === 1
+              ? "Sign Up"
+              : "Almost There"}
           </motion.span>
+
+          {/* ADD THIS - Show user email if OAuth completion */}
+          {isOAuthComplete && userEmail && (
+            <p className="text-white/50 text-sm -mt-4 mb-2">{userEmail}</p>
+          )}
 
           {/* General Error Message */}
           {errors.general && (
@@ -331,7 +407,7 @@ const AuthClient = () => {
 
           <AnimatePresence mode="wait" custom={signupStep}>
             {!isLogin && signupStep === 1 ? (
-              // Sign Up Step 1
+              // Sign Up Step 1 - UNCHANGED
               <motion.div
                 key="signup-step-1"
                 custom={1}
@@ -342,6 +418,8 @@ const AuthClient = () => {
                 transition={{ duration: 0.4, ease: "easeInOut" }}
                 className="h-full w-full grid grid-rows-5 grow"
               >
+                {/* ... your existing Step 1 JSX ... */}
+                {/* (keeping it the same) */}
                 <div className="row-span-1 gap-5 flex w-full justify-between">
                   <div className="w-full">
                     <FormField
@@ -441,7 +519,7 @@ const AuthClient = () => {
                 </div>
               </motion.div>
             ) : !isLogin && signupStep === 2 ? (
-              // Sign Up Step 2
+              // Sign Up Step 2 - UNCHANGED (works for both regular and OAuth)
               <motion.div
                 key="signup-step-2"
                 custom={2}
@@ -452,6 +530,7 @@ const AuthClient = () => {
                 transition={{ duration: 0.4, ease: "easeInOut" }}
                 className="h-full w-full grid grid-rows-5 grow"
               >
+                {/* ... your existing Step 2 JSX ... */}
                 <div className="row-span-1 gap-5 flex w-full justify-between items-start">
                   <div className="w-full">
                     <FormField
@@ -522,14 +601,17 @@ const AuthClient = () => {
                 </div>
 
                 <div className="row-span-2 justify-center gap-2 md:gap-5 flex flex-col w-full h-full">
-                  <div className="flex w-full justify-between px-4">
-                    <span
-                      className="text-white font-normal hover:underline cursor-pointer"
-                      onClick={handleBack}
-                    >
-                      ← Back
-                    </span>
-                  </div>
+                  {/* MODIFIED - Hide back button for OAuth completion */}
+                  {!isOAuthComplete && (
+                    <div className="flex w-full justify-between px-4">
+                      <span
+                        className="text-white font-normal hover:underline cursor-pointer"
+                        onClick={handleBack}
+                      >
+                        ← Back
+                      </span>
+                    </div>
+                  )}
                   <GlowButton
                     style={{
                       fontFamily: "Montserrat, 'Consolas', monospace",
@@ -538,13 +620,15 @@ const AuthClient = () => {
                     className="group w-full h-fit px-10"
                   >
                     <div className="flex gap-2 items-center justify-center">
-                      <span className="">Sign Up</span>
+                      <span className="">
+                        {isOAuthComplete ? "Complete Profile" : "Sign Up"}
+                      </span>
                     </div>
                   </GlowButton>
                 </div>
               </motion.div>
             ) : (
-              // Login
+              // Login - UNCHANGED
               <motion.div
                 key="login"
                 custom={0}
@@ -555,6 +639,7 @@ const AuthClient = () => {
                 transition={{ duration: 0.4, ease: "easeInOut" }}
                 className="h-full w-full flex flex-col gap-10 justify-between grow"
               >
+                {/* ... your existing Login JSX ... */}
                 <div className="gap-10 flex flex-col">
                   <div className="flex w-full">
                     <div className="w-full">
@@ -623,56 +708,61 @@ const AuthClient = () => {
             )}
           </AnimatePresence>
 
-          <div className="flex items-center justify-between w-full gap-2">
-            <div className="w-full h-px rounded-full bg-[#FFFFFF50]" />
-            <span className="text-[#FFFFFF50]">or</span>
-            <div className="w-full h-px rounded-full bg-[#FFFFFF50]" />
-          </div>
+          {/* MODIFIED - Hide OAuth buttons during completion */}
+          {!isOAuthComplete && (
+            <>
+              <div className="flex items-center justify-between w-full gap-2">
+                <div className="w-full h-px rounded-full bg-[#FFFFFF50]" />
+                <span className="text-[#FFFFFF50]">or</span>
+                <div className="w-full h-px rounded-full bg-[#FFFFFF50]" />
+              </div>
 
-          <div className="flex w-full gap-5 justify-between max-sm:justify-around">
-            <GlowButton
-              style={{
-                fontFamily: "Montserrat, 'Consolas', monospace",
-              }}
-              onClick={() => handleLogin("google")}
-              className="group w-full max-w-40"
-            >
-              <div className="flex w-full gap-2 justify-center max-sm:justify-around">
-                <Image
-                  src={googleIcon}
-                  alt="google logo"
-                  className="w-4 group-hover:brightness-150 transition-all duration-750"
+              <div className="flex w-full gap-5 justify-between max-sm:justify-around">
+                <GlowButton
                   style={{
-                    textShadow:
-                      "0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff",
+                    fontFamily: "Montserrat, 'Consolas', monospace",
                   }}
-                />
-                <span className="">Google</span>
-              </div>
-            </GlowButton>
+                  onClick={() => handleLogin("google")}
+                  className="group w-full max-w-40"
+                >
+                  <div className="flex w-full gap-2 justify-center max-sm:justify-around">
+                    <Image
+                      src={googleIcon}
+                      alt="google logo"
+                      className="w-4 group-hover:brightness-150 transition-all duration-750"
+                      style={{
+                        textShadow:
+                          "0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff",
+                      }}
+                    />
+                    <span className="">Google</span>
+                  </div>
+                </GlowButton>
 
-            <GlowButton
-              style={{
-                fontFamily: "Montserrat, 'Consolas', monospace",
-              }}
-              onClick={() => handleLogin("github")}
-              className="group w-full max-w-40"
-            >
-              <div className="flex w-full gap-2 justify-center max-sm:justify-around">
-                <div className="flex items-center">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="w-5 h-5 transition-colors duration-300"
-                    aria-hidden
-                  >
-                    <path d="M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.42 7.86 10.95.58.11.79-.25.79-.56 0-.27-.01-1-.02-1.97-3.2.7-3.87-1.54-3.87-1.54-.53-1.35-1.3-1.71-1.3-1.71-1.06-.73.08-.72.08-.72 1.17.08 1.78 1.2 1.78 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.75.4-1.27.73-1.56-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.3 1.2-3.11-.12-.3-.52-1.52.12-3.17 0 0 .97-.31 3.18 1.19a11.1 11.1 0 0 1 5.8 0c2.21-1.5 3.18-1.19 3.18-1.19.64 1.65.24 2.87.12 3.17.75.81 1.2 1.85 1.2 3.11 0 4.43-2.7 5.41-5.27 5.7.41.35.78 1.05.78 2.13 0 1.54-.02 2.78-.02 3.16 0 .31.21.67.8.56 4.57-1.53 7.85-5.85 7.85-10.95C23.5 5.74 18.27.5 12 .5z" />
-                  </svg>
-                </div>
-                <span className="">GitHub</span>
+                <GlowButton
+                  style={{
+                    fontFamily: "Montserrat, 'Consolas', monospace",
+                  }}
+                  onClick={() => handleLogin("github")}
+                  className="group w-full max-w-40"
+                >
+                  <div className="flex w-full gap-2 justify-center max-sm:justify-around">
+                    <div className="flex items-center">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="w-5 h-5 transition-colors duration-300"
+                        aria-hidden
+                      >
+                        <path d="M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.42 7.86 10.95.58.11.79-.25.79-.56 0-.27-.01-1-.02-1.97-3.2.7-3.87-1.54-3.87-1.54-.53-1.35-1.3-1.71-1.3-1.71-1.06-.73.08-.72.08-.72 1.17.08 1.78 1.2 1.78 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.75.4-1.27.73-1.56-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.3 1.2-3.11-.12-.3-.52-1.52.12-3.17 0 0 .97-.31 3.18 1.19a11.1 11.1 0 0 1 5.8 0c2.21-1.5 3.18-1.19 3.18-1.19.64 1.65.24 2.87.12 3.17.75.81 1.2 1.85 1.2 3.11 0 4.43-2.7 5.41-5.27 5.7.41.35.78 1.05.78 2.13 0 1.54-.02 2.78-.02 3.16 0 .31.21.67.8.56 4.57-1.53 7.85-5.85 7.85-10.95C23.5 5.74 18.27.5 12 .5z" />
+                      </svg>
+                    </div>
+                    <span className="">GitHub</span>
+                  </div>
+                </GlowButton>
               </div>
-            </GlowButton>
-          </div>
+            </>
+          )}
         </motion.div>
       </div>
     </motion.div>
