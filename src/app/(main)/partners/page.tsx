@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+
 import { useSpring, motion } from "framer-motion";
 import Image from "next/image";
 
@@ -29,7 +29,7 @@ const page = () => {
           }}
         >
           {/* CRT Screen Container */}
-          <div className="relative w-full h-full overflow-hidden flex flex-col items-center justify-center">
+          <div className="relative w-full h-full overflow-hidden">
             {/* Background glow - Orange/Amber tint */}
             <div
               className="absolute inset-0 z-0"
@@ -59,7 +59,7 @@ const page = () => {
 
             {/* Main Content Layer */}
             <div
-              className="absolute inset-0 z-10 flex items-center  p-12"
+              className="absolute inset-0 z-10 flex items-center justify-center p-12"
               style={{
                 filter: "blur(0.3px)",
               }}
@@ -68,7 +68,7 @@ const page = () => {
               <div
                 className="absolute top-8 left-1/2 transform -translate-x-1/2 text-center select-none"
                 style={{
-                  fontFamily: "'Courier New', monospace",
+                  fontFamily: "monospace",
                   fontWeight: "bold",
                 }}
               >
@@ -77,6 +77,7 @@ const page = () => {
                   style={{
                     color: "#d4a574",
                     textShadow: "0 0 10px rgba(212, 165, 116, 0.8)",
+                    fontFamily: "monospace",
                   }}
                 >
                   ✶ NIT Puducherry's ✶
@@ -91,10 +92,9 @@ const page = () => {
                   }}
                 ></div>
               </div>
-
               {/* Decorative corner elements */}
               <div
-                className="absolute top-6 left-6  text-sm select-none opacity-15 md:opacity-100"
+                className="absolute top-6 left-6 text-sm select-none opacity-15 md:opacity-100"
                 style={{
                   fontFamily: "monospace",
                   fontWeight: "bold",
@@ -105,7 +105,7 @@ const page = () => {
                 ▓▒░ B-15 ░▒▓
               </div>
               <div
-                className="absolute top-6 right-6  text-sm select-none opacity-15 md:opacity-100"
+                className="absolute top-6 right-6  text-sm select-none opacity-25 md:opacity-100"
                 style={{
                   fontFamily: "monospace",
                   fontWeight: "bold",
@@ -115,10 +115,9 @@ const page = () => {
               >
                 NITPY-2026
               </div>
-
               {/* Side panel decorations */}
               <div
-                className="absolute left-8 top-1/4 select-none"
+                className="absolute left-8 top-1/4 select-none "
                 style={{
                   fontFamily: "monospace",
                   fontSize: "0.7rem",
@@ -127,20 +126,39 @@ const page = () => {
                   textShadow: "0 0 5px rgba(212, 165, 116, 0.5)",
                 }}
               >
-                <div className="mb-2 px-2 py-1 border border-current opacity-25 md:opacity-100">
+                <div
+                  className="mb-2 px-2 py-1 border border-current opacity-25 md:opacity-100 "
+                  style={{
+                    fontFamily: "monospace",
+                  }}
+                >
                   F1
                 </div>
-                <div className="mb-2 px-2 py-1 border border-current bg-black bg-opacity-40 opacity-25 md:opacity-100">
+                <div
+                  className="mb-2 px-2 py-1 border border-current bg-black bg-opacity-40 opacity-25 md:opacity-100"
+                  style={{
+                    fontFamily: "monospace",
+                  }}
+                >
                   ON
                 </div>
-                <div className="mb-2 px-2 py-1 border border-current opacity-25 md:opacity-100">
+                <div
+                  className="mb-2 px-2 py-1 border border-current opacity-25 md:opacity-100"
+                  style={{
+                    fontFamily: "monospace",
+                  }}
+                >
                   F5
                 </div>
-                <div className="mb-2 px-2 py-1 border border-current opacity-25 md:opacity-100">
+                <div
+                  className="mb-2 px-2 py-1 border border-current opacity-25 md:opacity-100"
+                  style={{
+                    fontFamily: "monospace",
+                  }}
+                >
                   OFF
                 </div>
               </div>
-
               <div
                 className="absolute right-8 top-1/4 text-right select-none "
                 style={{
@@ -152,21 +170,80 @@ const page = () => {
                 }}
               >
                 <div className="mb-1 opacity-25 md:opacity-100">
-                  <span className="opacity-60">BLM</span>{" "}
-                  <span className="ml-2">F-VAR</span>{" "}
-                  <span className="ml-2">K-VAR</span>
+                  <span
+                    className="opacity-60"
+                    style={{
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    BLM
+                  </span>{" "}
+                  <span
+                    className="ml-2"
+                    style={{
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    F-VAR
+                  </span>{" "}
+                  <span
+                    className="ml-2"
+                    style={{
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    K-VAR
+                  </span>
                 </div>
                 <div className="mb-1 opacity-25 md:opacity-100">
-                  <span className="opacity-60">L5</span>{" "}
-                  <span className="ml-2">F2</span>{" "}
-                  <span className="ml-2">L4</span>
+                  <span
+                    className="opacity-60 "
+                    style={{
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    L5
+                  </span>{" "}
+                  <span
+                    className="ml-2"
+                    style={{
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    F2
+                  </span>{" "}
+                  <span
+                    className="ml-2"
+                    style={{
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    L4
+                  </span>
                 </div>
                 <div className="mb-1 opacity-25 md:opacity-100">
-                  <span className="opacity-60">F22+</span>{" "}
-                  <span className="ml-2">V.09</span>{" "}
+                  <span
+                    className="opacity-60"
+                    style={{
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    F22+
+                  </span>{" "}
+                  <span
+                    className="ml-2"
+                    style={{
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    V.09
+                  </span>{" "}
                   <span
                     className="ml-2 px-1 opacity-25 md:opacity-100"
-                    style={{ backgroundColor: "rgba(212, 165, 116, 0.3)" }}
+                    style={{
+                      backgroundColor: "rgba(212, 165, 116, 0.3)",
+                      fontFamily: "monospace",
+                    }}
                   >
                     L0
                   </span>
@@ -175,14 +252,23 @@ const page = () => {
                   <span className="opacity-60">-</span>{" "}
                   <span
                     className="ml-2 px-1 opacity-25 md:opacity-100"
-                    style={{ backgroundColor: "rgba(212, 165, 116, 0.3)" }}
+                    style={{
+                      backgroundColor: "rgba(212, 165, 116, 0.3)",
+                      fontFamily: "monospace",
+                    }}
                   >
                     Nul
                   </span>{" "}
-                  <span className="ml-2 opacity-25 md:opacity-100">L4</span>
+                  <span
+                    className="ml-2"
+                    style={{
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    L4
+                  </span>
                 </div>
               </div>
-
               {/* Main Text Display */}
               <div className="relative md:mx-26 flex flex-col w-full">
                 <div
@@ -209,10 +295,180 @@ const page = () => {
                   <Image src={handshakeImage} alt="Handshake Image" />
                 </div>
               </div>
-
+              ;{/* Bottom section with data blocks */}
+              <div
+                className="absolute bottom-12 left-1/2 transform -translate-x-1/2 select-none opacity-25 md:opacity-100"
+                style={{
+                  fontFamily: "monospace",
+                  fontWeight: "bold",
+                }}
+              >
+                <div
+                  className="h-px mx-auto mb-4"
+                  style={{
+                    width: "500px",
+                    background:
+                      "linear-gradient(to right, transparent, #d4a574, transparent)",
+                    boxShadow: "0 0 8px rgba(212, 165, 116, 0.6)",
+                  }}
+                ></div>
+                <div
+                  className="text-center text-sm mb-3"
+                  style={{
+                    color: "#d4a574",
+                    textShadow: "0 0 10px rgba(212, 165, 116, 0.8)",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  ✶ Boot Balance ✶
+                </div>
+                <div className="flex justify-center gap-8 text-xs">
+                  <div
+                    className="border px-3 py-2"
+                    style={{
+                      borderColor: "#d4a574",
+                      color: "#d4a574",
+                      opacity: 0.8,
+                    }}
+                  >
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1122344778
+                    </div>
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1123446658
+                    </div>
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      5566998774
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1115566448
+                    </div>
+                  </div>
+                  <div
+                    className="text-xs opacity-70"
+                    style={{
+                      color: "#d4a574",
+                      fontWeight: "bold",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    VB
+                  </div>
+                  <div
+                    className="border px-3 py-2"
+                    style={{
+                      borderColor: "#d4a574",
+                      color: "#d4a574",
+                      opacity: 0.8,
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1124677894
+                    </div>
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1123446658
+                    </div>
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1122344778
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1166699878
+                    </div>
+                  </div>
+                  <div
+                    className="text-xs opacity-70"
+                    style={{
+                      color: "#d4a574",
+                      fontWeight: "bold",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    VB
+                  </div>
+                  <div
+                    className="border px-3 py-2"
+                    style={{
+                      borderColor: "#d4a574",
+                      color: "#d4a574",
+                      opacity: 0.8,
+                    }}
+                  >
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1155446688
+                    </div>
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1124677894
+                    </div>
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1354469785
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      1354469785
+                    </div>
+                  </div>
+                </div>
+              </div>
               {/* Bottom right corner logo */}
               <div
-                className="absolute bottom-8 right-12 text-2xl font-bold select-none"
+                className="absolute bottom-8 right-12 text-2xl font-bold select-none opacity-45 md:opacity-100"
                 style={{
                   color: "#d4a574",
                   textShadow: "0 0 15px rgba(212, 165, 116, 0.9)",
@@ -220,17 +476,38 @@ const page = () => {
                   letterSpacing: "0.1em",
                 }}
               >
-                <div>P△</div>
-                <div>V▽</div>
+                <div
+                  style={{
+                    fontFamily: "monospace",
+                  }}
+                >
+                  P△
+                </div>
+                <div
+                  style={{
+                    fontFamily: "monospace",
+                  }}
+                >
+                  V▽
+                </div>
               </div>
             </div>
+
+            {/* Screen glare effect */}
+            <div
+              className="absolute inset-0 z-30 pointer-events-none opacity-15"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 40%, transparent 60%, rgba(255, 255, 255, 0.1) 100%)",
+              }}
+            ></div>
 
             {/* Vignette effect */}
             <div
               className="absolute inset-0 z-30 pointer-events-none"
               style={{
                 background:
-                  "radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0, 0, 0, 0.35) 100%)",
+                  "radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0, 0, 0, 0.55) 100%)",
               }}
             ></div>
           </div>

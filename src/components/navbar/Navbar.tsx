@@ -73,7 +73,7 @@ const Navbar: React.FC = () => {
   return (
     <>
       <motion.nav
-        className="fixed z-50 left-[50%] -translate-x-[50%] bottom-16 lg:top-26 transition-transform duration-300 items-center gap-2 sm:gap-2 h-fit"
+        className="fixed z-50 left-[50%] -translate-x-[50%] bottom-7 lg:top-20 lg:bottom-auto transition-transform duration-300 items-center gap-2 sm:gap-2 h-fit"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1.2, ease: "easeInOut" }}

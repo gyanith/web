@@ -1,13 +1,25 @@
 "use client";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import merchPic from "@/assets/merchPic.jpg";
+import merchPicHero from "@/assets/merchPicHero.jpg";
+import merchPic1 from "@/assets/merchPic1.jpg";
+import merchPic2 from "@/assets/merchPic2.jpg";
+import merchPic3 from "@/assets/merchPic3.jpg";
+import merchPic4 from "@/assets/merchPic4.jpg";
 import Footer from "@/components/Footer";
 import SparklesCore from "@/components/SparklesCore";
 
 import { unispace, ledLight, creatoDisplay } from "@/fonts/fonts";
+import { useState } from "react";
+
+const merchPics = [merchPic1, merchPic2, merchPic3, merchPic4];
+const sizes = ["S", "M", "L", "XL", "XXL"] as const;
 
 const page = () => {
+  const [sizeSelected, setSizeSelected] = useState<
+    "S" | "M" | "L" | "XL" | "XXL"
+  >("M");
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -17,11 +29,11 @@ const page = () => {
       {/* Hero Product Image */}
       <div className="w-screen h-screen overflow-hidden flex items-center justify-center bg-[#070a10]">
         <Image
-          src={merchPic}
+          src={merchPicHero}
           alt="Merchandise"
           fill
           objectPosition="top"
-          className="contrast-125 object-cover object-center"
+          className=" object-cover object-center"
         />
       </div>
 
@@ -31,20 +43,20 @@ const page = () => {
         <div className="flex h-[60vh]  z-10 w-full lg:h-full lg:w-2/3 ">
           {/* Showcase */}
           <div className="w-full h-full relative overflow-x-auto">
-            <div className="flex h-full">
-              {[1, 2, 3, 4].map((item) => (
+            <div className="flex h-full gap-2 md:gap-5 lg:gap-7 rounded-br-xl md:rounded-br-2xl lg:rounded-br-4xl overflow-x-auto">
+              {merchPics.map((src, index) => (
                 <div
-                  key={item}
+                  key={index}
                   className=" min-w-5/6 relative h-full bg-gray-200 shrink-0  overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-linear-to-r from-black/5 via-black/10 to-black" />
                   <Image
-                    src={merchPic}
-                    alt={`Product View ${item}`}
+                    src={src}
+                    alt={`Product View ${src}`}
                     objectFit="cover"
                     layout="fill"
-                    objectPosition="center"
-                    className="h-full w-full"
+                    objectPosition="top"
+                    className="h-full w-full "
                   />
                 </div>
               ))}
@@ -80,47 +92,63 @@ const page = () => {
                 that would entice customers to make a purchase.
               </p>
             </div>
-            <span className="font-semibold md:font-bold text-[clamp(1.5rem,2vw,2rem)] mt-2 lg:mt-15">
+            <span
+              className={`font-semibold md:font-bold text-[clamp(1.5rem,2vw,2rem)] mt-2 lg:mt-15 ${unispace.className}`}
+            >
               $49.99
             </span>
 
             {/* Sizes */}
             <div className="mt-4">
-              <span className="font-semibold mr-4">Sizes</span>
-              <button className="border border-[#d4a574]/60 px-3 py-1 mr-2 hover:bg-black hover:text-white transition">
-                S
-              </button>
-              <button className="border border-[#d4a574]/60 px-3 py-1 mr-2 hover:bg-black hover:text-white transition">
-                M
-              </button>
-              <button className="border border-[#d4a574]/60 px-3 py-1 mr-2 hover:bg-black hover:text-white transition">
-                L
-              </button>
-              <button className="border border-[#d4a574]/60 px-3 py-1 mr-2 hover:bg-black hover:text-white transition">
-                XL
-              </button>
+              <span className={`font-semibold mr-4 ${unispace.className}`}>
+                Sizes
+              </span>
+
+              {sizes.map((size) => {
+                const isActive = sizeSelected === size;
+
+                return (
+                  <button
+                    key={size}
+                    onClick={() => setSizeSelected(size)}
+                    className={`
+          mr-2 px-3 py-1 border ease-out cursor-pointer
+          ${
+            isActive
+              ? "bg-[#d4a574] text-black border-[#d4a574] scale-105 shadow-[0_0_10px_#d4a57480]"
+              : "border-[#d4a574]/60 text-[#d4a574] hover:bg-[#d4a57450] "
+          }
+          ${unispace.className}
+        `}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
             {/* Action Buttons */}
 
             <div className="my-4 flex items-center">
-              <span className="font-semibold mr-4 ">Quantity</span>
+              <span className={`font-semibold mr-4 ${unispace.className}`}>
+                Quantity
+              </span>
               <input
                 type="number"
                 defaultValue={1}
                 min={1}
-                className="w-16 border border-[#d4a574]/60 px-2 py-1"
+                className={`w-16 border border-[#d4a574]/60 px-2 py-1 ${unispace.className}`}
               />
             </div>
 
             <div className="w-full flex  gap-5">
               <button
-                className={`flex-1 border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
+                className={`flex-1 border cursor-pointer hover:bg-[#d4a574] hover:text-black border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
               >
                 Add to Cart
               </button>
 
               <button
-                className={`flex-1 border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
+                className={`flex-1 border cursor-pointer hover:bg-[#d4a574] hover:text-black border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
               >
                 Buy Now
               </button>

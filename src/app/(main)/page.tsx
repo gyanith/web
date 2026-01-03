@@ -28,7 +28,7 @@ export default function Home() {
         times: [0, 0.6, 1], // Timing split: 60% for width, 40% for height
       }}
     >
-      <div className="w-screen h-screen flex items-center justify-center ">
+      <div className="w-screen h-screen flex items-center overflow-hidden justify-center ">
         <CRTMonitor />
         <div className="z-50  absolute top-[50%]"></div>
       </div>

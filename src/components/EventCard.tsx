@@ -40,7 +40,7 @@ const EventCard: React.FC<EventCardProps> = ({
       className="w-full max-w-[90vw] sm:max-w-[50vw] lg:max-w-full bg-[#1b1b1b] cursor-pointer border group border-[#d4a574]/40 p-4 relative overflow-hidden"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.5 }}
+      viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.6 }}
       whileTap={{
         scale: 0.97,
@@ -114,7 +114,7 @@ const EventCard: React.FC<EventCardProps> = ({
         className="mt-4 flex gap-2"
         initial={{ opacity: 0, y: 10 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.6 }}
+        viewport={{ once: true, amount: 0.3 }}
         transition={{ delay: 0.5, duration: 0.5 }}
       >
         <motion.div

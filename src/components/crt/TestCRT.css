@@ -54,3 +54,52 @@
 .scanline-effect {
   animation: scanline 1.5s linear infinite;
 }
+
+/* ===== CRT CURVATURE CORE ===== */
+
+.crt-curved {
+  position: relative;
+  transform: perspective(1200px) scale(1.02);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* Barrel distortion illusion */
+.crt-curved::before {
+  content: "";
+  position: absolute;
+  inset: -6%;
+  z-index: 50;
+  pointer-events: none;
+
+  /* Curvature shading */
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 35%,
+    rgba(0, 0, 0, 0.25) 65%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+
+  /* Barrel illusion */
+  transform: scale(1.12);
+  border-radius: 50%;
+  mix-blend-mode: overlay;
+}
+
+/* Edge darkening (CRT glass depth) */
+.crt-curved::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.75),
+    inset 0 0 160px rgba(0, 0, 0, 0.55);
+}
+
+/* Slight vertical bulge */
+.main-text-display {
+  transform: scaleY(1.02);
+}
