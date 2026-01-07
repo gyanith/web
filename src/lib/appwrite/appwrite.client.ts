@@ -1,15 +1,12 @@
-import { Client, Account } from 'appwrite';
+// @lib/appwrite/appwrite.client.ts
+import { Client, Account, ID } from "appwrite";
 
-// Initialize the Appwrite Client (Web SDK)
+const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
+
 const client = new Client()
-    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+    .setEndpoint(endpoint) // ✅ absolute + same-origin
     .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
 
-// Export services for client-side usage
 export const account = new Account(client);
-
-// Export ID helper
-export { ID } from 'appwrite';
-
-// Default export
+export { ID };
 export default client;

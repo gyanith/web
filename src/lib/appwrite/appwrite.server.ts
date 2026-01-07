@@ -1,5 +1,5 @@
 
-import { Client, Account, TablesDB, Users } from 'node-appwrite';
+import { Client, Account, TablesDB, Users, Storage } from 'node-appwrite';
 import { cookies } from 'next/headers';
 
 
@@ -17,7 +17,7 @@ export const createAdminClient = () => {
         getTablesDB: () => new TablesDB(client),
         getAccount: () => new Account(client),
         getUsers: () => new Users(client),
-        getStorage: () => new Storage(),
+        getStorage: () => new Storage(client),
     };
 };
 
