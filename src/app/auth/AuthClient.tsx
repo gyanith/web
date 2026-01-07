@@ -7,9 +7,11 @@ import { useSearchParams } from "next/navigation";
 import {
   loginWithEmail,
   signUpWithEmail,
-  getOAuthUrl,
   completeOAuthSignup, // ADD THIS IMPORT
 } from "@/lib/actions/auth";
+
+import { account } from "@/lib/appwrite/appwrite.client";
+import { OAuthProvider } from "appwrite";
 
 import { useRouter } from "next/navigation";
 
@@ -42,6 +44,27 @@ const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
+
+const oAuthSignup = (
+  authProvider: "google" | "github",
+  isSignup: boolean,
+  redirectUrl: string = "/"
+) => {
+  document.cookie = `oauth_is_signup=${
+    isSignup ? "1" : ""
+  }; path=/; max-age=600`;
+
+  if (redirectUrl && redirectUrl !== "/") {
+    sessionStorage.setItem("authRedirect", redirectUrl);
+  }
+
+  account.createOAuth2Session({
+    provider:
+      authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
+    success: `${process.env.NEXT_PUBLIC_APP_URL}/auth/oauth/callback`,
+    failure: `${process.env.NEXT_PUBLIC_APP_URL}/auth?error=oauth_failed`,
+  });
+};
 
 // ADD PROPS TYPE
 type AuthClientProps = {
@@ -249,11 +272,7 @@ const AuthClient = ({
   const handleOAuth = async (provider: "google" | "github") => {
     try {
       if (isOAuthComplete) {
-        // Already in OAuth completion mode - shouldn't happen
-        // but handle it anyway by completing the profile
-        if (!validateStep2()) {
-          return;
-        }
+        if (!validateStep2()) return;
 
         const result = await completeOAuthSignup({
           phone: formData.phone,
@@ -271,13 +290,8 @@ const AuthClient = ({
         sessionStorage.removeItem("authRedirect");
         navigate(storedRedirect);
       } else {
-        // Starting OAuth flow
-        if (redirectUrl !== "/") {
-          sessionStorage.setItem("authRedirect", redirectUrl);
-        }
-
-        const oAuthUrl = await getOAuthUrl(provider, !isLogin); // Pass isSignup flag
-        window.location.href = oAuthUrl;
+        // START OAuth — browser redirect happens HERE
+        oAuthSignup(provider, !isLogin, redirectUrl);
       }
     } catch (error) {
       console.error("OAuth error:", error);

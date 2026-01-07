@@ -80,3 +80,13 @@ export const creatoDisplay = localFont({
     variable: '--font-creatoDisplay',
     display: "swap"
 })
+
+export const superRetro = localFont({
+    src: [{
+        path: "./Super-Retro.ttf",
+        weight: "400",
+        style: "normal",
+    }],
+    variable: '--font-superRetro',
+    display: "swap"
+})

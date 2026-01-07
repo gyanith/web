@@ -1,32 +1,36 @@
+// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
-    const appwriteSessionCookie = `a_session_${projectId?.toLowerCase()}`;
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!;
+    const appwriteEndpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!; // https://cloud.appwrite.io
 
-    const session = request.cookies.get(appwriteSessionCookie);
+    /* =========================
+       🔁 APPWRITE PROXY (/v1)
+       ========================= */
+    if (pathname.startsWith("/v1")) {
+        return NextResponse.rewrite(
+            new URL(`${appwriteEndpoint}${pathname}`)
+        );
+    }
 
-    // ----- PROTECTED ROUTES -----
-    const protectedRoutes = [
-        "/residence",
-        "/merch",
-        "/user",
-    ];
-
-    const isProtectedBaseRoute = protectedRoutes.some(
-        (route) => pathname === route || pathname.startsWith(`${route}/`)
+    /* =========================
+       🔒 AUTH PROTECTION
+       ========================= */
+    const sessionCookie = request.cookies.get(
+        `a_session_${projectId.toLowerCase()}`
     );
 
-    // 🔒 Protect /events/tech/* but NOT /events/tech
-    const isProtectedTechEvent =
-        pathname.startsWith("/events/tech/");
+    const protectedRoutes = ["/residence", "/merch", "/user"];
+    const isProtected =
+        protectedRoutes.some(
+            (route) => pathname === route || pathname.startsWith(`${route}/`)
+        ) || pathname.startsWith("/events/tech/");
 
-    const isProtected = isProtectedBaseRoute || isProtectedTechEvent;
-
-    if (isProtected && !session) {
+    if (isProtected && !sessionCookie) {
         const loginUrl = new URL("/auth", request.url);
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);
@@ -37,6 +41,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
-        "/((?!api|_next/static|_next/image|favicon.ico).*)",
+        "/((?!_next/static|_next/image|favicon.ico).*)",
     ],
 };

@@ -12,6 +12,7 @@ async function getEvents(eventType: string) {
   const data = await res.json();
   return data;
 }
+
 async function page({ params }: { params: Promise<{ eventType: string }> }) {
   const { eventType } = await params;
   console.log("Event Type:", eventType);
