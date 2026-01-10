@@ -1,6 +1,6 @@
 {
   "name": "gyanith-web",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -32,6 +32,7 @@
     "node-appwrite": "^21.1.0",
     "ogl": "^1.0.11",
     "postprocessing": "^6.38.2",
+    "razorpay": "^2.9.6",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "styled-jsx": "^5.1.7",

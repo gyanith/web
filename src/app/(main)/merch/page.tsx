@@ -1,6 +1,8 @@
 "use client";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+
 import merchPicHero from "@/assets/merchPicHero.jpg";
 import merchPic1 from "@/assets/merchPic1.jpg";
 import merchPic2 from "@/assets/merchPic2.jpg";
@@ -19,6 +21,8 @@ const page = () => {
   const [sizeSelected, setSizeSelected] = useState<
     "S" | "M" | "L" | "XL" | "XXL"
   >("M");
+
+  const router = useRouter();
 
   return (
     <motion.div
@@ -149,6 +153,9 @@ const page = () => {
 
               <button
                 className={`flex-1 border cursor-pointer hover:bg-[#d4a574] hover:text-black border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
+                onClick={() => {
+                  router.push("/merch/checkout");
+                }}
               >
                 Buy Now
               </button>

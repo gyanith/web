@@ -16,8 +16,8 @@ async function getEvents(eventType: string) {
 async function page({ params }: { params: Promise<{ eventType: string }> }) {
   const { eventType } = await params;
   console.log("Event Type:", eventType);
-  const funEvents = await getEvents(eventType);
-  // console.log("Tech Events Data:", techEvents);
+  const allEvents = await getEvents(eventType);
+  console.log("Events Data:", allEvents);
   return (
     <div>
       <div className="text-white relative font-5xl w-screen h-[33vh] md:h-[50vh] lg:h-[66vh] overflow-clip flex items-end transition-all duration-300 ease-in-out">
@@ -80,8 +80,8 @@ async function page({ params }: { params: Promise<{ eventType: string }> }) {
             lg:grid-cols-[repeat(auto-fit,minmax(500px,1fr))]
           "
         >
-          {funEvents &&
-            funEvents.map((event: any) => (
+          {Array.isArray(allEvents) && allEvents.length > 0 ? (
+            allEvents.map((event: any) => (
               <EventCard
                 key={event.eventId}
                 eventId={event.eventId}
@@ -93,7 +93,16 @@ async function page({ params }: { params: Promise<{ eventType: string }> }) {
                 prizePool={event.prizePool}
                 imageUrl={event.imageUrl}
               />
-            ))}
+            ))
+          ) : (
+            /* 2. Optional: Handle the empty/error state gracefully */
+            <div className="text-white text-center w-full">
+              {/* If it's an error object, show the message, otherwise show generic text */}
+              {(allEvents as any)?.error
+                ? "Failed to load events"
+                : "No events found"}
+            </div>
+          )}
         </div>
       </div>
 

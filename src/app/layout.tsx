@@ -3,18 +3,9 @@ import { ledLight } from "@/fonts/fonts";
 import "./globals.css";
 import Noise from "@/components/Noise";
 
-import { LoaderProvider, useLoader } from "@/components/LoaderContext";
-import { Montserrat, Inter } from "next/font/google";
+import { montserrat } from "@/fonts/fonts";
 
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  variable: "--font-montserrat",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
+import { LoaderProvider } from "@/components/LoaderContext";
 
 export const metadata: Metadata = {
   title: "Gyanith 2026",
@@ -29,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={ledLight.variable}>
       <body
-        className={` ${montserrat.variable} bg-[#070a10]  antialiased flex flex-col items-center`}
+        className={`${montserrat.className} bg-[#070a10]  antialiased flex flex-col items-center`}
       >
         <LoaderProvider>
           <Noise
