@@ -30,7 +30,7 @@ export function proxy(request: NextRequest) {
             (route) => pathname === route || pathname.startsWith(`${route}/`)
         ) || pathname.startsWith("/events/tech/");
 
-    if (isProtected && !sessionCookie) {
+    if (isProtected && !sessionCookie?.value) {
         const loginUrl = new URL("/auth", request.url);
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);

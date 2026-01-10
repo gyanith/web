@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
+import { Minus, Plus } from "lucide-react";
+
 import merchPicHero from "@/assets/merchPicHero.jpg";
 import merchPic1 from "@/assets/merchPic1.jpg";
 import merchPic2 from "@/assets/merchPic2.jpg";
@@ -22,6 +24,8 @@ const page = () => {
     "S" | "M" | "L" | "XL" | "XXL"
   >("M");
 
+  const [qty, setQty] = useState(1);
+
   const router = useRouter();
 
   return (
@@ -31,7 +35,7 @@ const page = () => {
       transition={{ duration: 2, ease: "circInOut" }}
     >
       {/* Hero Product Image */}
-      <div className="w-screen h-screen overflow-hidden flex items-center justify-center bg-[#070a10]">
+      <div className="w-screen h-[50vh] relative md:h-screen overflow-hidden flex items-center justify-center bg-[#070a10]">
         <Image
           src={merchPicHero}
           alt="Merchandise"
@@ -42,7 +46,7 @@ const page = () => {
       </div>
 
       {/* Product Description */}
-      <div className="w-screen min-h-screen sm:h-screen flex flex-col lg:flex-row overflow-hidden  items-center justify-center">
+      <div className="w-screen min-h-screen h-fit flex flex-col lg:flex-row overflow-hidden  items-center justify-center">
         {/* Image Container */}
         <div className="flex h-[60vh]  z-10 w-full lg:h-full lg:w-2/3 ">
           {/* Showcase */}
@@ -99,7 +103,7 @@ const page = () => {
             <span
               className={`font-semibold md:font-bold text-[clamp(1.5rem,2vw,2rem)] mt-2 lg:mt-15 ${unispace.className}`}
             >
-              $49.99
+              &#08377;350
             </span>
 
             {/* Sizes */}
@@ -132,16 +136,29 @@ const page = () => {
             </div>
             {/* Action Buttons */}
 
-            <div className="my-4 flex items-center">
+            <div className="my-4 flex items-center h-10">
               <span className={`font-semibold mr-4 ${unispace.className}`}>
                 Quantity
               </span>
-              <input
-                type="number"
-                defaultValue={1}
-                min={1}
-                className={`w-16 border border-[#d4a574]/60 px-2 py-1 ${unispace.className}`}
-              />
+              <div className="flex items-center h-full backdrop-blur-xl border overflow-hidden text-[#d4a574] border-[#d4a574]">
+                <button
+                  className="px-3 h-full hover:bg-black hover:scale-110 group hover:text-white  flex items-center justify-center"
+                  onClick={() => setQty(Math.max(1, qty - 1))}
+                >
+                  <Minus size={14} className="group-active:scale-95" />
+                </button>
+                <span
+                  className={`w-8 text-center text-xs ${unispace.className} `}
+                >
+                  {qty}
+                </span>
+                <button
+                  className="px-3 h-full hover:bg-black hover:scale-110 group hover:text-white  flex items-center justify-center"
+                  onClick={() => setQty(qty + 1)}
+                >
+                  <Plus size={14} className="group-active:scale-95" />
+                </button>
+              </div>
             </div>
 
             <div className="w-full flex  gap-5">
@@ -154,7 +171,11 @@ const page = () => {
               <button
                 className={`flex-1 border cursor-pointer hover:bg-[#d4a574] hover:text-black border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
                 onClick={() => {
-                  router.push("/merch/checkout");
+                  // Construct the URL with query parameters
+                  // Example: /merch/checkout?qty=2&price=350&size=L
+                  router.push(
+                    `/merch/checkout?qty=${qty}&size=${sizeSelected}`
+                  );
                 }}
               >
                 Buy Now

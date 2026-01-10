@@ -7,7 +7,8 @@ import { useSearchParams } from "next/navigation";
 import {
   loginWithEmail,
   signUpWithEmail,
-  completeOAuthSignup, // ADD THIS IMPORT
+  completeOAuthSignup,
+  setSessionCookie, // ADD THIS IMPORT
 } from "@/lib/actions/auth";
 
 import { account } from "@/lib/appwrite/appwrite.client";
@@ -186,11 +187,13 @@ const AuthClient = ({
   // MODIFIED - Handle Email/Password Authentication
   const handleEmailAuth = async () => {
     try {
+      // ===========================
+      // 🔐 LOGIN FLOW
+      // ===========================
       if (isLogin) {
-        if (!validateLogin()) {
-          return;
-        }
+        if (!validateLogin()) return;
 
+        // ✅ Call Server Action
         const result = await loginWithEmail({
           email: formData.email,
           password: formData.password,
@@ -201,73 +204,64 @@ const AuthClient = ({
           return;
         }
 
-        console.log("Logged in successfully");
+        console.log("Login success, redirecting...");
+        router.refresh(); // Update server components
         navigate(redirectUrl);
+        return;
+      }
+
+      // ===========================
+      // 📝 SIGNUP FLOW
+      // ===========================
+      if (signupStep === 1 && !isOAuthComplete) {
+        if (!validateStep1()) return;
+        setSignupStep(2);
       } else {
-        if (signupStep === 1 && !isOAuthComplete) {
-          if (!validateStep1()) {
+        if (!validateStep2()) return;
+
+        if (isOAuthComplete) {
+          // ... OAuth Completion Logic (Unchanged) ...
+          const result = await completeOAuthSignup({
+            phone: formData.phone,
+            gender: formData.gender,
+            collegeName: formData.collegeName,
+            isNITPY,
+          });
+
+          if (!result.success) {
+            setErrors({ general: result.error || "Failed" });
             return;
           }
-          setSignupStep(2);
+          router.push(sessionStorage.getItem("authRedirect") || "/");
         } else {
-          if (!validateStep2()) {
+          // ✅ Call Server Action
+          const result = await signUpWithEmail({
+            email: formData.email,
+            password: formData.password,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phone: formData.phone,
+            gender: formData.gender,
+            collegeName: formData.collegeName,
+            isNITPY,
+          });
+
+          if (!result.success) {
+            setErrors({ general: result.error || "Signup failed" });
             return;
           }
 
-          if (isOAuthComplete) {
-            // COMPLETE OAUTH SIGNUP
-            const result = await completeOAuthSignup({
-              phone: formData.phone,
-              gender: formData.gender,
-              collegeName: formData.collegeName,
-              isNITPY,
-            });
-
-            if (!result.success) {
-              setErrors({
-                general: result.error || "Failed to complete profile",
-              });
-              return;
-            }
-
-            // Clear sessionStorage and navigate
-            const storedRedirect = sessionStorage.getItem("authRedirect");
-            sessionStorage.removeItem("authRedirect");
-
-            // Use navigate hook instead of direct redirect
-            // navigate(storedRedirect || "/");
-            router.push(storedRedirect || "/");
-          } else {
-            // Regular email signup
-            const user = await signUpWithEmail({
-              email: formData.email,
-              password: formData.password,
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              phone: formData.phone,
-              gender: formData.gender,
-              collegeName: formData.collegeName,
-              isNITPY,
-            });
-
-            if (user.success) {
-              console.log("User created and profile saved:", user);
-            } else {
-              setErrors({ general: user.error || "Signup failed" });
-              return;
-            }
-
-            navigate(redirectUrl);
-          }
+          console.log("Signup success, redirecting...");
+          router.refresh();
+          navigate(redirectUrl);
         }
       }
-    } catch (error: any) {
-      console.error("Authentication error:", error);
-      setErrors({
-        general: error.message || "Authentication failed. Please try again.",
-      });
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      setErrors({ general: err.message || "Authentication failed" });
     }
   };
+
   // MODIFIED - Handle OAuth Authentication
   const handleOAuth = async (provider: "google" | "github") => {
     try {

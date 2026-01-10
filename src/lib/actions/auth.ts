@@ -2,8 +2,10 @@
 
 'use server';
 import { createAdminClient, createSessionClient } from "@/lib/appwrite/appwrite.server"
+import { account } from "@/lib/appwrite/appwrite.client";
 import { ID, Query } from "node-appwrite";
 import { cookies } from "next/headers";
+import { Account, Client } from "appwrite";
 
 
 // --- Types --- 
@@ -34,101 +36,104 @@ interface OAuthSignupData {
 }
 
 // --- Appwrite Clients ---
-
+// 🚨 FIX: Robust Cookie Setting
 export async function setSessionCookie(secret: string, expire: string) {
     const cookieStore = await cookies();
+    const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!.toLowerCase(); // Force lowercase
 
-    // CRITICAL: Next.js treats "localhost" as insecure (http).
-    // If we set 'secure: true' on localhost, the browser blocks the cookie.
+    // Determine if we are in production (HTTPS)
     const isProduction = process.env.NODE_ENV === "production";
 
     cookieStore.set({
-        name: `a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`,
+        name: `a_session_${projectId}`,
         value: secret,
         httpOnly: true,
         path: "/",
-        // If production, use Secure/None. If localhost, use Not-Secure/Lax.
+        // 🚨 FIX: False on localhost (http), True on Production (https)
         secure: isProduction,
-        sameSite: isProduction ? "none" : "lax",
+        sameSite: "lax", // 'lax' is safer for navigation redirects than 'strict'
         expires: new Date(expire),
     });
 }
 
-export async function loginWithEmail(data: LoginData) {
+// --- Actions ---
+
+export async function loginWithEmail(data: any) {
     try {
         const { email, password } = data;
 
-        // Use Session Client (not Admin!)
-        const { getAccount } = await createSessionClient();
-        const account = getAccount();
+        // Verify credentials with Client SDK
+        const client = new Client()
+            .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+            .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
 
-        // This creates a proper session with the server
-        const session = await account.createEmailPasswordSession({ email, password });
+        const account = new Account(client);
 
-        console.log("✅ Login successful:", session.userId);
+        // Create session to verify password
+        const verification = await account.createEmailPasswordSession({ email, password });
 
-        // Session is AUTOMATICALLY handled by Appwrite SDK
-        // The cookie is already set by createSessionClient
+        // ✅ FIX: Authenticate the client with the session secret
+        // But wait... verification.secret is empty! So we can't do this.
+        // We need a different approach.
 
-        return { success: true };
-    } catch (error: any) {
-        console.error("Login Error:", error);
-
-        // Handle specific error codes
-        if (error.code === 401) {
-            return { success: false, error: "Invalid email or password" };
-        }
-
-        return { success: false, error: error.message || "Login failed" };
-    }
-}
-
-export async function signUpWithEmail(data: SignUpData) {
-    let userId: string | null = null;
-
-    try {
-        const {
-            email,
-            password,
-            firstName,
-            lastName,
-            phone,
-            gender,
-            collegeName,
-            isNITPY,
-        } = data;
-        const name = `${firstName} ${lastName}`;
-
-        // 1. Check if User Already Exists
+        // Actually, we can just delete by session ID using Admin SDK
         const { getUsers } = createAdminClient();
         const users = getUsers();
 
+        // Delete the verification session using Admin SDK
+        await users.deleteSession({
+            userId: verification.userId,
+            sessionId: verification.$id
+        });
+
+        // Create a new session with Admin SDK that has the secret
+        const session = await users.createSession({ userId: verification.userId });
+
+        await setSessionCookie(session.secret, session.expire);
+
+        console.log("✅ Login Action: Cookie set for", session.userId);
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Login Action Error:", error.message);
+        return { success: false, error: "Invalid email or password" };
+    }
+}
+
+export async function signUpWithEmail(data: any) {
+    let userId: string | null = null;
+
+    try {
+        const { email, password, firstName, lastName, phone, gender, collegeName, isNITPY } = data;
+        const name = `${firstName} ${lastName}`;
+
+        // 1. Init Admin Client
+        const { getUsers, getTablesDB } = createAdminClient();
+        const users = getUsers();
+        const tablesDB = getTablesDB();
+
+        // 2. Check Existence
         const existingUsers = await users.list({
-            queries: [Query.equal("email", email)]
+            queries: [Query.equal("email", email)],
         });
 
         if (existingUsers.total > 0) {
-            return {
-                success: false,
-                error: "A user with this email already exists.",
-            };
+            return { success: false, error: "A user with this email already exists." };
         }
 
-        // 2. Create User Account (using Admin Client)
+        // 3. Create User (Admin allows plain password creation)
         userId = ID.unique();
-        await users.createBcryptUser({
+        await users.create(
             userId,
             email,
+            phone ? `+91${phone}` : undefined,
             password,
-            name,
-        });
+            name
+        );
 
-        console.log("✅ User account created:", userId);
+        console.log("✅ Signup Action: User created", userId);
 
-        // 3. Create User Profile in Database
-        const { getTablesDB } = createAdminClient();
-        const tablesDB = getTablesDB();
-
+        // 4. Create Profile DB Entry
         await tablesDB.createRow({
             databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
             tableId: process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
@@ -142,59 +147,30 @@ export async function signUpWithEmail(data: SignUpData) {
             },
         });
 
-        console.log("✅ User profile created in database");
+        // 5. Auto-Login (Create Session & Set Cookie)
+        // Since we just created the user via Admin, we can trust this and create a session directly
+        const session = await users.createSession({ userId });
 
-        // 4. Create Session for the User (using Admin Client)
-        // This generates a session token that we can set as a cookie
-        const sessionData = await users.createSession({ userId });
+        await setSessionCookie(session.secret, session.expire);
 
-        console.log("✅ Session created:", sessionData.$id);
-
-        // 5. Set the Session Cookie
-        // The session secret is what authenticates the user
-        await setSessionCookie(sessionData.secret, sessionData.expire);
-
-        console.log("🍪 Session cookie set - user is now logged in");
+        console.log("✅ Signup Action: Auto-logged in");
 
         return { success: true };
 
     } catch (error: any) {
-        console.error("Signup Error:", error);
+        console.error("Signup Action Error:", error);
 
-        // If we created the user but something failed after, clean up
+        // Cleanup ghost user
         if (userId && error.code !== 409) {
             try {
                 const { getUsers } = createAdminClient();
-                const users = getUsers();
-                await users.delete({ userId });
-                console.log("🧹 Cleaned up user account after error");
-            } catch (cleanupError) {
-                console.error("Failed to cleanup user:", cleanupError);
-            }
+                await getUsers().delete({ userId });
+            } catch (e) { /* ignore cleanup error */ }
         }
 
-        // Handle specific error cases
-        if (error.code === 409) {
-            return {
-                success: false,
-                error: "A user with this email already exists.",
-            };
-        }
-
-        if (error.code === 400) {
-            return {
-                success: false,
-                error: "Invalid data provided. Please check your input.",
-            };
-        }
-
-        return {
-            success: false,
-            error: error.message || "Signup failed. Please try again."
-        };
+        return { success: false, error: error.message || "Signup failed." };
     }
 }
-
 
 export async function signOut() {
     try {
@@ -241,14 +217,37 @@ export async function signOut() {
 
 export async function getLoggedInUser() {
     try {
-        const { getAccount } = await createSessionClient(); // Add await here
-        const account = getAccount();
+        const cookieStore = await cookies();
 
+        // 1. Construct the cookie name exactly as we set it (Lowercase!)
+        const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase();
+        const cookieName = `a_session_${projectId}`;
+
+        // 2. Read the cookie
+        const sessionCookie = cookieStore.get(cookieName);
+
+        if (!sessionCookie || !sessionCookie.value) {
+            console.log("❌ getLoggedInUser: No session cookie found");
+            return null;
+        }
+
+        // 3. Initialize Client manually with this session
+        const client = new Client()
+            .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+            .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+            .setSession(sessionCookie.value); // Authenticate!
+
+        const account = new Account(client);
+
+        // 4. Fetch User
         const user = await account.get();
+
         console.log("✅ getLoggedInUser: Success", user.$id);
         return user;
 
     } catch (error: any) {
+        // 401 means "Unauthorized" (Cookie expired or invalid)
+        // We swallow this error and return null so the UI just shows "Log In"
         if (error.code !== 401) {
             console.error("❌ getLoggedInUser Error:", error.message);
         }
