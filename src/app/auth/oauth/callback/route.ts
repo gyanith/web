@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
                     maxAge: 600,
                 });
 
-                const redirectUrl = new URL("/auth", request.url);
+                const redirectUrl = new URL(`gyanith.org/auth`);
                 redirectUrl.searchParams.set("mode", "oauth_complete");
                 return NextResponse.redirect(redirectUrl);
             }

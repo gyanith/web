@@ -9,13 +9,11 @@ import {
   Smartphone,
   CreditCard,
   ChevronRight,
-  Circle,
-  Dot,
 } from "lucide-react";
 
 import { useSearchParams } from "next/navigation";
 
-import { unispace, pressStart2P, garetBook } from "@/fonts/fonts";
+import { unispace, pressStart2P } from "@/fonts/fonts";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 import testPic from "@/assets/merchPic1.jpg";
