@@ -46,7 +46,7 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const oAuthSignup = (
+const oAuthSignup = async (
   authProvider: "google" | "github",
   isSignup: boolean,
   redirectUrl: string = "/"
@@ -59,12 +59,14 @@ const oAuthSignup = (
     sessionStorage.setItem("authRedirect", redirectUrl);
   }
 
-  account.createOAuth2Session({
+  const session = await account.createOAuth2Session({
     provider:
       authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
     success: `https://gyanith.org/auth/oauth/callback`,
     failure: `https://gyanith.org/auth?error=oauth_failed`,
   });
+
+  console.log(session);
 };
 
 // ADD PROPS TYPE
@@ -221,6 +223,7 @@ const AuthClient = ({
 
         if (isOAuthComplete) {
           // ... OAuth Completion Logic (Unchanged) ...
+
           const result = await completeOAuthSignup({
             phone: formData.phone,
             gender: formData.gender,
