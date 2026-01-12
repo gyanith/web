@@ -46,7 +46,7 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const oAuthSignup = async (
+const oAuthSignup =  (
   authProvider: "google" | "github",
   isSignup: boolean,
   redirectUrl: string = "/"
@@ -58,15 +58,17 @@ const oAuthSignup = async (
   if (redirectUrl && redirectUrl !== "/") {
     sessionStorage.setItem("authRedirect", redirectUrl);
   }
-
-  const session = await account.createOAuth2Session({
+  
+  const s = account.createOAuth2Session({
     provider:
       authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
-    success: `https://gyanith.org/auth/oauth/callback`,
-    failure: `https://gyanith.org/auth?error=oauth_failed`,
+    /* success: `https://gyanith.org/auth/oauth/callback`,
+    failure: `https://gyanith.org/auth?error=oauth_failed`, */
   });
 
-  console.log(session);
+  console.log("this is a test: " + s);
+
+  
 };
 
 // ADD PROPS TYPE
