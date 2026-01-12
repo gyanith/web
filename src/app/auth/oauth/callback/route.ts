@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
         if (!sessionCookie) {
             console.error("No session cookie found after OAuth");
             return NextResponse.redirect(
-                new URL("/auth?error=no_session", request.url)
+                new URL("/auth?error=no_session", "https://gyanith.org")
             );
         }
 
