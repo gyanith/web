@@ -7,6 +7,7 @@ import { checkUserProfile } from "@/lib/actions/auth";
 export async function GET(request: NextRequest) {
     try {
         const cookieStore = await cookies();
+        console.log(request);
 
         // Appwrite already set the session cookie during OAuth
         const sessionCookie = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`);
