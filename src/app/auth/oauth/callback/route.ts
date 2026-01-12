@@ -6,95 +6,116 @@ import { checkUserProfile, setSessionCookie } from "@/lib/actions/auth";
 import { Client, Account } from "node-appwrite";
 
 export async function GET(request: NextRequest) {
-    try {
-        const cookieStore = await cookies();
-        console.log("🔍 Callback Request URL:", request.url);
+  try {
+    const cookieStore = await cookies();
+    console.log("🔍 Callback Request URL:", request.url);
 
-        const userId = request.nextUrl.searchParams.get("userId");
-        const secret = request.nextUrl.searchParams.get("secret");
+    const userId = request.nextUrl.searchParams.get("userId");
+    const secret = request.nextUrl.searchParams.get("secret");
 
-        if (userId && secret) {
-            console.log("✅ OAuth Credentials found in URL");
-            try {
-                // Verify session and get expiry
-                const client = new Client()
-                    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-                    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-                    .setSession(secret);
+    let user;
 
-                const account = new Account(client);
-                const session = await account.getSession({
-                    sessionId: 'current'
-                });
+    if (userId && secret) {
+      console.log("✅ OAuth Credentials found in URL");
+      try {
+        // Verify session and get expiry
+        const client = new Client()
+          .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+          .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+          .setSession(secret);
 
-                console.log("✅ Session retrieved, setting cookie...");
-                await setSessionCookie(session.secret, session.expire);
-            } catch (err) {
-                console.error("❌ Error setting session from secret:", err);
-            }
-        }
+        const account = new Account(client);
 
-        // Check for session cookie
-        // 🚨 CRITICAL FIX: Ensure project ID is lowercase to match setSessionCookie logic
-        const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase();
-        const cookieName = `a_session_${projectId}`;
-        const sessionCookie = cookieStore.get(cookieName);
+        // Fetch the user using the secret directly
+        user = await account.get();
+        console.log("✅ OAuth user authenticated via secret:", user.$id);
 
-        console.log(`🔍 Checking cookie: ${cookieName} -> ${sessionCookie ? 'FOUND' : 'MISSING'}`);
+        const session = await account.getSession({
+          sessionId: "current",
+        });
 
-        if (!sessionCookie) {
-            console.error("❌ No session cookie found after OAuth flow");
-            return NextResponse.redirect(
-                new URL("/auth?error=no_session", request.url)
-            );
-        }
+        console.log("✅ Session retrieved, setting cookie...");
+        await setSessionCookie(session.secret, session.expire);
+      } catch (err) {
+        console.error("❌ Error setting session from secret:", err);
+        return NextResponse.redirect(
+          new URL("/auth?error=session_creation_failed", request.url)
+        );
+      }
+    } else {
+      // Check for session cookie if no secret in URL
+      // 🚨 CRITICAL FIX: Ensure project ID is lowercase to match setSessionCookie logic
+      const projectId =
+        process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase();
+      const cookieName = `a_session_${projectId}`;
+      const sessionCookie = cookieStore.get(cookieName);
 
-        // Get the authenticated user
+      console.log(
+        `🔍 Checking cookie: ${cookieName} -> ${
+          sessionCookie ? "FOUND" : "MISSING"
+        }`
+      );
+
+      if (!sessionCookie) {
+        console.error("❌ No session cookie found after OAuth flow");
+        return NextResponse.redirect(
+          new URL("/auth?error=no_session", request.url)
+        );
+      }
+
+      // Get the authenticated user via cookie
+      try {
         const { getAccount } = await createSessionClient();
         const account = getAccount();
-        const user = await account.get();
-
-        console.log("✅ OAuth user authenticated:", user.$id);
-
-        // Check if this was a signup (check the cookie we set)
-        const oauthIsSignup = cookieStore.get("oauth_is_signup");
-
-        if (oauthIsSignup?.value === "1") {
-            // Check if profile exists in database
-            const { exists } = await checkUserProfile(user.$id);
-
-            if (!exists) {
-                // User needs to complete profile
-                cookieStore.set("oauth_needs_profile", "true", {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === "production",
-                    path: "/",
-                    maxAge: 600,
-                });
-
-                cookieStore.set("oauth_user_id", user.$id, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === "production",
-                    path: "/",
-                    maxAge: 600,
-                });
-
-                const redirectUrl = new URL(request.nextUrl.origin + "/auth");
-                redirectUrl.searchParams.set("mode", "oauth_complete");
-                return NextResponse.redirect(redirectUrl);
-            }
-        }
-
-        // Cleanup
-        cookieStore.delete("oauth_is_signup");
-        cookieStore.delete("oauth_needs_profile");
-        cookieStore.delete("oauth_user_id");
-
-        return NextResponse.redirect(new URL("/", request.url));
-    } catch (error: any) {
-        console.error("OAuth Callback Error:", error);
+        user = await account.get();
+        console.log("✅ OAuth user authenticated via cookie:", user.$id);
+      } catch (err) {
+        console.error("❌ Error fetching user from cookie:", err);
         return NextResponse.redirect(
-            new URL(`/auth?error=callback_failed`, request.url)
+          new URL("/auth?error=invalid_session", request.url)
         );
+      }
     }
+
+    // Check if this was a signup (check the cookie we set)
+    const oauthIsSignup = cookieStore.get("oauth_is_signup");
+
+    if (oauthIsSignup?.value === "1") {
+      // Check if profile exists in database
+      const { exists } = await checkUserProfile(user.$id);
+
+      if (!exists) {
+        // User needs to complete profile
+        cookieStore.set("oauth_needs_profile", "true", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+          maxAge: 600,
+        });
+
+        cookieStore.set("oauth_user_id", user.$id, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+          maxAge: 600,
+        });
+
+        const redirectUrl = new URL(request.nextUrl.origin + "/auth");
+        redirectUrl.searchParams.set("mode", "oauth_complete");
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
+
+    // Cleanup
+    cookieStore.delete("oauth_is_signup");
+    cookieStore.delete("oauth_needs_profile");
+    cookieStore.delete("oauth_user_id");
+
+    return NextResponse.redirect(new URL("/", request.url));
+  } catch (error: any) {
+    console.error("OAuth Callback Error:", error);
+    return NextResponse.redirect(
+      new URL(`/auth?error=callback_failed`, request.url)
+    );
+  }
 }
