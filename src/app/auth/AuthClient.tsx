@@ -59,15 +59,16 @@ const oAuthSignup = (
     sessionStorage.setItem("authRedirect", redirectUrl);
   }
 
-  const origin = window.location.origin;
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "");
   console.log("This is the origin ", origin);
 
-  const s = account.createOAuth2Session({
-    provider:
-      authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
-    /* success: `${origin}/auth/oauth/callback`,
-    failure: `${origin}/auth?error=oauth_failed`, */
-  });
+  const s = account.createOAuth2Session(
+    authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
+    `${origin}/auth/oauth/callback`,
+    `${origin}/auth?error=oauth_failed`
+  );
 
   console.log("this is a test: " + s);
 };
