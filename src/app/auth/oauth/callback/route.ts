@@ -7,32 +7,43 @@ import { Client, Account } from "node-appwrite";
 
 export async function GET(request: NextRequest) {
     try {
+        const cookieStore = await cookies();
+        console.log("🔍 Callback Request URL:", request.url);
+
         const userId = request.nextUrl.searchParams.get("userId");
         const secret = request.nextUrl.searchParams.get("secret");
 
         if (userId && secret) {
-            // Verify session and get expiry
-            const client = new Client()
-                .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-                .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-                .setSession(secret);
+            console.log("✅ OAuth Credentials found in URL");
+            try {
+                // Verify session and get expiry
+                const client = new Client()
+                    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+                    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+                    .setSession(secret);
 
-            const account = new Account(client);
-            const session = await account.getSession({
-                sessionId: "current"
-            })
+                const account = new Account(client);
+                const session = await account.getSession({
+                    sessionId: 'current'
+                });
 
-
-            await setSessionCookie(session.secret, session.expire);
+                console.log("✅ Session retrieved, setting cookie...");
+                await setSessionCookie(session.secret, session.expire);
+            } catch (err) {
+                console.error("❌ Error setting session from secret:", err);
+            }
         }
 
-        const cookieStore = await cookies();
-
         // Check for session cookie
-        const sessionCookie = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`);
+        // 🚨 CRITICAL FIX: Ensure project ID is lowercase to match setSessionCookie logic
+        const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase();
+        const cookieName = `a_session_${projectId}`;
+        const sessionCookie = cookieStore.get(cookieName);
+
+        console.log(`🔍 Checking cookie: ${cookieName} -> ${sessionCookie ? 'FOUND' : 'MISSING'}`);
 
         if (!sessionCookie) {
-            console.error("No session cookie found after OAuth");
+            console.error("❌ No session cookie found after OAuth flow");
             return NextResponse.redirect(
                 new URL("/auth?error=no_session", request.url)
             );
