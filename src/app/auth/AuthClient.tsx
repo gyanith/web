@@ -65,8 +65,8 @@ const oAuthSignup = (
   const s = account.createOAuth2Session({
     provider:
       authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
-    success: `${origin}/auth/oauth/callback`,
-    failure: `${origin}/auth?error=oauth_failed`,
+    /* success: `${origin}/auth/oauth/callback`,
+    failure: `${origin}/auth?error=oauth_failed`, */
   });
 
   console.log("this is a test: " + s);
