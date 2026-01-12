@@ -59,6 +59,12 @@ const oAuthSignup = (
     sessionStorage.setItem("authRedirect", redirectUrl);
   }
 
+  console.log("DEBUG: env SITE_URL:", process.env.NEXT_PUBLIC_SITE_URL);
+  console.log(
+    "DEBUG: window origin:",
+    typeof window !== "undefined" ? window.location.origin : "N/A"
+  );
+
   const origin =
     process.env.NEXT_PUBLIC_SITE_URL ||
     (typeof window !== "undefined" ? window.location.origin : "");
