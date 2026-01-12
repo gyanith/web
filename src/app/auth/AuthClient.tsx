@@ -65,10 +65,12 @@ const oAuthSignup = (
     typeof window !== "undefined" ? window.location.origin : "N/A"
   );
 
-  const origin =
+  /* const origin =
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (typeof window !== "undefined" ? window.location.origin : "");
-  console.log("This is the origin ", origin);
+    (typeof window !== "undefined" ? window.location.origin : ""); */
+  const origin = "https://gyanith.org";
+
+  console.log("DEBUG: HARDCODED origin:", origin);
 
   const s = account.createOAuth2Session(
     authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
