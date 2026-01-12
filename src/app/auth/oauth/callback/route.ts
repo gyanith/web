@@ -2,20 +2,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createSessionClient } from "@/lib/appwrite/appwrite.server";
-import { checkUserProfile } from "@/lib/actions/auth";
+import { checkUserProfile, setSessionCookie } from "@/lib/actions/auth";
+import { Client, Account } from "node-appwrite";
 
 export async function GET(request: NextRequest) {
     try {
-        const cookieStore = await cookies();
-        console.log(request);
+        const userId = request.nextUrl.searchParams.get("userId");
+        const secret = request.nextUrl.searchParams.get("secret");
 
-        // Appwrite already set the session cookie during OAuth
+        if (userId && secret) {
+            // Verify session and get expiry
+            const client = new Client()
+                .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+                .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+                .setSession(secret);
+
+            const account = new Account(client);
+            const session = await account.getSession({
+                sessionId: "current"
+            })
+
+
+            await setSessionCookie(session.secret, session.expire);
+        }
+
+        const cookieStore = await cookies();
+
+        // Check for session cookie
         const sessionCookie = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`);
 
         if (!sessionCookie) {
             console.error("No session cookie found after OAuth");
             return NextResponse.redirect(
-                new URL("/auth?error=no_session", "https://gyanith.org")
+                new URL("/auth?error=no_session", request.url)
             );
         }
 
@@ -49,7 +68,7 @@ export async function GET(request: NextRequest) {
                     maxAge: 600,
                 });
 
-                const redirectUrl = new URL(`gyanith.org/auth`);
+                const redirectUrl = new URL(request.nextUrl.origin + "/auth");
                 redirectUrl.searchParams.set("mode", "oauth_complete");
                 return NextResponse.redirect(redirectUrl);
             }
