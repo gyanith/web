@@ -60,6 +60,7 @@ const oAuthSignup = (
   }
 
   const origin = window.location.origin;
+  console.log("This is the origin ", origin);
 
   const s = account.createOAuth2Session({
     provider:
