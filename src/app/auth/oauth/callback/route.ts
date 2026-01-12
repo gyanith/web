@@ -8,7 +8,7 @@ import { Client, Account } from "node-appwrite";
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    console.log("🔍 Callback Request URL:", request.url);
+    console.log("🔍 Callback Request URL:", request.nextUrl);
 
     const userId = request.nextUrl.searchParams.get("userId");
     const secret = request.nextUrl.searchParams.get("secret");
