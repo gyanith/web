@@ -74,8 +74,11 @@ const oAuthSignup = (
 
   const s = account.createOAuth2Session(
     authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
-    `${origin}/auth/oauth/callback`,
-    `${origin}/auth?error=oauth_failed`
+    /*`${origin}/auth/oauth/callback`,
+    `${origin}/auth?error=oauth_failed`*/
+    "https://gyanith.org/",
+    "https://gyanith.org/fail"
+    
   );
 
   console.log("this is a test: " + s);
