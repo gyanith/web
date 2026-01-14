@@ -48,7 +48,7 @@ const page = () => {
       {/* Product Description */}
       <div className="w-screen min-h-screen h-fit flex flex-col lg:flex-row overflow-hidden  items-center justify-center">
         {/* Image Container */}
-        <div className="flex h-[60vh]  z-10 w-full lg:h-full lg:w-2/3 ">
+        <div className="flex h-[60vh]  z-10 w-full lg:h-screen lg:w-2/3 ">
           {/* Showcase */}
           <div className="w-full h-full relative overflow-x-auto">
             <div className="flex h-full gap-2 md:gap-5 lg:gap-7 rounded-br-xl md:rounded-br-2xl lg:rounded-br-4xl overflow-x-auto">

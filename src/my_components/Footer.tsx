@@ -14,7 +14,7 @@ import facebookLogo from "@/assets/facebook.svg";
 
 const Footer = () => {
   return (
-    <footer className="flex max-w-screen overflow-hidden h-full p-7 flex-col relative justify-center items-center select-none max-lg:border max-lg:border-t-[#d4a574]/40">
+    <footer className="flex max-w-screen overflow-hidden h-full p-7 flex-col relative justify-center items-center select-none max-lg:border-t max-lg:border-t-[#d4a574]/40">
       <div className="flex  items-center w-screen z-10 mb-25 md:mb-0 px-7">
         <div className="w-2/3 flex flex-col items-start justify-between h-full gap-5 ">
           <div className="flex flex-col items-start">

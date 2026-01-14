@@ -25,27 +25,48 @@ export const LoaderProvider = ({ children }: { children: React.ReactNode }) => {
   const [ready, setReady] = useState(true);
   const [text, setText] = useState("Loading...");
   const [isNavigating, setIsNavigating] = useState(false);
-
+  
   const pathname = usePathname();
   const previousPathname = useRef(pathname);
   const navigationStartTime = useRef<number | null>(null);
-  const minLoadTime = 2000;
+  
+  // Constants for dynamic loading
+  const MIN_LOAD_TIME = 500; // Minimum time to show loader to prevent flicker
+  const MAX_LOAD_TIME = 5000; // Emergency timeout
+  const CHECK_INTERVAL = 100;
 
   // Detect actual route changes
   useEffect(() => {
     if (previousPathname.current !== pathname && isNavigating) {
-      const navigationTime = navigationStartTime.current
-        ? Date.now() - navigationStartTime.current
-        : 0;
+      const startTime = navigationStartTime.current || Date.now();
+      
+      const checkContentReady = () => {
+        const timeElapsed = Date.now() - startTime;
+        
+        // Check if document is complete
+        const isDocReady = document.readyState === 'complete';
+        
+        // Check if all images are loaded
+        const images = Array.from(document.images);
+        const areImagesLoaded = images.every(img => img.complete);
+        
+        const isReady = isDocReady && areImagesLoaded;
+        const isMinTimeElapsed = timeElapsed >= MIN_LOAD_TIME;
+        const isMaxTimeElapsed = timeElapsed >= MAX_LOAD_TIME;
 
-      const remainingTime = Math.max(0, minLoadTime - navigationTime);
+        if ((isReady && isMinTimeElapsed) || isMaxTimeElapsed) {
+          finish();
+          previousPathname.current = pathname;
+          navigationStartTime.current = null;
+          setIsNavigating(false);
+        } else {
+          // Keep checking
+          setTimeout(checkContentReady, CHECK_INTERVAL);
+        }
+      };
 
-      setTimeout(() => {
-        finish();
-        previousPathname.current = pathname;
-        navigationStartTime.current = null;
-        setIsNavigating(false);
-      }, remainingTime);
+      // Start checking
+      checkContentReady();
     }
   }, [pathname, isNavigating]);
 
