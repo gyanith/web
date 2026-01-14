@@ -16,8 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge"; // Verify if badge exists, otherwise use span with class. I didn't install badge. Use span or install.
-// I didn't install badge. I'll use span with Tailwind classes.
 import Link from "next/link";
 import { Plus, CheckCircle, FileText, Users, DollarSign, Calendar } from "lucide-react";
 import { EventFormDialog } from "@/components/admin/event-form-dialog";
@@ -48,7 +46,6 @@ function fetchStats() {
   };
 }
 
-import { useState } from "react";
 
 export default function AdminDashboard() {
   const events = fetchAllEvents();

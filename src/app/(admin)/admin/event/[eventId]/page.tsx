@@ -7,8 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge"; // Ensure Badge is available or use generic span
-import { Separator } from "@/components/ui/separator"; // Ensure Separator is available or use hr
+
 import { ArrowLeft, Calendar, MapPin, Users, Trophy, Banknote, Edit, Clock, Laptop } from "lucide-react";
 import Link from "next/link";
 import { EventFormDialog } from "@/components/admin/event-form-dialog";

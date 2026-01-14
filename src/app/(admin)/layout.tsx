@@ -4,12 +4,6 @@
 // If it is already imported there, you can remove this line.
 // import "../globals.css";
 
-import { Montserrat } from "next/font/google";
-
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  variable: "--font-montserrat",
-});
 
 // Renamed from RootLayout to MainLayout to avoid confusion
 export default function MainLayout({
@@ -21,7 +15,7 @@ export default function MainLayout({
     // 1. Replaced <html> and <body> with a <div>
     // 2. Added 'min-h-screen' and 'w-full' to ensure it fills the viewport like <body> did
     <div
-      className={`${montserrat.variable} bg-[#070a10] dark antialiased flex flex-col min-h-screen w-full`}
+      className={` bg-[#070a10] dark antialiased flex flex-col min-h-screen w-full`}
       style={{
         fontFamily: "Montserrat",
       }}

@@ -6,7 +6,7 @@ import Image from "next/image";
 import handshakeImage from "@/assets/handshake-partner.svg";
 import Footer from "@/my_components/Footer";
 import DecayCard from "@/my_components/DecayCard";
-import "@/components/crt/TestCRT.css";
+import "@/my_components/crt/TestCRT.css";
 
 const page = () => {
   // Spring animations for smooth magnetic effect
