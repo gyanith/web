@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -14,6 +14,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { signOut } from "@/lib/actions/auth";
 
 const sidebarLinks = [
   {
@@ -50,6 +51,7 @@ const sidebarLinks = [
 
 export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <div className="flex h-screen flex-col gap-2 sticky top-0">
@@ -83,7 +85,11 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
         </nav>
       </div>
       <div className="mt-auto p-4">
-        <Button variant="outline" className="w-full justify-start gap-2 text-white">
+        <Button variant="outline" className="w-full justify-start gap-2 text-white"
+        onClick={async() => {
+          await signOut();
+          router.push("/");
+        }}>
           <LogOut className="h-4 w-4" />
           Logout
         </Button>

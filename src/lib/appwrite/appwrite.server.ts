@@ -31,7 +31,7 @@ export async function createSessionClient() {
 
     // Read the session cookie
     const cookieStore = await cookies();
-    const session = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`);
+    const session = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase()}`);
 
     // Set session if it exists
     if (session?.value) {

@@ -68,17 +68,22 @@ const oAuthSignup = (
   /* const origin =
     process.env.NEXT_PUBLIC_SITE_URL ||
     (typeof window !== "undefined" ? window.location.origin : ""); */
-  const origin = "https://gyanith.org";
+  
+  // LOGIC: Use window.location.origin by default for Client Side to ensure localhost works.
+  // Fallback to NEXT_PUBLIC_APP_URL if window is not available or for SSR consistency.
+  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || "");
 
-  console.log("DEBUG: HARDCODED origin:", origin);
-
-  const s = account.createOAuth2Session(
-    authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
-    `${origin}/auth/oauth/callback`,
-    `${origin}/auth?error=oauth_failed`
-  );
-
-  console.log("this is a test: " + s);
+  console.log("DEBUG: OAuth Origin:", origin);
+  
+  try {
+      account.createOAuth2Session(
+        authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
+        `${origin}/auth/oauth/callback`,
+        `${origin}/auth?error=oauth_failed`
+      );
+  } catch (err) {
+      console.error("OAuth Init Error:", err);
+  }
 };
 
 // ADD PROPS TYPE
