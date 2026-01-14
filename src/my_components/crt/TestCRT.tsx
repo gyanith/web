@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./TestCRT.css"; // Import the CSS file
+import { montserrat } from "@/fonts/fonts";
 
 const CRTMonitor: React.FC = () => {
   // Initial state for the main text display
@@ -263,10 +264,9 @@ const CRTMonitor: React.FC = () => {
               {/* Main Text Display */}
               <div className="relative text-center">
                 <div
-                  className="font-bold md:text-[7rem] text-[4rem]  leading-none mb-8 whitespace-pre-line font-montserrat select-none main-text-display" // Added 'main-text-display' class
+                  className={` ${montserrat.className} font-extrabold md:text-[7rem] text-[4rem]  leading-none mb-8 whitespace-pre-line  select-none main-text-display`} // Added 'main-text-display' class
                   style={{
                     color: "#d4a574",
-                    fontFamily: "Montserrat, 'Consolas', monospace",
                     fontWeight: 900,
                     filter: "contrast(1.3) brightness(1.2)",
                   }}

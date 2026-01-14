@@ -33,7 +33,7 @@ export const pixel = localFont({
 export const montserrat = localFont({
     src: [{
         path: "./Montserrat.ttf",
-        weight: "400",
+        weight: "100 400 900",
         style: "normal",
     }],
     variable: '--font-montserrat',
