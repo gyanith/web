@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("❌ OAuth Callback Error:", error);
     return NextResponse.redirect(
-      new URL(`/auth?error=callback_failed&message=${encodeURIComponent(error.message)}`, currentUrl)
+      new URL(`/auth?error=callback_failed&message=${encodeURIComponent(error.message)}`, request.url)
     );
   }
 } 
