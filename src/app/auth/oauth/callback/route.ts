@@ -3,13 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { checkUserProfile, setSessionCookie } from "@/lib/actions/auth";
 import { Client, Account } from "node-appwrite";
+import { headers } from "next/headers";
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") || headerList.get("host");
+  const proto = headerList.get("x-forwarded-proto") || "https";
+    const currentUrl = new URL(request.nextUrl.pathname + request.nextUrl.search, `${proto}://${host}`);
     const cookieStore = await cookies();
-    console.log("🔍 Callback Request URL:", request.nextUrl.toString());
+    console.log("🔍 Callback Request URL:", currentUrl.toString());
 
     // Extract parameters from URL
     const userId = request.nextUrl.searchParams.get("userId");
@@ -45,14 +50,14 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         console.error("❌ Error authenticating with OAuth secret:", err);
         return NextResponse.redirect(
-          new URL("/auth?error=session_creation_failed", request.url)
+          new URL("/auth?error=session_creation_failed", currentUrl)
         );
       }
     } else {
       // No OAuth parameters - this shouldn't happen in normal flow
       console.error("❌ Missing OAuth parameters (userId or secret)");
       return NextResponse.redirect(
-        new URL("/auth?error=invalid_oauth_response", request.url)
+        new URL("/auth?error=invalid_oauth_response",currentUrl)
       );
     }
 
@@ -101,7 +106,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("❌ OAuth Callback Error:", error);
     return NextResponse.redirect(
-      new URL(`/auth?error=callback_failed&message=${encodeURIComponent(error.message)}`, request.url)
+      new URL(`/auth?error=callback_failed&message=${encodeURIComponent(error.message)}`, currentUrl)
     );
   }
-}
+} 
