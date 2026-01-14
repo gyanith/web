@@ -23,13 +23,7 @@ export default function RootLayout({
         className={`${montserrat.className} bg-[#070a10]  antialiased flex flex-col items-center`}
       >
         <LoaderProvider>
-          <Noise
-            patternSize={250}
-            patternScaleX={1}
-            patternScaleY={1}
-            patternRefreshInterval={2}
-            patternAlpha={15}
-          />
+{/* Noise removed from RootLayout to prevent it showing in Admin */ }
           {children}
         </LoaderProvider>
       </body>

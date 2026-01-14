@@ -48,14 +48,14 @@ const sidebarLinks = [
   },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col gap-2">
+    <div className="flex h-screen flex-col gap-2 sticky top-0">
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span className="text-xl font-bold tracking-tight">Gyanith Admin</span>
+        <Link href="/admin" className="flex items-center gap-2 font-semibold" onClick={onNavigate}>
+          <span className="text-xl text-white font-bold tracking-tight">Gyanith Admin</span>
         </Link>
       </div>
       <div className="flex-1 overflow-auto py-2">
@@ -67,6 +67,7 @@ export function AdminSidebar() {
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
                   isActive
@@ -82,7 +83,7 @@ export function AdminSidebar() {
         </nav>
       </div>
       <div className="mt-auto p-4">
-        <Button variant="outline" className="w-full justify-start gap-2">
+        <Button variant="outline" className="w-full justify-start gap-2 text-white">
           <LogOut className="h-4 w-4" />
           Logout
         </Button>

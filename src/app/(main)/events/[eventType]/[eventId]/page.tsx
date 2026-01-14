@@ -42,7 +42,7 @@ export default async function Page({ params }: PageProps) {
       <div className="relative flex flex-col md:flex-row md:justify-center  z-0 w-screen h-screen ">
         <div className="flex absolute md:hidden h-full w-full rotate-180">
           <Aurora
-            colorStops={["#967656", "#AAAAAA", "110A05"]}
+            colorStops={["#967656", "#AAAAAA", "#110A05"]}
             blend={0.7}
             amplitude={0.5}
             speed={1}

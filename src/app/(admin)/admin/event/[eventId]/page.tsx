@@ -33,26 +33,33 @@ function getEventById(id: string) {
   };
 }
 
-export default function EventManagePage({ params }: { params: { eventId: string } }) {
-  const event = getEventById(params.eventId);
+import { use } from "react";
+
+export default function EventManagePage({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}) {
+  const { eventId } = use(params);
+  const event = getEventById(eventId);
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/admin">
-            <Button variant="outline" size="icon" className="h-8 w-8">
+      <div className="flex items-center gap-2 sm:gap-4 sticky top-0 z-40 bg-black  py-2 -mx-4 px-4 lg:-mx-6 lg:px-6 -mt-[4.5rem] md:-mt-4 lg:-mt-6 border-b mb-2">
+        <Link href="/admin/event">
+            <Button variant="outline" size="icon" className="h-8 w-8 text-foreground">
                 <ArrowLeft className="h-4 w-4" />
             </Button>
         </Link>
-        <div className="flex-1">
-            <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight">{event.name}</h1>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${event.status === 'Published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'}`}>
+        <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <h1 className="text-lg sm:text-2xl text-foreground font-bold tracking-tight truncate">{event.name}</h1>
+                <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${event.status === 'Published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'}`}>
                     {event.status}
                 </span>
             </div>
-            <p className="text-muted-foreground text-sm">Event ID: {event.id}</p>
+            <p className="text-muted-foreground text-xs sm:text-sm truncate">Event ID: {event.id}</p>
         </div>
         
         {/* Edit Action - using Reusable Dialog */}
@@ -61,7 +68,7 @@ export default function EventManagePage({ params }: { params: { eventId: string 
             initialData={event}
             eventId={event.id}
             trigger={
-                <Button className="gap-2">
+                <Button className="gap-2 text-black" suppressHydrationWarning>
                     <Edit className="h-4 w-4" />
                     Edit Event
                 </Button>

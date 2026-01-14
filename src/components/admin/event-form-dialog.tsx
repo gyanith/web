@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, FileText, Check, ChevronsUpDown, Laptop, Music, GraduationCap, Mic, Gamepad2, Home, Building2, Hotel } from "lucide-react";
+import { Plus, FileText, Check, ChevronsUpDown, Laptop, Music, GraduationCap, Mic, Gamepad2, Home, Building2, Hotel, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -48,7 +48,8 @@ interface EventFormDialogProps {
 
 export function EventFormDialog({ mode, initialData, trigger, eventId }: EventFormDialogProps) {
   const [open, setOpen] = useState(false);
-  const [selectedCoordinator, setSelectedCoordinator] = useState(initialData?.coordinator || "");
+  const [selectedCoordinator, setSelectedCoordinator] = useState<string[]>(initialData?.coordinator ? (Array.isArray(initialData.coordinator) ? initialData.coordinator : [initialData.coordinator]) : []);
+  const [isCoordinatorOpen, setIsCoordinatorOpen] = useState(false);
   const [eventType, setEventType] = useState(initialData?.type || "");
 
   const isDark = "dark bg-zinc-950 text-foreground border-zinc-800";
@@ -63,8 +64,8 @@ export function EventFormDialog({ mode, initialData, trigger, eventId }: EventFo
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className={cn("sm:max-w-lg md:max-w-3xl w-[95vw] lg:max-w-4xl", isDark)}>
-        <DialogHeader>
+      <DialogContent className={cn("w-full h-[100dvh] sm:h-auto max-w-full sm:max-w-lg md:max-w-3xl lg:max-w-4xl p-0 sm:p-6 rounded-none sm:rounded-lg flex flex-col gap-0 sm:gap-4", isDark)}>
+        <DialogHeader className="px-4 py-4 sm:px-0 sm:py-0 border-b sm:border-0">
           <DialogTitle>{mode === "create" ? "Add New Event" : "Update Event"}</DialogTitle>
           <DialogDescription>
             {mode === "create"
@@ -72,16 +73,22 @@ export function EventFormDialog({ mode, initialData, trigger, eventId }: EventFo
               : "Update the event details below."}
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[80vh] pr-4">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-0 sm:pr-4 h-full sm:max-h-[70vh] scrollbar-visible">
           <div className="grid gap-6 py-4 px-1">
             {/* File Upload Section */}
             <div className="flex flex-col gap-3 justify-center items-center border-2 border-dashed rounded-xl p-6 bg-muted/50 hover:bg-muted/80 transition-colors cursor-pointer relative group">
               <div className="flex flex-col items-center gap-2 text-center">
                 <div className="p-3 bg-background rounded-full shadow-sm group-hover:scale-110 transition-transform">
-                  <FileText className="h-6 w-6 text-primary" />
+                  {mode === "create" ? (
+                    <FileText className="h-6 w-6 text-primary" />
+                  ) : (
+                    <Pencil className="h-6 w-6 text-primary" />
+                  )}
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Click to upload poster</p>
+                  <p className="text-sm font-medium">
+                    {mode === "create" ? "Click to upload poster" : "Update Poster"}
+                  </p>
                   <p className="text-xs text-muted-foreground">SVG, PNG, JPG or GIF (max. 800x400px)</p>
                 </div>
               </div>
@@ -179,20 +186,30 @@ export function EventFormDialog({ mode, initialData, trigger, eventId }: EventFo
                 <Textarea id="description" placeholder="A brief description of the event..." className="min-h-[100px]" defaultValue={initialData?.description} />
               </div>
 
-              <div className="grid gap-2">
+                  <div className="grid gap-2">
                 <Label htmlFor="coordinators">Coordinators</Label>
-                <Popover>
+                <Popover open={isCoordinatorOpen} onOpenChange={setIsCoordinatorOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       role="combobox"
-                      className="justify-between w-full"
+                      className="justify-between w-full h-auto min-h-10"
                     >
-                      {selectedCoordinator || "Select coordinators..."}
+                        {selectedCoordinator.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                                {selectedCoordinator.map((coordinator: string) => (
+                                    <span key={coordinator} className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs flex items-center gap-1">
+                                        {coordinator}
+                                    </span>
+                                ))}
+                            </div>
+                        ) : (
+                            "Select coordinators..."
+                        )}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0" align="start">
+                  <PopoverContent className="w-[300px] p-0 dark bg-zinc-950 text-white border-zinc-800" align="start">
                     <Command>
                       <CommandInput placeholder="Search coordinator..." />
                       <CommandList>
@@ -203,17 +220,17 @@ export function EventFormDialog({ mode, initialData, trigger, eventId }: EventFo
                               key={coordinator}
                               value={coordinator}
                               onSelect={(currentValue) => {
-                                setSelectedCoordinator(currentValue === selectedCoordinator ? "" : currentValue);
-                                // setOpen(false); // Don't close popover to allow multi-select (logic to be improved later if needed)
-                                // Actually, for single select:
-                                // setOpen(false); // Can't close Parent Dialog here, this is Popover state. 
-                                // The popover trigger manages its own open state usually, but let's keep it simple.
+                                setSelectedCoordinator((prev: string[]) => 
+                                    prev.includes(currentValue) 
+                                    ? prev.filter((c) => c !== currentValue)
+                                    : [...prev, currentValue]
+                                );
                               }}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  selectedCoordinator === coordinator ? "opacity-100" : "opacity-0"
+                                  selectedCoordinator.includes(coordinator) ? "opacity-100" : "opacity-0"
                                 )}
                               />
                               {coordinator}
@@ -253,8 +270,8 @@ export function EventFormDialog({ mode, initialData, trigger, eventId }: EventFo
 
             </div>
           </div>
-        </ScrollArea>
-        <DialogFooter className="gap-2 sm:gap-0">
+        </div>
+        <DialogFooter className="p-4 sm:p-0 border-t sm:border-0 gap-2 sm:gap-0">
           <Button variant="secondary" onClick={() => console.log("Draft Saved")}>Save Draft</Button>
           <Button type="submit">{mode === "create" ? "Publish Event" : "Save Changes"}</Button>
         </DialogFooter>

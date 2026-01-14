@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Link from "next/link";
-import { Plus, CheckCircle, FileText, Users, DollarSign, Calendar } from "lucide-react";
+import { Plus, CheckCircle, FileText, Users, IndianRupee, Calendar } from "lucide-react";
 import { EventFormDialog } from "@/components/admin/event-form-dialog";
 
 type EventSummary = {
@@ -47,22 +47,47 @@ function fetchStats() {
 }
 
 
+// ... imports
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+// ... existing code ...
+
+const registrationData = [
+  { date: "Jan 01", count: 12 },
+  { date: "Jan 05", count: 45 },
+  { date: "Jan 10", count: 89 },
+  { date: "Jan 15", count: 156 },
+  { date: "Jan 20", count: 240 },
+  { date: "Jan 25", count: 350 },
+  { date: "Feb 01", count: 620 },
+];
+
 export default function AdminDashboard() {
   const events = fetchAllEvents();
   const stats = fetchStats();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
+      {/* ... header ... */}
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
       </div>
       
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-3">
+        {/* ... existing stats cards ... */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <IndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</div>
@@ -91,10 +116,58 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Registration Trend Chart */}
+      <div className="grid gap-4">
+          <Card className="col-span-1">
+              <CardHeader>
+                  <CardTitle>Registration Trends</CardTitle>
+                  <CardDescription>Daily registration count over the last 30 days</CardDescription>
+              </CardHeader>
+              <CardContent className="pl-2">
+                  <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={registrationData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                              <XAxis 
+                                  dataKey="date" 
+                                  stroke="#888888" 
+                                  fontSize={12} 
+                                  tickLine={false} 
+                                  axisLine={false} 
+                              />
+                              <YAxis 
+                                  stroke="#888888" 
+                                  fontSize={12} 
+                                  tickLine={false} 
+                                  axisLine={false} 
+                                  tickFormatter={(value) => `${value}`} 
+                              />
+                              <Tooltip 
+                                  contentStyle={{ 
+                                      backgroundColor: "rgba(0,0,0,0.8)", 
+                                      border: "none", 
+                                      borderRadius: "8px", 
+                                      color: "#fff" 
+                                  }} 
+                              />
+                              <Line 
+                                  type="monotone" 
+                                  dataKey="count" 
+                                  stroke="#8884d8" 
+                                  strokeWidth={2} 
+                                  activeDot={{ r: 8 }} 
+                              />
+                          </LineChart>
+                      </ResponsiveContainer>
+                  </div>
+              </CardContent>
+          </Card>
+      </div>
+
       {/* Quick Actions & Recent Events */}
-      <div className="grid gap-4 md:gap-8 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center">
+          <CardHeader className="flex flex-row items-center justify-between">
             <div className="grid gap-2">
               <CardTitle>Recent Events</CardTitle>
               <CardDescription>
