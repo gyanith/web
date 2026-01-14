@@ -7,7 +7,7 @@
 import Noise from "@/my_components/Noise";
 import Navbar from "@/my_components/navbar/Navbar";
 import { LoaderProvider } from "@/my_components/LoaderContext";
-
+import { montserrat } from "@/fonts/fonts";
 
 // Renamed from RootLayout to MainLayout to avoid confusion
 export default function MainLayout({
@@ -19,10 +19,8 @@ export default function MainLayout({
     // 1. Replaced <html> and <body> with a <div>
     // 2. Added 'min-h-screen' and 'w-full' to ensure it fills the viewport like <body> did
     <div
-      className={` bg-[#070a10] antialiased flex flex-col items-center min-h-screen w-full`}
-      style={{
-        fontFamily: "Montserrat",
-      }}
+      className={`${montserrat.className} bg-[#070a10] antialiased flex flex-col items-center min-h-screen w-full`}
+      
     >
       <LoaderProvider>
         <Noise
