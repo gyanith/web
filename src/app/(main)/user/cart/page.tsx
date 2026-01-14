@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, X, RefreshCw } from "lucide-react";
-import Footer from "@/components/Footer";
+import Footer from "@/my_components/Footer";
 
 interface CartItem {
   id: string;

@@ -18,12 +18,12 @@ import { useRouter } from "next/navigation";
 
 import { z } from "zod";
 
-import GlowButton from "@/components/GlowButton";
-import ColorBends from "@/components/ColorBends";
+import GlowButton from "@/my_components/GlowButton";
+import ColorBends from "@/my_components/ColorBends";
 
 import googleIcon from "@/assets/googleIcon.svg";
-import FormField from "@/components/FormField";
-import GenderDropdown from "@/components/Dropdown";
+import FormField from "@/my_components/FormField";
+import GenderDropdown from "@/my_components/Dropdown";
 
 import { useNavigate } from "@/hooks/useNavigate";
 

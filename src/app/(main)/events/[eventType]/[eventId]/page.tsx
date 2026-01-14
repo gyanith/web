@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import Aurora from "@/components/Aurora";
+import Aurora from "@/my_components/Aurora";
 import Image from "next/image";
 
 import { superRetro } from "@/fonts/fonts";
-import Footer from "@/components/Footer";
+import Footer from "@/my_components/Footer";
 import BackButton from "./BackButton";
 
 type PageProps = {

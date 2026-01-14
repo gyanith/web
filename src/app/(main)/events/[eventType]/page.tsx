@@ -1,11 +1,11 @@
 import Image from "next/image";
 import searchIcon from "@/assets/searchIcon.svg";
 
-import EventCard from "@/components/EventCard";
-import Footer from "@/components/Footer";
+import EventCard from "@/my_components/EventCard";
+import Footer from "@/my_components/Footer";
 
-import Plasma from "@/components/Plasma";
-import FloatingLines from "@/components/FloatingLines";
+import Plasma from "@/my_components/Plasma";
+import FloatingLines from "@/my_components/FloatingLines";
 
 async function getEvents(eventType: string) {
   const res = await fetch(`http://localhost:3000/api/events/${eventType}`);

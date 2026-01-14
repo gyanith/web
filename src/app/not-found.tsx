@@ -1,6 +1,6 @@
 "use client";
-import CurvedLoop from "@/components/CurvedLoop";
-import FuzzyText from "@/components/FuzzyText";
+import CurvedLoop from "@/my_components/CurvedLoop";
+import FuzzyText from "@/my_components/FuzzyText";
 
 const pageNotFound = () => {
   return (

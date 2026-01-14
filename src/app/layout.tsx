@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { ledLight } from "@/fonts/fonts";
 import "./globals.css";
-import Noise from "@/components/Noise";
+import Noise from "@/my_components/Noise";
 
 import { montserrat } from "@/fonts/fonts";
 
-import { LoaderProvider } from "@/components/LoaderContext";
+import { LoaderProvider } from "@/my_components/LoaderContext";
 
 export const metadata: Metadata = {
   title: "Gyanith 2026",

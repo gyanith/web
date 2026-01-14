@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 
-import SparklesCore from "@/components/SparklesCore";
+import SparklesCore from "@/my_components/SparklesCore";
 import { ledLight, pressStart2P, pixel, montserrat } from "@/fonts/fonts";
-import "@/components/crt/TestCRT.css";
+import "@/my_components/crt/TestCRT.css";
 
 import playstoreLogo from "@/assets/playstore.svg";
 import appstoreLogo from "@/assets/appstore.svg";

@@ -1,7 +1,8 @@
 "use client";
-import CRTMonitor from "@/components/crt/TestCRT";
-import GlassSurface from "@/components/GlassSurface";
+import CRTMonitor from "@/my_components/crt/TestCRT";
+import GlassSurface from "@/my_components/GlassSurface";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -31,20 +32,26 @@ export default function Home() {
     >
       <div className="w-screen h-screen flex items-center overflow-hidden justify-center ">
         <div className="w-fit z-10 h-16  absolute flex top-24 lg:bottom-52 lg:top-auto">
-          <GlassSurface
-            borderRadius={10}
-            backgroundOpacity={0.75}
-            className="cursor-pointer border border-amber-700/30  transition-all duration-300 px-3"
-          >
-            <span className="text-white flex flex-col items-left justify-center   lg:text-base tracking-wide ">
-              <span className="font-thin lowercase text-xs hidden lg:flex">
-                Explore
+          <Link 
+            href="https://gyanith-conference.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer">
+            <GlassSurface
+              borderRadius={10}
+              backgroundOpacity={0.75}
+              className="cursor-pointer border border-amber-700/30  transition-all duration-300 px-3"
+            >
+
+              <span className="text-white flex flex-col items-left justify-center   lg:text-base tracking-wide ">
+                <span className="font-thin lowercase text-xs hidden lg:flex">
+                  Explore
+                </span>
+                <span className="font-bold uppercase text-base lg:text-xl">
+                  ICDTSES'26
+                </span>
               </span>
-              <span className="font-bold uppercase text-base lg:text-xl">
-                ICDTSES'26
-              </span>
-            </span>
-          </GlassSurface>
+            </GlassSurface>
+          </Link>
         </div>
         <CRTMonitor />
         <div className="z-50  absolute top-[50%]"></div>

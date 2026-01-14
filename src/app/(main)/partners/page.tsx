@@ -4,8 +4,8 @@ import { useSpring, motion } from "framer-motion";
 import Image from "next/image";
 
 import handshakeImage from "@/assets/handshake-partner.svg";
-import Footer from "@/components/Footer";
-import DecayCard from "@/components/DecayCard";
+import Footer from "@/my_components/Footer";
+import DecayCard from "@/my_components/DecayCard";
 import "@/components/crt/TestCRT.css";
 
 const page = () => {

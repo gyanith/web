@@ -2,7 +2,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useLoader } from "@/components/LoaderContext";
+import { useLoader } from "@/my_components/LoaderContext";
 import { useCallback } from "react";
 
 export const useNavigate = () => {

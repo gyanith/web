@@ -1,6 +1,6 @@
 "use client";
 
-import TerminalLoader from "@/components/TerminalLoader";
+import TerminalLoader from "@/my_components/TerminalLoader";
 import React from "react";
 
 const page = () => {

@@ -4,9 +4,6 @@
 // If it is already imported there, you can remove this line.
 // import "../globals.css";
 
-import Noise from "@/my_components/Noise";
-import Navbar from "@/my_components/navbar/Navbar";
-import { LoaderProvider } from "@/my_components/LoaderContext";
 import { Montserrat } from "next/font/google";
 
 const montserrat = Montserrat({
@@ -24,22 +21,14 @@ export default function MainLayout({
     // 1. Replaced <html> and <body> with a <div>
     // 2. Added 'min-h-screen' and 'w-full' to ensure it fills the viewport like <body> did
     <div
-      className={`${montserrat.variable} bg-[#070a10] antialiased flex flex-col items-center min-h-screen w-full`}
+      className={`${montserrat.variable} bg-[#070a10] dark antialiased flex flex-col min-h-screen w-full`}
       style={{
         fontFamily: "Montserrat",
       }}
     >
-      <LoaderProvider>
-        <Noise
-          patternSize={250}
-          patternScaleX={1}
-          patternScaleY={1}
-          patternRefreshInterval={2}
-          patternAlpha={15}
-        />
-        <Navbar />
+      
         {children}
-      </LoaderProvider>
+      
     </div>
   );
 }
