@@ -76,7 +76,7 @@ const oAuthSignup = (
     authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
     /*`${origin}/auth/oauth/callback`,
     `${origin}/auth?error=oauth_failed`*/
-    "https://gyanith.org/",
+    "https://gyanith.org/auth/oauth/callback/",
     "https://gyanith.org/fail"
     
   );
