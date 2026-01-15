@@ -84,6 +84,7 @@ const Page = () => {
         <span className="flex mt-2">
           <button
             className={`hover:bg-[#D4A574]  hover:text-black cursor-pointer text-right text-[#D4A574] border-[#D4A574] border p-2 rounded-lg text-[12px] ${pressStart2P.className}`}
+            onClick={() => router.push("/privacy-policy")}  
           >
             Privacy Policy
           </button>
@@ -91,7 +92,8 @@ const Page = () => {
         <span className="flex  mt-2">
           <button
             className={`hover:bg-[#D4A574]  hover:text-black cursor-pointer text-right text-[#D4A574] border-[#D4A574] border p-2 rounded-lg text-[12px] ${pressStart2P.className}`}
-          >
+            onClick={() => router.push("/terms-and-conditions")}
+            >
             Terms & Conditions
           </button>
         </span>

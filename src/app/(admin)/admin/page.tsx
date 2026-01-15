@@ -124,7 +124,7 @@ export default function AdminDashboard() {
                   <CardDescription>Daily registration count over the last 30 days</CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
-                  <div className="h-[300px] w-full">
+                  <div className="h-[300px] w-full min-w-0">
                       <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={registrationData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

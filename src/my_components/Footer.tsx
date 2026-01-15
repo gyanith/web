@@ -11,6 +11,7 @@ import appstoreLogo from "@/assets/appstore.svg";
 import linkedInLogo from "@/assets/linkedin.svg";
 import instagramLogo from "@/assets/instagram.svg";
 import facebookLogo from "@/assets/facebook.svg";
+import mailLogo from "@/assets/mailIcon.svg"
 
 const Footer = () => {
   return (
@@ -70,6 +71,14 @@ const Footer = () => {
               <Image
                 src={facebookLogo}
                 alt="Facebook Logo"
+                width={35}
+                height={35}
+                className="object-contain w-5 sm:w-7 md:w-9 cursor-pointer group-hover:brightness-50 hover:brightness-125 hover:rotate-2 origin-bottom-right transition-all duration-500 ease-in-out"
+              />
+
+              <Image
+                src={mailLogo}
+                alt="GMail Logo"
                 width={35}
                 height={35}
                 className="object-contain w-5 sm:w-7 md:w-9 cursor-pointer group-hover:brightness-50 hover:brightness-125 hover:rotate-2 origin-bottom-right transition-all duration-500 ease-in-out"
