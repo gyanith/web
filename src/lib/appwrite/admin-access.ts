@@ -53,7 +53,7 @@ export async function verifyAdminAccess() {
                 }
             } catch (err) {
                 // Ignore errors, check next team
-                console.error(`Error checking team ${team.name}:`, err);
+                console.error(`Error  checking team ${team.name}:`, err);
             }
         }
 
