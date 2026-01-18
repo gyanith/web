@@ -52,7 +52,7 @@ const Page = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 2, ease: "circInOut" }}
+      transition={{ duration: 0.5, ease: "circInOut" }}
       className="w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden"
     >
       <div className="absolute inset-0 w-screen h-screen -z-10 bg-zinc-900">
