@@ -1,6 +1,6 @@
 {
   "name": "gyanith-web",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -33,6 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "face-api.js": "^0.22.2",
     "framer-motion": "^12.23.26",
     "gsap": "^3.14.2",
     "html2canvas": "^1.4.1",

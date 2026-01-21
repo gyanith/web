@@ -1,5 +1,5 @@
 
-import { Client, Account, TablesDB, Users, Storage } from 'node-appwrite';
+import { Client, Account, TablesDB, Users, Storage, Teams } from 'node-appwrite';
 import { cookies } from 'next/headers';
 
 
@@ -18,6 +18,7 @@ export const createAdminClient = () => {
         getAccount: () => new Account(client),
         getUsers: () => new Users(client),
         getStorage: () => new Storage(client),
+        getTeams: () => new Teams(client),
     };
 };
 
@@ -42,6 +43,7 @@ export async function createSessionClient() {
         getClient: () => client,
         getAccount: () => new Account(client),
         getTablesDB: () => new TablesDB(client),
+        getStorage: () => new Storage(client),
     };
 }
 

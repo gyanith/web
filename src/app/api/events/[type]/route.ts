@@ -15,8 +15,8 @@ export async function GET(
     try {
         const { type } = await params;
         const response = await tablesDB.listRows({
-            databaseId: process.env.APPWRITE_DATABASE_ID!,
-            tableId: process.env.APPWRITE_EVENTS_COLLECTION_ID!,
+            databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+            tableId: process.env.NEXT_PUBLIC_EVENTS_COLLECTION_ID!,
             queries: [
                 Query.equal("type", type)
             ]

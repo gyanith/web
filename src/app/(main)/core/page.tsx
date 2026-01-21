@@ -1,6 +1,6 @@
 "use client";
 import LiquidEther from "@/components/LiquidEther";
-import { garetBook, pixel, pressStart2P, superRetro } from "@/fonts/fonts";
+import { garetBook, pressStart2P, superRetro } from "@/fonts/fonts";
 import Image from "next/image";
 import { motion } from "framer-motion";
 

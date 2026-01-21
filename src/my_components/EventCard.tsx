@@ -135,6 +135,9 @@ const EventCard: React.FC<EventCardProps> = ({
             initial={{ x: "-100%" }}
             whileHover={{ x: "100%" }}
             transition={{ duration: 0.6 }}
+            onClick={() => {
+              router.push(`/events/${eventType.toLowerCase()}/${eventId}`);
+            }}
           />
           <ShinyText
             text="Register"

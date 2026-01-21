@@ -1,5 +1,4 @@
-
-import { montserrat } from "@/fonts/fonts";
+import { creatoDisplay } from "@/fonts/fonts";
 import { verifyAdminAccess } from "@/lib/appwrite/admin-access";
 import { redirect } from "next/navigation";
 
@@ -19,9 +18,9 @@ export default async function MainLayout({
     // 1. Replaced <html> and <body> with a <div>
     // 2. Added 'min-h-screen' and 'w-full' to ensure it fills the viewport like <body> did
     <div
-      className={`${montserrat.className} bg-[#070a10] dark antialiased flex flex-col min-h-screen w-full`}
+      className={`${creatoDisplay.className} bg-[#070a10] dark antialiased flex flex-col min-h-screen w-full`}
     >
-        {children}
+      {children}
     </div>
   );
 }
