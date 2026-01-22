@@ -13,6 +13,7 @@ import {
   Gamepad2,
   Pencil,
   Loader2,
+  RefreshCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +53,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createEvent, updateEvent } from "@/lib/actions/events.actions";
+import { useToast } from "@/components/ui/toast-provider";
 
 // Initialize Appwrite services
 // const databases = new Databases(client); // Removed
@@ -69,11 +71,12 @@ interface EventFormDialogProps {
   eventId?: string;
   onSuccess?: () => void;
   coordinatorsList: Coordinator[];
+  onRefreshCoordinators?: () => Promise<void>;
 }
 
 const EVENT_TYPES = [
   { id: "TECH", label: "Technical", icon: Laptop },
-  { id: "FUN", label: "Cultural", icon: Music },
+  { id: "FUN", label: "Fun", icon: Music },
   { id: "WORKSHOP", label: "Workshop", icon: GraduationCap },
 ];
 
@@ -84,6 +87,7 @@ export function EventFormDialog({
   eventId,
   onSuccess,
   coordinatorsList,
+  onRefreshCoordinators,
 }: EventFormDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -114,6 +118,8 @@ export function EventFormDialog({
   // UI State
   const [isCoordinatorOpen, setIsCoordinatorOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [isRefreshingCoordinators, setIsRefreshingCoordinators] =
+    useState(false);
 
   // Initialize form data when opening in update mode
   useEffect(() => {
@@ -134,10 +140,17 @@ export function EventFormDialog({
             : [],
         is_solo: initialData.is_solo ?? true,
         is_team_event: initialData.is_team_event ?? false,
-        day: initialData.day || "1",
+        day: Array.isArray(initialData.day)
+          ? String(initialData.day[0] || "1")
+          : String(initialData.day || "1"),
         g_form_link: initialData.g_form_link || "",
         image_id: initialData.image_id || "",
       };
+      console.log(
+        "[EventFormDialog] Init coordinators:",
+        initData.coordinators,
+      );
+      console.log("[EventFormDialog] Coordinators list:", coordinatorsList);
       setFormData(initData);
 
       if (initialData.image_id) {
@@ -170,7 +183,9 @@ export function EventFormDialog({
             : [],
         is_solo: initialData.is_solo ?? true,
         is_team_event: initialData.is_team_event ?? false,
-        day: initialData.day || "1",
+        day: Array.isArray(initialData.day)
+          ? String(initialData.day[0] || "1")
+          : String(initialData.day || "1"),
         g_form_link: initialData.g_form_link || "",
         image_id: initialData.image_id || "",
       };
@@ -194,6 +209,8 @@ export function EventFormDialog({
     }
   };
 
+  const { showToast } = useToast();
+
   const validateForm = () => {
     if (!formData.name.trim()) return "Event Name is required";
     if (!formData.date) return "Date is required";
@@ -204,10 +221,10 @@ export function EventFormDialog({
     return null;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (isPublished: boolean = true) => {
     const error = validateForm();
     if (error) {
-      alert(error); // Using alert for simplicity, replace with toast
+      showToast(error, "error");
       return;
     }
 
@@ -228,6 +245,7 @@ export function EventFormDialog({
       payload.append("is_team_event", String(formData.is_team_event));
       payload.append("day", formData.day);
       payload.append("g_form_link", formData.g_form_link);
+      payload.append("is_published", String(isPublished));
 
       if (formData.image_id) {
         payload.append("image_id", formData.image_id);
@@ -256,6 +274,10 @@ export function EventFormDialog({
 
       if (result.success) {
         console.log("Event Saved!");
+        showToast(
+          `Event ${mode === "create" ? "created" : "updated"} successfully!`,
+          "success",
+        );
         setOpen(false);
         // router.refresh(); // Handled in server action via revalidatePath
         if (onSuccess) onSuccess();
@@ -264,7 +286,7 @@ export function EventFormDialog({
       }
     } catch (err: any) {
       console.error("Error submitting form:", err);
-      alert(err.message || "Failed to save event.");
+      showToast(err.message || "Failed to save event.", "error");
     } finally {
       setLoading(false);
     }
@@ -504,7 +526,39 @@ export function EventFormDialog({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="coordinators">Coordinators</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="coordinators">Coordinators</Label>
+                  {onRefreshCoordinators && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={async () => {
+                        setIsRefreshingCoordinators(true);
+                        try {
+                          await onRefreshCoordinators();
+                        } catch (error) {
+                          console.error(
+                            "Failed to refresh coordinators:",
+                            error,
+                          );
+                        } finally {
+                          setIsRefreshingCoordinators(false);
+                        }
+                      }}
+                      disabled={isRefreshingCoordinators}
+                      title="Refresh coordinators list"
+                    >
+                      <RefreshCcw
+                        className={cn(
+                          "h-4 w-4",
+                          isRefreshingCoordinators && "animate-spin",
+                        )}
+                      />
+                    </Button>
+                  )}
+                </div>
                 <Popover
                   open={isCoordinatorOpen}
                   onOpenChange={setIsCoordinatorOpen}
@@ -630,8 +684,18 @@ export function EventFormDialog({
           >
             Cancel
           </Button>
+          {mode === "create" && (
+            <Button
+              variant="outline"
+              onClick={() => handleSubmit(false)}
+              disabled={loading}
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Draft
+            </Button>
+          )}
           <Button
-            onClick={handleSubmit}
+            onClick={() => handleSubmit(true)}
             disabled={loading || (mode === "update" && !isDirty)}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

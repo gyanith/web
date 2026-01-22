@@ -18,7 +18,8 @@ export async function GET(
             databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
             tableId: process.env.NEXT_PUBLIC_EVENTS_COLLECTION_ID!,
             queries: [
-                Query.equal("type", type)
+                Query.equal("type", type),
+                Query.equal("is_published", true)
             ]
         });
 

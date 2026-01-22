@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,8 +24,12 @@ import {
   GraduationCap,
   Mic,
   Gamepad2,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { togglePublishStatus, deleteEvent } from "@/lib/actions/events.actions";
+import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
+import { useToast } from "@/components/ui/toast-provider";
 
 export type EventType =
   | "technical"
@@ -40,6 +45,7 @@ export interface EventData {
   status: string;
   location: string;
   type: EventType | string;
+  is_published?: boolean;
 }
 
 interface EventCardProps {
@@ -48,6 +54,9 @@ interface EventCardProps {
 
 export function EventCard({ event }: EventCardProps) {
   const router = useRouter();
+  const { showToast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const iconMap: Record<string, any> = {
     TECH: Laptop,
@@ -67,6 +76,53 @@ export function EventCard({ event }: EventCardProps) {
   const handleAction = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
     action();
+  };
+
+  const handleTogglePublish = async () => {
+    setIsLoading(true);
+    try {
+      const result = await togglePublishStatus(
+        event.id,
+        event.is_published ?? event.status === "Published",
+      );
+      if (result.success) {
+        showToast(
+          result.newStatus
+            ? `"${event.name}" has been published`
+            : `"${event.name}" has been unpublished`,
+          "success",
+        );
+        router.refresh();
+      } else {
+        showToast(result.error || "Failed to toggle publish status", "error");
+      }
+    } catch (error) {
+      console.error("Error toggling publish status:", error);
+      showToast("Failed to toggle publish status", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsLoading(true);
+    try {
+      const result = await deleteEvent(event.id);
+      if (result.success) {
+        showToast(`"${event.name}" has been deleted successfully`, "success");
+        setShowDeleteModal(false);
+        // Redirect to events list to avoid staying on deleted event's page
+        router.push("/admin/events");
+        router.refresh();
+      } else {
+        showToast(result.error || "Failed to delete event", "error");
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      showToast("Failed to delete event", "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getBadgeVariant = (status: string) => {
@@ -130,24 +186,26 @@ export function EventCard({ event }: EventCardProps) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={(e) =>
-                handleAction(e, () => {
-                  console.log("Toggle Status", event.id);
-                })
-              }
+              onClick={(e) => handleAction(e, handleTogglePublish)}
+              disabled={isLoading}
             >
-              <Check className="mr-2 h-4 w-4" />
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="mr-2 h-4 w-4" />
+              )}
               {event.status === "Published" ? "Unpublish" : "Publish"}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-red-600 focus:text-red-600"
-              onClick={(e) =>
-                handleAction(e, () => {
-                  console.log("Delete Event", event.id);
-                })
-              }
+              onClick={(e) => handleAction(e, () => setShowDeleteModal(true))}
+              disabled={isLoading}
             >
-              <Trash className="mr-2 h-4 w-4" />
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash className="mr-2 h-4 w-4" />
+              )}
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -178,6 +236,15 @@ export function EventCard({ event }: EventCardProps) {
           </div>
         </div>
       </CardContent>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        onConfirm={handleDelete}
+        title={event.name}
+        isLoading={isLoading}
+      />
     </Card>
   );
 }

@@ -1,15 +1,22 @@
-"use client"
+"use client";
 
 import { ReactNode, useState } from "react";
 import { AdminSidebar } from "@/components/admin-sidebar";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   // TODO: check coordinator role via Appwrite logic if needed globally here or in middleware
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  
+
   return (
     <div className="grid min-h-screen min-w-screen md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       {/* Desktop Sidebar */}
@@ -32,16 +39,21 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col p-0 w-[240px] dark bg-zinc-950 text-white border-zinc-800">
+            <SheetContent
+              side="left"
+              className="flex flex-col p-0 w-[240px] dark bg-zinc-950 text-white border-zinc-800"
+            >
               <SheetHeader className="sr-only">
                 <SheetTitle>Navigation Menu</SheetTitle>
-                <SheetDescription>Main navigation menu for the admin portal.</SheetDescription>
+                <SheetDescription>
+                  Main navigation menu for the admin portal.
+                </SheetDescription>
               </SheetHeader>
               <AdminSidebar onNavigate={() => setIsMobileOpen(false)} />
             </SheetContent>
           </Sheet>
           <div className="w-full flex-1">
-             <h1 className="font-semibold text-lg text-white">Admin Portal</h1>
+            <h1 className="font-semibold text-lg text-white">Admin Portal</h1>
           </div>
         </header>
 

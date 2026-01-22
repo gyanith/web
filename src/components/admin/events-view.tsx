@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Laptop, Music, GraduationCap } from "lucide-react";
 import { EventCard, EventData } from "@/components/admin/event-card";
 import { EventFormDialog } from "@/components/admin/event-form-dialog";
+import { getCoordinators } from "@/lib/actions/events.actions";
 
 interface Coordinator {
   id: string;
@@ -15,7 +17,23 @@ interface EventsViewProps {
   coordinatorsList: Coordinator[];
 }
 
-export function EventsView({ events, coordinatorsList }: EventsViewProps) {
+export function EventsView({
+  events,
+  coordinatorsList: initialCoordinators,
+}: EventsViewProps) {
+  const [coordinatorsList, setCoordinatorsList] =
+    useState<Coordinator[]>(initialCoordinators);
+
+  const handleRefreshCoordinators = async () => {
+    try {
+      const freshCoordinators = await getCoordinators();
+      setCoordinatorsList(freshCoordinators);
+    } catch (error) {
+      console.error("Failed to refresh coordinators:", error);
+      throw error;
+    }
+  };
+
   // Filter events into categories (case-insensitive)
   // Filter events into categories (case-insensitive for safety, but target uppercase)
   const technicalEvents = events.filter(
@@ -42,7 +60,11 @@ export function EventsView({ events, coordinatorsList }: EventsViewProps) {
             Manage all your events from a single view.
           </p>
         </div>
-        <EventFormDialog mode="create" coordinatorsList={coordinatorsList} />
+        <EventFormDialog
+          mode="create"
+          coordinatorsList={coordinatorsList}
+          onRefreshCoordinators={handleRefreshCoordinators}
+        />
       </div>
 
       {/* Mobile View: Tabs */}

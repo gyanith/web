@@ -1,6 +1,6 @@
 // app/api/events/route.ts
 import { NextResponse } from 'next/server';
-import { createAdminClient } from "@/lib/appwrite/appwrite.server"
+import { createAdminClient, Query } from "@/lib/appwrite/appwrite.server"
 import { getImageUrl } from '@/lib/helpers/imageStorage.helper';
 
 export async function GET() {
@@ -11,7 +11,10 @@ export async function GET() {
     try {
         const response = await tablesDB.listRows({
             databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-            tableId: process.env.NEXT_PUBLIC_EVENTS_COLLECTION_ID!
+            tableId: process.env.NEXT_PUBLIC_EVENTS_COLLECTION_ID!,
+            queries: [
+                Query.equal("is_published", true)
+            ]
         });
 
         // Transform data to only return necessary fields

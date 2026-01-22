@@ -7,13 +7,12 @@ import {
   Users,
   Trophy,
   Banknote,
-  Edit,
   Clock,
   Laptop,
 } from "lucide-react";
 import Link from "next/link";
-import { EventFormDialog } from "@/components/admin/event-form-dialog";
-import { createSessionClient } from "@/lib/appwrite/appwrite.server";
+import { EventDetailClient } from "@/components/admin/event-detail-client";
+import { createAdminClient } from "@/lib/appwrite/appwrite.server";
 import { Query } from "node-appwrite";
 import { RefreshButton } from "@/components/admin/refresh-button";
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
@@ -50,24 +49,32 @@ export default async function EventManagePage({
   let error: string | null = null;
 
   try {
-    const { getTablesDB } = await createSessionClient();
-    const { rows } = await getTablesDB().listRows(
-      process.env.NEXT_PUBLIC_DATABASE_ID!,
-      process.env.NEXT_PUBLIC_EVENTS_COLLECTION_ID!,
-      [Query.equal("$id", eventId)],
-    );
+    const { getTablesDB } = createAdminClient();
+    const { rows } = await getTablesDB().listRows({
+      databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+      tableId: process.env.NEXT_PUBLIC_EVENTS_COLLECTION_ID!,
+      queries: [Query.equal("$id", eventId)],
+    });
 
     // Fetch coordinators
     coordinatorsList = await getCoordinators();
 
     if (rows.length > 0) {
       const doc = rows[0];
-      // Explicitly map properties to avoid TS errors
+      // Extract coordinator IDs from relationship objects
+      let coordinatorIds: string[] = [];
+      const coordData = doc.coordinators || doc.coordinator || [];
+      if (Array.isArray(coordData)) {
+        coordinatorIds = coordData.map((coord: any) =>
+          typeof coord === "object" && coord.$id ? coord.$id : coord,
+        );
+      }
+
       event = {
         id: doc.$id,
         $id: doc.$id,
         status: doc.is_published ? "Published" : "Draft",
-        coordinator: doc.coordinators || doc.coordinator || [],
+        coordinator: coordinatorIds,
         name: doc.name,
         date: doc.date,
         description: doc.description,
@@ -81,6 +88,8 @@ export default async function EventManagePage({
         updatedAt: doc.$updatedAt,
         image_id: doc.image_id,
       } as Event;
+
+      console.log("[EventDetail] Event coordinator field:", event.coordinator);
     }
   } catch (err) {
     console.error("Error fetching event:", err);
@@ -102,20 +111,20 @@ export default async function EventManagePage({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center gap-2 sm:gap-4 sticky top-0 z-40 bg-black py-2 -mx-4 px-4 lg:-mx-6 lg:px-6 -mt-[4.5rem] md:-mt-4 lg:-mt-6 border-b mb-2">
+      {/* Header - Full Width */}
+      <div className="flex items-center gap-2 sm:gap-4 sticky top-0 z-40 bg-black py-2 px-4 lg:px-6 -mx-4 lg:-mx-6 -mt-[4.5rem] md:-mt-4 lg:-mt-6 border-b mb-2">
         <Link href="/admin/events">
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8 text-foreground"
+            className="h-8 w-8 text-foreground flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <h1 className="text-lg sm:text-2xl text-foreground font-bold tracking-tight truncate">
+            <h1 className="text-base sm:text-lg md:text-2xl text-foreground font-bold tracking-tight truncate">
               {event.name}
             </h1>
             <span
@@ -124,28 +133,18 @@ export default async function EventManagePage({
               {event.status}
             </span>
           </div>
-          <p className="text-muted-foreground text-xs sm:text-sm truncate">
-            Event ID: {event.id}
+          <p className="text-muted-foreground text-xs truncate mb-1">
+            {event.id}
           </p>
         </div>
 
-        {/* Edit Action - using Reusable Dialog */}
-        <EventFormDialog
-          mode="update"
-          initialData={{
-            ...event,
-            // Ensure compatibility with whatever EventFormDialog expects
-            coordinator: event.coordinator,
-          }}
-          eventId={event.id}
-          coordinatorsList={coordinatorsList}
-          trigger={
-            <Button className="gap-2 text-black">
-              <Edit className="h-4 w-4" />
-              Edit Event
-            </Button>
-          }
-        />
+        {/* Edit Action - using Client Component */}
+        <div className="flex-shrink-0">
+          <EventDetailClient
+            event={event}
+            coordinatorsList={coordinatorsList}
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

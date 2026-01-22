@@ -11,6 +11,7 @@ import bagIcon from "@/assets/bag.svg";
 import phoneIcon from "@/assets/phone.svg";
 import userIcon from "@/assets/user.svg";
 import menuIcon from "@/assets/menu.svg";
+import dollarIcon from "@/assets/dollar.svg";
 import gyLogo from "@/assets/gyanith-logo.svg";
 
 import { useNavigate } from "@/hooks/useNavigate";
@@ -21,14 +22,14 @@ type NavItem =
   | "EVENTS"
   | "RESIDENCE"
   | "MERCH"
-  | "PARTNERS"
+  | "TICKET"
   | "CORE"
   | "";
 
 const Navbar: React.FC = () => {
   const router = useRouter();
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<NavItem>("PARTNERS");
+  const [selected, setSelected] = useState<NavItem>("");
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   /* const [imageData, setImageData] = useState<ImageData | null>(null);
@@ -52,9 +53,9 @@ const Navbar: React.FC = () => {
 
   const navItems: NavItem[] = [
     "EVENTS",
-    "RESIDENCE",
+    "TICKET",
     "MERCH",
-    "PARTNERS",
+    "RESIDENCE",
     "CORE",
   ];
 
@@ -163,7 +164,7 @@ const Navbar: React.FC = () => {
 
           {/* Icon Buttons */}
           <div className="flex items-center gap-2 ">
-            {["bag", "phone", "user"].map((icon) => (
+            {["bag", "partners", "user"].map((icon) => (
               <GlassSurface
                 key={icon}
                 width={60}
@@ -175,8 +176,8 @@ const Navbar: React.FC = () => {
                   onMouseEnter={() => setHoveredIcon(icon)}
                   onMouseLeave={() => setHoveredIcon(null)}
                   onClick={() => {
-                    if (icon === "phone") {
-                      navigate("/contacts");
+                    if (icon === "partners") {
+                      navigate("/partners");
                     } else if (icon === "user") {
                       navigate("/user/account");
                     } else {
@@ -186,14 +187,28 @@ const Navbar: React.FC = () => {
                   className="group relative w-12 h-12 sm:w-14 cursor-pointer sm:h-14 rounded-full  backdrop-blur-xl border border-amber-700/30 shadow-2xl flex items-center justify-center transition-all duration-300  hover:shadow-amber-500/30 shrink-0 overflow-hidden"
                 >
                   {/* Icons */}
-                  <div className="relative w-6 h-6 sm:w-7 sm:h-7 bg-linear-to-br  rounded transition-transform duration-150">
-                    {icon === "phone" && (
-                      <Image src={phoneIcon} alt="Phone Icon" />
+                  <div className="relative flex w-6 h-6 sm:w-7 sm:h-7 bg-linear-to-br  rounded transition-transform duration-150 items-center justify-between">
+                    {icon === "partners" && (
+                      <Image
+                        src={dollarIcon}
+                        alt="Dollar Icon"
+                        className="w-full h-full"
+                      />
                     )}
                     {icon === "user" && (
-                      <Image src={userIcon} alt="User Icon" />
+                      <Image
+                        src={userIcon}
+                        alt="User Icon"
+                        className="w-full h-full"
+                      />
                     )}
-                    {icon === "bag" && <Image src={bagIcon} alt="Bag Icon" />}
+                    {icon === "bag" && (
+                      <Image
+                        src={bagIcon}
+                        alt="Bag Icon"
+                        className="w-full h-full"
+                      />
+                    )}
                   </div>
 
                   {/* Glare effect */}
