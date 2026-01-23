@@ -26,7 +26,6 @@ async function uploadImage(file: File) {
 
 /**
  * Creates a new event in the database.
- * Uses TablesDB and object notation as requested.
  * @param formData - The form data containing event details and file.
  */
 export async function createEvent(formData: FormData) {
@@ -45,6 +44,10 @@ export async function createEvent(formData: FormData) {
         }
 
         // 2. Prepare Data
+        // Confirm is_published value from formData
+        const isPublishedRaw = formData.get("is_published");
+        console.log(`[createEvent] Raw is_published: ${isPublishedRaw}, Type: ${typeof isPublishedRaw}`);
+
         const data = {
             name: formData.get("name") as string,
             date: formData.get("date") as string,
@@ -59,7 +62,7 @@ export async function createEvent(formData: FormData) {
             day: [parseInt(formData.get("day") as string)],
             g_form_link: formData.get("g_form_link") as string,
             image_id: imageId,
-            is_published: formData.get("is_published") === "true",
+            is_published: isPublishedRaw === "true",
         };
 
         // Extract coordinators (could be multiple entries)
@@ -141,6 +144,10 @@ export async function updateEvent(eventId: string, formData: FormData) {
         }
 
         // 2. Prepare Data
+        // Confirm is_published value from formData
+        const isPublishedRaw = formData.get("is_published");
+        console.log(`[updateEvent] Raw is_published: ${isPublishedRaw}`);
+
         const data = {
             name: formData.get("name") as string,
             date: formData.get("date") as string,
@@ -155,7 +162,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
             day: [parseInt(formData.get("day") as string)],
             g_form_link: formData.get("g_form_link") as string,
             image_id: imageId,
-            is_published: formData.get("is_published") === "true",
+            is_published: isPublishedRaw === "true",
         };
 
         const coordinators = formData.getAll("coordinators") as string[];
@@ -246,14 +253,20 @@ export async function updateEvent(eventId: string, formData: FormData) {
  */
 export async function getCoordinators(): Promise<{ id: string; name: string }[]> {
     try {
-        const { getTeams } = await createAdminClient();
+        const { getTeams } = createAdminClient();
         const teams = getTeams();
 
+        console.log("Fetching coordinators for Team ID:", appwriteConfig.coordinatorsTeamId);
+
+        if (!appwriteConfig.coordinatorsTeamId) {
+            console.warn("COORDINATORS_TEAM_ID is not defined in environment variables.");
+            return [];
+        }
+
         const result = await teams.listMemberships({
-            teamId: appwriteConfig.coordinatorsTeamId!
+            teamId: appwriteConfig.coordinatorsTeamId
         });
 
-        console.log("Fetching coordinators for Team ID:", appwriteConfig.coordinatorsTeamId);
         console.log("Coordinators result:", result);
 
         return result.memberships.map((member: any) => ({
@@ -327,7 +340,7 @@ export async function togglePublishStatus(eventId: string, currentStatus: boolea
     }
 }
 
-/**
+/*
  * Deletes an event from the database.
  * @param eventId - The ID of the event to delete.
  * @returns Success or error response.
@@ -421,11 +434,11 @@ export async function getEvent(eventId: string): Promise<(Event & { coordinators
         )) as unknown as Event;
 
         // 2. Get coordinator IDs from Junction Table
-        const junctionRows = await db.listRows(
-            appwriteConfig.databaseId,
-            appwriteConfig.eventsCoordinatorsCollectionId,
-            [Query.equal("event_id", eventId)]
-        );
+        const junctionRows = await db.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.eventsCoordinatorsCollectionId,
+            queries: [Query.equal("event_id", eventId)]
+        });
 
         const coordinatorIds = junctionRows.rows
             .map((row: any) => row.coordinator_id)

@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import {
   MoreVertical,
   Copy,
@@ -46,6 +47,16 @@ export interface EventData {
   location: string;
   type: EventType | string;
   is_published?: boolean;
+  coordinators?: any[];
+  description?: string;
+  fee?: number;
+  prize_pool?: number;
+  num_seats?: number;
+  is_solo?: boolean;
+  is_team_event?: boolean;
+  day?: any;
+  g_form_link?: string;
+  image_id?: string;
 }
 
 interface EventCardProps {

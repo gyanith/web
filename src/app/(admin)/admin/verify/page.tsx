@@ -25,7 +25,9 @@ export default function VerifyPaymentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-         <h1 className="text-lg font-semibold md:text-2xl">Payment Verification</h1>
+        <h1 className="text-lg font-semibold md:text-2xl text-white">
+          Payment Verification
+        </h1>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -72,12 +74,12 @@ export default function VerifyPaymentsPage() {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="rounded-lg border p-4 bg-muted/50">
-                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      payment status will appear here
-                   </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    payment status will appear here
+                  </div>
                 </div>
               </div>
             </Tabs>

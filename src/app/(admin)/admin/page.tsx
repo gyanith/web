@@ -1,19 +1,20 @@
 import { getRecentEvents, getCoordinators } from "@/lib/actions/events.actions";
 import { DashboardView } from "@/components/admin/dashboard-view";
 
-function fetchStats() {
+import { getTotalRevenue } from "@/lib/actions/stats";
+
+async function fetchStats() {
   return {
     totalEvents: 12,
     totalRegistrations: 1540,
-    totalRevenue: 45000,
+    totalRevenue: await getTotalRevenue(),
   };
 }
 
 export default async function AdminDashboard() {
-  const stats = fetchStats();
-
   // Fetch data in parallel
-  const [events, coordinators] = await Promise.all([
+  const [stats, events, coordinators] = await Promise.all([
+    fetchStats(),
     getRecentEvents(),
     getCoordinators(),
   ]);

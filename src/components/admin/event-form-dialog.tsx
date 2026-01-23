@@ -91,7 +91,9 @@ export function EventFormDialog({
 }: EventFormDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<
+    "draft" | "publish" | null
+  >(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
@@ -225,14 +227,17 @@ export function EventFormDialog({
     return null;
   };
 
-  const handleSubmit = async (isPublished: boolean = true) => {
+  const handleSubmit = async (
+    actionType: "draft" | "publish",
+    isPublished: boolean = true,
+  ) => {
     const error = validateForm();
     if (error) {
       showToast(error, "error");
       return;
     }
 
-    setLoading(true);
+    setActionLoading(actionType);
     try {
       const payload = new FormData();
 
@@ -249,6 +254,11 @@ export function EventFormDialog({
       payload.append("is_team_event", String(formData.is_team_event));
       payload.append("day", formData.day);
       payload.append("g_form_link", formData.g_form_link);
+
+      // Explicitly log this for debugging
+      console.log(
+        `[EventFormDialog] Submitting as: ${actionType}, is_published: ${isPublished}`,
+      );
       payload.append("is_published", String(isPublished));
 
       if (formData.image_id) {
@@ -292,7 +302,7 @@ export function EventFormDialog({
       console.error("Error submitting form:", err);
       showToast(err.message || "Failed to save event.", "error");
     } finally {
-      setLoading(false);
+      setActionLoading(null);
     }
   };
 
@@ -684,25 +694,29 @@ export function EventFormDialog({
           <Button
             variant="secondary"
             onClick={() => setOpen(false)}
-            disabled={loading}
+            disabled={actionLoading !== null}
           >
             Cancel
           </Button>
           {mode === "create" && (
             <Button
               variant="outline"
-              onClick={() => handleSubmit(false)}
-              disabled={loading}
+              onClick={() => handleSubmit("draft", false)}
+              disabled={actionLoading !== null}
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {actionLoading === "draft" && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Save Draft
             </Button>
           )}
           <Button
-            onClick={() => handleSubmit(true)}
-            disabled={loading || (mode === "update" && !isDirty)}
+            onClick={() => handleSubmit("publish", true)}
+            disabled={actionLoading !== null || (mode === "update" && !isDirty)}
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {actionLoading === "publish" && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             {mode === "create" ? "Publish Event" : "Save Changes"}
           </Button>
         </DialogFooter>

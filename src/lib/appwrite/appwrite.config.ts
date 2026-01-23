@@ -4,6 +4,7 @@ export const appwriteConfig = {
     databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
     eventsCollectionId: process.env.NEXT_PUBLIC_EVENTS_COLLECTION_ID!,
     eventsBucketId: process.env.NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID!,
-    coordinatorsTeamId: "6958c606001b9b1162cd",
+    coordinatorsTeamId: process.env.NEXT_PUBLIC_COORDINATORS_TEAM_ID,
     eventsCoordinatorsCollectionId: process.env.NEXT_PUBLIC_COORDINATORS_COLLECTION_ID!,
+    transactionsCollectionId: process.env.NEXT_PUBLIC_TRANSACTIONS_COLLECTION_ID!,
 };

@@ -79,7 +79,9 @@ export function DashboardView({
     <div className="flex flex-col gap-4">
       {/* ... header ... */}
       <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
+        <h1 className="text-lg font-semibold md:text-2xl text-white">
+          Dashboard
+        </h1>
       </div>
 
       {/* Stats Grid */}
