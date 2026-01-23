@@ -133,10 +133,12 @@ export function EventFormDialog({
         fee: initialData.fee || 0,
         prize_pool: initialData.prize_pool || 0,
         num_seats: initialData.num_seats || 0,
-        coordinators: Array.isArray(initialData.coordinator)
-          ? initialData.coordinator
-          : initialData.coordinator
-            ? [initialData.coordinator]
+        coordinators: Array.isArray(
+          initialData.coordinators || initialData.coordinator,
+        )
+          ? initialData.coordinators || initialData.coordinator
+          : initialData.coordinators || initialData.coordinator
+            ? [initialData.coordinators || initialData.coordinator]
             : [],
         is_solo: initialData.is_solo ?? true,
         is_team_event: initialData.is_team_event ?? false,
@@ -176,10 +178,12 @@ export function EventFormDialog({
         fee: initialData.fee || 0,
         prize_pool: initialData.prize_pool || 0,
         num_seats: initialData.num_seats || 0,
-        coordinators: Array.isArray(initialData.coordinator)
-          ? initialData.coordinator
-          : initialData.coordinator
-            ? [initialData.coordinator]
+        coordinators: Array.isArray(
+          initialData.coordinators || initialData.coordinator,
+        )
+          ? initialData.coordinators || initialData.coordinator
+          : initialData.coordinators || initialData.coordinator
+            ? [initialData.coordinators || initialData.coordinator]
             : [],
         is_solo: initialData.is_solo ?? true,
         is_team_event: initialData.is_team_event ?? false,

@@ -5,4 +5,5 @@ export const appwriteConfig = {
     eventsCollectionId: process.env.NEXT_PUBLIC_EVENTS_COLLECTION_ID!,
     eventsBucketId: process.env.NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID!,
     coordinatorsTeamId: "6958c606001b9b1162cd",
+    eventsCoordinatorsCollectionId: process.env.NEXT_PUBLIC_COORDINATORS_COLLECTION_ID!,
 };

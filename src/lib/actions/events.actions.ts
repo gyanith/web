@@ -4,6 +4,7 @@ import { createSessionClient, createAdminClient } from "@/lib/appwrite/appwrite.
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
 import { ID, Query } from "node-appwrite";
 import { revalidatePath } from "next/cache";
+import { Event, EventSummary } from "@/lib/types";
 
 /**
  * Uploads a file to the configured events bucket.
@@ -59,19 +60,11 @@ export async function createEvent(formData: FormData) {
             g_form_link: formData.get("g_form_link") as string,
             image_id: imageId,
             is_published: formData.get("is_published") === "true",
-            // Handle coordinators - assuming it's sent as JSON string or multi-value? 
-            // For FormData, usually same keys. Let's assume JSON for complex array if needed or just comma separated.
-            // Based on EventFormDialog logic, we might need to adjust how we pass this. 
-            // For now, let's parse it if it's a string, or expect separate logic.
-            // We'll extract carefully below.
         };
 
         // Extract coordinators (could be multiple entries)
         const coordinators = formData.getAll("coordinators") as string[];
         console.log("[createEvent] Coordinators received:", coordinators);
-        // If passed as a single JSON string
-        // const coordinatorsRaw = formData.get("coordinators"); 
-        // const coordinators = coordinatorsRaw ? JSON.parse(coordinatorsRaw as string) : [];
 
         const finalData = {
             ...data,
@@ -79,12 +72,46 @@ export async function createEvent(formData: FormData) {
         };
 
         // 3. Create Row using TablesDB and object notation
-        await tablesDB.createRow({
+        const generateEventId = (type: string) => {
+            const prefix = type.toLowerCase();
+            const timestamp = Date.now().toString(36);
+            const randomPart = Math.random().toString(36).substring(2, 6);
+            return `${prefix}_${timestamp}${randomPart}`.substring(0, 30);
+        }
+
+        const type = (formData.get("type") as string) || "event";
+        const eventId = generateEventId(type);
+
+        // Remove coordinators from the data sent to the events collection
+        const { coordinators: _, ...eventData } = finalData;
+
+        const newEvent = await tablesDB.createRow({
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.eventsCollectionId,
-            rowId: ID.unique(),
-            data: finalData
+            rowId: eventId,
+            data: eventData
         });
+
+        // 4. Create Junction Table Entries for Coordinators
+        if (coordinators.length > 0) {
+            const generateJuctionId = () => {
+                const timestamp = Date.now().toString(36);
+                const randomPart = Math.random().toString(36).substring(2, 10);
+                return `link_${timestamp}${randomPart}`.substring(0, 20);
+            }
+
+            await Promise.all(coordinators.map(async (userId) => {
+                await tablesDB.createRow({
+                    databaseId: appwriteConfig.databaseId,
+                    tableId: appwriteConfig.eventsCoordinatorsCollectionId,
+                    rowId: generateJuctionId(),
+                    data: {
+                        event_id: newEvent.$id,
+                        coordinator_id: userId
+                    }
+                });
+            }));
+        }
 
         // 4. Revalidate cache
         revalidatePath("/admin/events");
@@ -147,12 +174,57 @@ export async function updateEvent(eventId: string, formData: FormData) {
         console.log("[updateEvent] Final data to update:", finalData);
 
         // 3. Update Row
+        // Remove coordinators from the data sent to the events collection
+        const { coordinators: _, ...eventData } = finalData;
+
         await tablesDB.updateRow({
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.eventsCollectionId,
             rowId: eventId,
-            data: finalData
+            data: eventData
         });
+
+        // 4. Update Coordinators (Junction Table)
+        // Fetch existing links
+        const existingLinks = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.eventsCoordinatorsCollectionId,
+            queries: [Query.equal("event_id", eventId)]
+        });
+
+        // Delete all existing links
+        await Promise.all(existingLinks.rows.map(row =>
+            tablesDB.deleteRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.eventsCoordinatorsCollectionId,
+                rowId: row.$id
+            })
+        ));
+
+        // Create new links
+        if (coordinators.length > 0) {
+            const generateId = () => {
+                const timestamp = Date.now().toString(36);
+                const randomPart = Math.random().toString(36).substring(2, 10);
+                return `${timestamp}${randomPart}`.substring(0, 20);
+            }
+            await Promise.all(coordinators.map(async (userId) => {
+                if (!userId || userId === 'null' || userId === 'undefined') {
+                    console.warn("[updateEvent] Skipping invalid coordinator ID:", userId);
+                    return;
+                }
+
+                await tablesDB.createRow({
+                    databaseId: appwriteConfig.databaseId,
+                    tableId: appwriteConfig.eventsCoordinatorsCollectionId,
+                    rowId: generateId(),
+                    data: {
+                        event_id: eventId,
+                        coordinator_id: userId
+                    }
+                });
+            }));
+        }
 
         console.log("[updateEvent] Event updated successfully in DB");
 
@@ -172,7 +244,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
  * Fetches all coordinators from the Appwrite Team.
  * @returns Array of coordinators with id (userId) and name.
  */
-export async function getCoordinators() {
+export async function getCoordinators(): Promise<{ id: string; name: string }[]> {
     try {
         const { getTeams } = await createAdminClient();
         const teams = getTeams();
@@ -218,8 +290,6 @@ export async function togglePublishStatus(eventId: string, currentStatus: boolea
 
         const existingEvent = rows[0];
 
-        console.log("[togglePublishStatus] Existing event data:", existingEvent);
-
         // Update with all existing data plus the new publish status
         const updateData = {
             name: existingEvent.name,
@@ -235,11 +305,8 @@ export async function togglePublishStatus(eventId: string, currentStatus: boolea
             day: existingEvent.day ?? [1],
             g_form_link: existingEvent.g_form_link ?? "",
             image_id: existingEvent.image_id ?? "",
-            coordinators: existingEvent.coordinators ?? [],
             is_published: !currentStatus
         };
-
-        console.log("[togglePublishStatus] Update data:", updateData);
 
         await tablesDB.updateRow({
             databaseId: appwriteConfig.databaseId,
@@ -270,6 +337,22 @@ export async function deleteEvent(eventId: string) {
         const { getTablesDB } = await createSessionClient();
         const tablesDB = getTablesDB();
 
+        // 1. Delete Coordinator Association (Junction Table)
+        const existingLinks = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.eventsCoordinatorsCollectionId,
+            queries: [Query.equal("event_id", eventId)]
+        });
+
+        await Promise.all(existingLinks.rows.map(row =>
+            tablesDB.deleteRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.eventsCoordinatorsCollectionId,
+                rowId: row.$id
+            })
+        ));
+
+        // 2. Delete Event
         await tablesDB.deleteRow({
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.eventsCollectionId,
@@ -284,5 +367,81 @@ export async function deleteEvent(eventId: string) {
     } catch (error) {
         console.error("Failed to delete event:", error);
         return { success: false, error: "Failed to delete event" };
+    }
+}
+
+/**
+ * Fetches the top 5 most recent events.
+ */
+export async function getRecentEvents(): Promise<EventSummary[]> {
+    try {
+        const { getTablesDB } = await createSessionClient();
+        const tablesDB = getTablesDB();
+
+        const response = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.eventsCollectionId,
+            queries: [Query.orderDesc("$updatedAt"), Query.limit(5)],
+        });
+
+        return response.rows.map((doc: any) => ({
+            id: doc.$id,
+            name: doc.name,
+            date: new Date(doc.date).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+            }),
+            type: doc.type,
+            fee: doc.fee,
+            day: Array.isArray(doc.day) ? doc.day.map(String) : [String(doc.day)],
+            status: (doc.is_published ? "Published" : "Draft") as "Published" | "Draft",
+        }));
+    } catch (err) {
+        console.error("Failed to fetch events:", err);
+        return [];
+    }
+}
+
+/**
+ * Fetches a single event by ID.
+ * @param eventId - The ID of the event to fetch.
+ */
+export async function getEvent(eventId: string): Promise<(Event & { coordinators: any[] }) | null> {
+    try {
+        const { getTablesDB, getUsers } = createAdminClient();
+        const db = getTablesDB();
+        const users = getUsers();
+
+        // 1. Fetch event
+        const event = (await db.getRow(
+            appwriteConfig.databaseId,
+            appwriteConfig.eventsCollectionId,
+            eventId,
+        )) as unknown as Event;
+
+        // 2. Get coordinator IDs from Junction Table
+        const junctionRows = await db.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.eventsCoordinatorsCollectionId,
+            [Query.equal("event_id", eventId)]
+        );
+
+        const coordinatorIds = junctionRows.rows
+            .map((row: any) => row.coordinator_id)
+            .filter((id: any) => id); // Filter out null/undefined IDs
+
+        // 3. Fetch user profiles
+        const coordinatorProfiles = await Promise.all(
+            coordinatorIds.map((id: string) => users.get(id).catch(() => null)) // Handle fetch errors gracefully
+        );
+
+        return {
+            ...event,
+            coordinators: coordinatorProfiles.filter(p => p !== null), // Filter out failed fetches
+        };
+    } catch (error) {
+        console.error("Failed to fetch event:", error);
+        return null;
     }
 }

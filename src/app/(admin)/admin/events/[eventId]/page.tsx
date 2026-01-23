@@ -12,31 +12,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { EventDetailClient } from "@/components/admin/event-detail-client";
-import { createAdminClient } from "@/lib/appwrite/appwrite.server";
-import { Query } from "node-appwrite";
-import { RefreshButton } from "@/components/admin/refresh-button";
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
-
-interface Event {
-  id: string;
-  $id: string;
-  name: string;
-  date: string;
-  description: string;
-  location: string;
-  fee: number;
-  prize_pool: number | string;
-  num_seats: number;
-  type: string;
-  is_team_event: boolean;
-  coordinator: string[];
-  day: string;
-  status: "Published" | "Draft";
-  updatedAt: string;
-  image_id?: string;
-}
-
-import { getCoordinators } from "@/lib/actions/events.actions";
+import { getCoordinators, getEvent } from "@/lib/actions/events.actions";
+import { Event } from "@/lib/types";
+import { RefreshButton } from "@/components/admin/refresh-button";
 
 export default async function EventManagePage({
   params,
@@ -44,53 +23,19 @@ export default async function EventManagePage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = await params;
-  let event: Event | null = null;
+  let event: (Event & { coordinators: any[] }) | null = null;
   let coordinatorsList: any[] = [];
   let error: string | null = null;
 
   try {
-    const { getTablesDB } = createAdminClient();
-    const { rows } = await getTablesDB().listRows({
-      databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
-      tableId: process.env.NEXT_PUBLIC_EVENTS_COLLECTION_ID!,
-      queries: [Query.equal("$id", eventId)],
-    });
+    event = await getEvent(eventId);
 
-    // Fetch coordinators
-    coordinatorsList = await getCoordinators();
-
-    if (rows.length > 0) {
-      const doc = rows[0];
-      // Extract coordinator IDs from relationship objects
-      let coordinatorIds: string[] = [];
-      const coordData = doc.coordinators || doc.coordinator || [];
-      if (Array.isArray(coordData)) {
-        coordinatorIds = coordData.map((coord: any) =>
-          typeof coord === "object" && coord.$id ? coord.$id : coord,
-        );
-      }
-
-      event = {
-        id: doc.$id,
-        $id: doc.$id,
-        status: doc.is_published ? "Published" : "Draft",
-        coordinator: coordinatorIds,
-        name: doc.name,
-        date: doc.date,
-        description: doc.description,
-        location: doc.location,
-        fee: doc.fee,
-        prize_pool: doc.prize_pool,
-        num_seats: doc.num_seats,
-        type: doc.type,
-        is_team_event: doc.is_team_event,
-        day: doc.day,
-        updatedAt: doc.$updatedAt,
-        image_id: doc.image_id,
-      } as Event;
-
-      console.log("[EventDetail] Event coordinator field:", event.coordinator);
+    if (!event) {
+      throw new Error("Event not found");
     }
+
+    // Fetch coordinators list for the form/lookup
+    coordinatorsList = await getCoordinators();
   } catch (err) {
     console.error("Error fetching event:", err);
     error = "Failed to load event. It may not exist.";
@@ -108,6 +53,13 @@ export default async function EventManagePage({
       </div>
     );
   }
+
+  // Prepare data for Client Component
+  // Client component expects coordinator IDs in 'coordinator' or 'coordinators' field
+  const clientEventData = {
+    ...event,
+    coordinator: event.coordinators.map((c) => c.$id),
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,20 +80,20 @@ export default async function EventManagePage({
               {event.name}
             </h1>
             <span
-              className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${event.status === "Published" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"}`}
+              className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${event.is_published ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"}`}
             >
-              {event.status}
+              {event.is_published ? "Published" : "Draft"}
             </span>
           </div>
           <p className="text-muted-foreground text-xs truncate mb-1">
-            {event.id}
+            {event.$id}
           </p>
         </div>
 
         {/* Edit Action - using Client Component */}
         <div className="flex-shrink-0">
           <EventDetailClient
-            event={event}
+            event={clientEventData}
             coordinatorsList={coordinatorsList}
           />
         </div>
@@ -222,20 +174,22 @@ export default async function EventManagePage({
                 <div>
                   <p className="text-sm font-medium">Coordinators</p>
                   <div className="flex flex-wrap gap-2">
-                    {Array.isArray(event.coordinator) &&
-                      event.coordinator.map((id: string, index: number) => {
-                        const coordinator = coordinatorsList.find(
-                          (c: any) => c.id === id,
-                        );
-                        return (
+                    {event.coordinators && event.coordinators.length > 0 ? (
+                      event.coordinators.map(
+                        (coordinator: any, index: number) => (
                           <span
                             key={index}
                             className="px-3 py-1 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground border"
                           >
-                            {coordinator ? coordinator.name : id}
+                            {coordinator.name}
                           </span>
-                        );
-                      })}
+                        ),
+                      )
+                    ) : (
+                      <span className="text-sm text-muted-foreground italic">
+                        No coordinators assigned
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
