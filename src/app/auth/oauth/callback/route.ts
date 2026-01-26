@@ -1,5 +1,4 @@
 // app/auth/oauth/callback/route.ts
-"use client";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { checkUserProfile, setSessionCookie } from "@/lib/actions/auth";
