@@ -50,7 +50,6 @@ const oAuthSignup = async (
   authProvider: "google" | "github",
   isSignup: boolean,
   redirectUrl: string = "/",
-  redirectUrl: string = "/",
 ) => {
   document.cookie = `oauth_is_signup=${
     isSignup ? "1" : ""
@@ -73,10 +72,6 @@ const oAuthSignup = async (
 
   // LOGIC: Use window.location.origin by default for Client Side to ensure localhost works.
   // Fallback to NEXT_PUBLIC_APP_URL if window is not available or for SSR consistency.
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : process.env.NEXT_PUBLIC_APP_URL || "";
   const origin =
     typeof window !== "undefined"
       ? window.location.origin
@@ -406,8 +401,8 @@ const AuthClient = ({
                 : isOAuthComplete
                   ? "oauth-complete"
                   : `signup-${signupStep}`
-                  ? "oauth-complete"
-                  : `signup-${signupStep}`
+                    ? "oauth-complete"
+                    : `signup-${signupStep}`
             }
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -423,12 +418,9 @@ const AuthClient = ({
                 : signupStep === 1
                   ? "Sign Up"
                   : "Almost There"}
-                ? `Complete Your Profile${
-                    userName ? `, ${userName.split(" ")[0]}` : ""
-                  }`
-                : signupStep === 1
-                  ? "Sign Up"
-                  : "Almost There"}
+            ? `Complete Your Profile$
+            {userName ? `, ${userName.split(" ")[0]}` : ""}` : signupStep === 1
+            ? "Sign Up" : "Almost There"
           </motion.span>
 
           {/* ADD THIS - Show user email if OAuth completion */}
