@@ -7,6 +7,7 @@
 import Noise from "@/my_components/Noise";
 import Navbar from "@/my_components/navbar/Navbar";
 import { LoaderProvider } from "@/my_components/LoaderContext";
+import { ToastProvider } from "@/context/ToastContext";
 import { montserrat } from "@/fonts/fonts";
 
 // Renamed from RootLayout to MainLayout to avoid confusion
@@ -20,18 +21,19 @@ export default function MainLayout({
     // 2. Added 'min-h-screen' and 'w-full' to ensure it fills the viewport like <body> did
     <div
       className={`${montserrat.className} bg-[#070a10] antialiased flex flex-col items-center min-h-screen w-full`}
-      
     >
       <LoaderProvider>
-        <Noise
-          patternSize={250}
-          patternScaleX={1}
-          patternScaleY={1}
-          patternRefreshInterval={2}
-          patternAlpha={15}
-        />
-        <Navbar />
-        {children}
+        <ToastProvider>
+          <Noise
+            patternSize={250}
+            patternScaleX={1}
+            patternScaleY={1}
+            patternRefreshInterval={2}
+            patternAlpha={15}
+          />
+          <Navbar />
+          {children}
+        </ToastProvider>
       </LoaderProvider>
     </div>
   );

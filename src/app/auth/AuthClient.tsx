@@ -49,7 +49,7 @@ const loginSchema = z.object({
 const oAuthSignup = (
   authProvider: "google" | "github",
   isSignup: boolean,
-  redirectUrl: string = "/"
+  redirectUrl: string = "/",
 ) => {
   document.cookie = `oauth_is_signup=${
     isSignup ? "1" : ""
@@ -62,7 +62,7 @@ const oAuthSignup = (
   console.log("DEBUG: env SITE_URL:", process.env.NEXT_PUBLIC_SITE_URL);
   console.log(
     "DEBUG: window origin:",
-    typeof window !== "undefined" ? window.location.origin : "N/A"
+    typeof window !== "undefined" ? window.location.origin : "N/A",
   );
 
   /* const origin =
@@ -71,14 +71,19 @@ const oAuthSignup = (
 
   // LOGIC: Use window.location.origin by default for Client Side to ensure localhost works.
   // Fallback to NEXT_PUBLIC_APP_URL if window is not available or for SSR consistency.
-  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || "");
+  const origin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_APP_URL || "";
 
   console.log("DEBUG: OAuth Origin:", origin);
 
   account.createOAuth2Session({
-    provider: authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
-  }
-   );
+    provider:
+      authProvider === "google" ? OAuthProvider.Google : OAuthProvider.Github,
+    success: `${origin}/auth/oauth/callback`,
+    failure: `${origin}/auth/oauth/callback?error=provider_failure`,
+  });
 };
 
 // ADD PROPS TYPE
@@ -393,8 +398,8 @@ const AuthClient = ({
               isLogin
                 ? "login"
                 : isOAuthComplete
-                ? "oauth-complete"
-                : `signup-${signupStep}`
+                  ? "oauth-complete"
+                  : `signup-${signupStep}`
             }
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -404,12 +409,12 @@ const AuthClient = ({
             {isLogin
               ? "Log In"
               : isOAuthComplete
-              ? `Complete Your Profile${
-                  userName ? `, ${userName.split(" ")[0]}` : ""
-                }`
-              : signupStep === 1
-              ? "Sign Up"
-              : "Almost There"}
+                ? `Complete Your Profile${
+                    userName ? `, ${userName.split(" ")[0]}` : ""
+                  }`
+                : signupStep === 1
+                  ? "Sign Up"
+                  : "Almost There"}
           </motion.span>
 
           {/* ADD THIS - Show user email if OAuth completion */}

@@ -39,11 +39,11 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { label: "EVENTS", link: "/events" },
+    { label: "TICKET", link: "/ticket" },
     { label: "RESIDENCE", link: "/residence" },
     { label: "MERCH", link: "/merch" },
     { label: "PARTNERS", link: "/partners" },
     { label: "CORE", link: "/core" },
-    { label: "CONTACTS", link: "/contacts" },
     { label: "CART", link: "/user/cart" },
     { label: "ACCOUNT", link: "/user/account" },
   ];
@@ -64,7 +64,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       let preLayers: HTMLElement[] = [];
       if (preContainer) {
         preLayers = Array.from(
-          preContainer.querySelectorAll(".mm-prelayer")
+          preContainer.querySelectorAll(".mm-prelayer"),
         ) as HTMLElement[];
       }
       preLayerElsRef.current = preLayers;
@@ -89,10 +89,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
     closeTweenRef.current?.kill();
 
     const itemEls = Array.from(
-      panel.querySelectorAll(".mm-panel-itemLabel")
+      panel.querySelectorAll(".mm-panel-itemLabel"),
     ) as HTMLElement[];
     const numberEls = Array.from(
-      panel.querySelectorAll(".mm-panel-list[data-numbering] .mm-panel-item")
+      panel.querySelectorAll(".mm-panel-list[data-numbering] .mm-panel-item"),
     ) as HTMLElement[];
 
     if (itemEls.length) gsap.set(itemEls, { yPercent: 140, rotate: 10 });
@@ -106,7 +106,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
         el,
         { xPercent: 100 },
         { xPercent: 0, duration: 0.5, ease: "power4.out" },
-        i * 0.07
+        i * 0.07,
       );
     });
 
@@ -117,7 +117,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       panel,
       { xPercent: 100 },
       { xPercent: 0, duration: 0.65, ease: "power4.out" },
-      panelInsertTime
+      panelInsertTime,
     );
 
     if (itemEls.length) {
@@ -131,7 +131,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
           ease: "power4.out",
           stagger: 0.1,
         },
-        itemsStart
+        itemsStart,
       );
 
       if (numberEls.length) {
@@ -143,7 +143,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             ["--mm-num-opacity" as any]: 1,
             stagger: 0.08,
           },
-          itemsStart + 0.1
+          itemsStart + 0.1,
         );
       }
     }

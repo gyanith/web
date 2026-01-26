@@ -1,12 +1,13 @@
-// @lib/appwrite/appwrite.client.ts
-import { Client, Account, ID } from "appwrite";
+import { Client, Account, Databases, Storage } from 'appwrite';
+import { appwriteConfig } from './appwrite.config';
 
-const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
+const client = new Client();
 
-const client = new Client()
-    .setEndpoint(endpoint) // ✅ absolute + same-origin
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+client
+    .setEndpoint(appwriteConfig.endpoint)
+    .setProject(appwriteConfig.projectId);
 
 export const account = new Account(client);
-export { ID };
-export default client;
+export const databases = new Databases(client);
+export const storage = new Storage(client);
+export { client };

@@ -1,5 +1,5 @@
 
-import { Client, Account, TablesDB, Users, Storage, Teams } from 'node-appwrite';
+import { Client, Account, TablesDB, Users, Storage, Teams, Query } from 'node-appwrite';
 import { cookies } from 'next/headers';
 
 
@@ -32,7 +32,11 @@ export async function createSessionClient() {
 
     // Read the session cookie
     const cookieStore = await cookies();
-    const session = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase()}`);
+    const cookieName = `a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase()}`;
+    const session = cookieStore.get(cookieName);
+
+    console.log("Looking for cookie:", cookieName);
+    console.log("Session found:", !!session?.value);
 
     // Set session if it exists
     if (session?.value) {
@@ -48,6 +52,6 @@ export async function createSessionClient() {
 }
 
 
-export { Query } from "node-appwrite"
+export { Query }
 
 
