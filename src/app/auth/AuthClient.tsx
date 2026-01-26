@@ -418,9 +418,6 @@ const AuthClient = ({
                 : signupStep === 1
                   ? "Sign Up"
                   : "Almost There"}
-            ? `Complete Your Profile$
-            {userName ? `, ${userName.split(" ")[0]}` : ""}` : signupStep === 1
-            ? "Sign Up" : "Almost There"
           </motion.span>
 
           {/* ADD THIS - Show user email if OAuth completion */}
