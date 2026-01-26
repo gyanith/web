@@ -4,15 +4,23 @@ import { cookies } from "next/headers";
 import { checkUserProfile, setSessionCookie } from "@/lib/actions/auth";
 import { Client, Account } from "node-appwrite";
 import { headers } from "next/headers";
+import {
+  createAdminClient,
+  createSessionClient,
+} from "@/lib/appwrite/appwrite.server";
+import { create } from "domain";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
     const headerList = await headers();
-  const host = headerList.get("x-forwarded-host") || headerList.get("host");
-  const proto = headerList.get("x-forwarded-proto") || "https";
-    const currentUrl = new URL(request.nextUrl.pathname + request.nextUrl.search, `${proto}://${host}`);
+    const host = headerList.get("x-forwarded-host") || headerList.get("host");
+    const proto = headerList.get("x-forwarded-proto") || "https";
+    const currentUrl = new URL(
+      request.nextUrl.pathname + request.nextUrl.search,
+      `${proto}://${host}`,
+    );
     const cookieStore = await cookies();
     console.log("🔍 Callback Request URL:", currentUrl.toString());
 
@@ -20,44 +28,57 @@ export async function GET(request: NextRequest) {
     const userId = request.nextUrl.searchParams.get("userId");
     const secret = request.nextUrl.searchParams.get("secret");
 
-    console.log("🔍 OAuth params - userId:", userId, "secret:", secret ? "present" : "missing");
+    console.log(
+      "🔍 OAuth params keys:",
+      Array.from(request.nextUrl.searchParams.keys()),
+    );
+    console.log(
+      "🔍 OAuth params - userId:",
+      userId,
+      "secret:",
+      secret ? "present" : "missing",
+    );
 
     let user;
 
     // CRITICAL FIX: Always prioritize the secret from URL parameters
-    if (userId && secret) {
-      console.log("✅ OAuth credentials found in URL");
+    if (secret) {
+      console.log(secret);
 
       try {
-        // Create client with the session secret from OAuth redirect
-        const client = new Client()
+        /* const client = new Client()
           .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-          .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-          .setSession(secret);
+          .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!); */
+        const client = createSessionClient().getClient();
 
         const account = new Account(client);
+        const acc = await account.createSession({
+          userId: userId!,
+          secret: secret,
+        });
 
+        console.log(acc);
         // Verify the session and get user
-        user = await account.get();
-        console.log("✅ OAuth user authenticated:", user.$id);
+        /* user = await account.get();
+        console.log("✅ OAuth user authenticated:", user.$id); */
 
         // Get full session details to set proper expiry
-        const session = await account.getSession('current');
+        const session = await account.getSession("current");
+        console.log(session);
 
         console.log("✅ Setting session cookie...");
         await setSessionCookie(session.secret, session.expire);
-
       } catch (err) {
         console.error("❌ Error authenticating with OAuth secret:", err);
         return NextResponse.redirect(
-          new URL("/auth?error=session_creation_failed", currentUrl)
+          new URL("/auth?error=session_creation_failed", currentUrl),
         );
       }
     } else {
       // No OAuth parameters - this shouldn't happen in normal flow
       console.error("❌ Missing OAuth parameters (userId or secret)");
       return NextResponse.redirect(
-        new URL("/auth?error=invalid_oauth_response",currentUrl)
+        new URL("/auth?error=invalid_oauth_response", currentUrl),
       );
     }
 
@@ -68,7 +89,7 @@ export async function GET(request: NextRequest) {
       console.log("🔍 OAuth signup flow detected");
 
       // Check if profile exists in database
-      const { exists } = await checkUserProfile(user.$id);
+      const { exists } = await checkUserProfile(userId! /* user.$id */);
 
       if (!exists) {
         console.log("📝 Profile doesn't exist, redirecting to completion...");
@@ -81,12 +102,12 @@ export async function GET(request: NextRequest) {
           maxAge: 600,
         });
 
-        cookieStore.set("oauth_user_id", user.$id, {
+        /* cookieStore.set("oauth_user_id", user.$id, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           path: "/",
           maxAge: 600,
-        });
+        }); */
 
         const redirectUrl = new URL(request.nextUrl.origin + "/auth");
         redirectUrl.searchParams.set("mode", "oauth_complete");
@@ -102,11 +123,13 @@ export async function GET(request: NextRequest) {
 
     console.log("✅ OAuth flow complete, redirecting to home");
     return NextResponse.redirect(new URL("/", request.url));
-
   } catch (error: any) {
     console.error("❌ OAuth Callback Error:", error);
     return NextResponse.redirect(
-      new URL(`/auth?error=callback_failed&message=${encodeURIComponent(error.message)}`, request.url)
+      new URL(
+        `/auth?error=callback_failed&message=${encodeURIComponent(error.message)}`,
+        request.url,
+      ),
     );
   }
-} 
+}
