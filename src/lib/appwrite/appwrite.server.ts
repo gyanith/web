@@ -25,23 +25,19 @@ export const createAdminClient = () => {
 // 2. Session Client
 // Used for: Operations acting as the specific user (e.g., logging in, creating a session).
 // Does NOT use the API Key.
-export async function createSessionClient() {
+export function createSessionClient() {
     const client = new Client()
         .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
         .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
 
     // Read the session cookie
-    const cookieStore = await cookies();
-    const cookieName = `a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase()}`;
-    const session = cookieStore.get(cookieName);
-
-    console.log("Looking for cookie:", cookieName);
-    console.log("Session found:", !!session?.value);
-
-    // Set session if it exists
-    if (session?.value) {
-        client.setSession(session.value);
-    }
+    /* const cookieStore = await cookies();
+      const session = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase()}`);
+  
+      // Set session if it exists
+      if (session?.value) {
+          client.setSession(session.value);
+      } */
 
     return {
         getClient: () => client,
