@@ -5,8 +5,8 @@ import { getImageUrl } from '@/lib/helpers/imageStorage.helper';
 
 export async function GET() {
 
-    const client = createAdminClient();
-    const tablesDB = client.getTablesDB();
+    const { getTablesDB } = await createAdminClient();
+    const tablesDB = getTablesDB();
 
     try {
         const response = await tablesDB.listRows({

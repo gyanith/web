@@ -9,8 +9,8 @@ export async function GET(
 ) {
 
 
-    const client = createAdminClient();
-    const tablesDB = client.getTablesDB();
+    const { getTablesDB } = await createAdminClient();
+    const tablesDB = getTablesDB();
 
     try {
         const { eventId } = await params;

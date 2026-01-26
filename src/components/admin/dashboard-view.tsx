@@ -28,7 +28,7 @@ import {
 import { EventFormDialog } from "@/components/admin/event-form-dialog";
 import { RegistrationChart } from "@/components/admin/registration-chart";
 import { RefreshButton } from "@/components/admin/refresh-button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getCoordinators } from "@/lib/actions/events.actions";
 
 type EventSummary = {
@@ -64,6 +64,11 @@ export function DashboardView({
   const [coordinatorsList, setCoordinatorsList] =
     useState<Coordinator[]>(initialCoordinators);
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleRefreshCoordinators = async () => {
     try {
@@ -74,6 +79,14 @@ export function DashboardView({
       setError("Failed to refresh coordinators");
     }
   };
+
+  if (!isMounted) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">

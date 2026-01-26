@@ -5,7 +5,7 @@ import { Query } from "node-appwrite";
 
 export async function getTotalRevenue() {
     try {
-        const { getTablesDB } = createAdminClient();
+        const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
 
         let totalRevenue = 0;

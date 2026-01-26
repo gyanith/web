@@ -6,11 +6,13 @@ import { cookies } from 'next/headers';
 // 1. Admin Client
 // Used for: Database writes (bypassing RLS), User management (checking if user exists), Admin tasks.
 // Requires: APPWRITE_API_KEY
-export const createAdminClient = () => {
+export async function createAdminClient() {
     const client = new Client()
         .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
         .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
         .setKey(process.env.APPWRITE_API_KEY!);
+
+
 
     return {
         getClient: () => client,
@@ -25,19 +27,19 @@ export const createAdminClient = () => {
 // 2. Session Client
 // Used for: Operations acting as the specific user (e.g., logging in, creating a session).
 // Does NOT use the API Key.
-export function createSessionClient() {
+export async function createSessionClient() {
     const client = new Client()
         .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
         .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
 
     // Read the session cookie
-    /* const cookieStore = await cookies();
-      const session = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase()}`);
-  
-      // Set session if it exists
-      if (session?.value) {
-          client.setSession(session.value);
-      } */
+    const cookieStore = await cookies();
+    const session = cookieStore.get(`a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase()}`);
+
+    // Set session if it exists
+    if (session?.value) {
+        client.setSession(session.value);
+    }
 
     return {
         getClient: () => client,

@@ -82,7 +82,7 @@ export async function loginWithEmail(data: any) {
     // We need a different approach.
 
     // Actually, we can just delete by session ID using Admin SDK
-    const { getUsers } = createAdminClient();
+    const { getUsers } = await createAdminClient();
     const users = getUsers();
 
     // Delete the verification session using Admin SDK
@@ -122,7 +122,7 @@ export async function signUpWithEmail(data: any) {
     const name = `${firstName} ${lastName}`;
 
     // 1. Init Admin Client
-    const { getUsers, getTablesDB } = createAdminClient();
+    const { getUsers, getTablesDB } = await createAdminClient();
     const users = getUsers();
     const tablesDB = getTablesDB();
 
@@ -179,7 +179,7 @@ export async function signUpWithEmail(data: any) {
     // Cleanup ghost user
     if (userId && error.code !== 409) {
       try {
-        const { getUsers } = createAdminClient();
+        const { getUsers } = await createAdminClient();
         await getUsers().delete({ userId });
       } catch (e) {
         /* ignore cleanup error */
@@ -295,14 +295,14 @@ export async function completeOAuthSignup(data: {
       return { success: false, error: "OAuth user not found" };
     }
 
-    const { getUsers } = createAdminClient();
+    const { getUsers } = await createAdminClient();
     const users = getUsers();
 
     const user = await users.get({ userId: oauthUserId });
 
     console.log("OAuth user:", user.$id, user.email);
 
-    const { getTablesDB } = createAdminClient();
+    const { getTablesDB } = await createAdminClient();
     const tablesDB = getTablesDB();
 
     await tablesDB.createRow({
@@ -337,7 +337,7 @@ export async function completeOAuthSignup(data: {
 // Check if user profile exists
 export async function checkUserProfile(userId: string) {
   try {
-    const { getTablesDB } = createAdminClient();
+    const { getTablesDB } = await createAdminClient();
     const tablesDB = getTablesDB();
 
     const profile = await tablesDB.getRow({

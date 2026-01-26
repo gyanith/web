@@ -12,7 +12,7 @@ import { Event, EventSummary } from "@/lib/types";
  * @returns The file ID of the uploaded image.
  */
 async function uploadImage(file: File) {
-    const { getStorage } = await createSessionClient();
+    const { getStorage } = await createAdminClient();
     const storage = getStorage();
 
     const uploadedFile = await storage.createFile({
@@ -30,7 +30,7 @@ async function uploadImage(file: File) {
  */
 export async function createEvent(formData: FormData) {
     try {
-        const { getTablesDB } = await createSessionClient();
+        const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
 
         // 1. Handle Image Upload
@@ -132,7 +132,7 @@ export async function createEvent(formData: FormData) {
 export async function updateEvent(eventId: string, formData: FormData) {
     try {
         console.log("[updateEvent] Starting update for event:", eventId);
-        const { getTablesDB } = await createSessionClient();
+        const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
 
         // 1. Handle Image Upload (Optional)
@@ -257,7 +257,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
  */
 export async function getCoordinators(): Promise<{ id: string; name: string }[]> {
     try {
-        const { getTeams } = createAdminClient();
+        const { getTeams } = await createAdminClient();
         const teams = getTeams();
 
         console.log("Fetching coordinators for Team ID:", appwriteConfig.coordinatorsTeamId);
@@ -291,7 +291,7 @@ export async function getCoordinators(): Promise<{ id: string; name: string }[]>
  */
 export async function togglePublishStatus(eventId: string, currentStatus: boolean) {
     try {
-        const { getTablesDB } = await createSessionClient();
+        const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
 
         // First, fetch the existing event data
@@ -353,7 +353,7 @@ export async function togglePublishStatus(eventId: string, currentStatus: boolea
  */
 export async function deleteEvent(eventId: string) {
     try {
-        const { getTablesDB } = await createSessionClient();
+        const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
 
         // 1. Delete Coordinator Association (Junction Table)
@@ -394,7 +394,7 @@ export async function deleteEvent(eventId: string) {
  */
 export async function getRecentEvents(): Promise<EventSummary[]> {
     try {
-        const { getTablesDB } = await createSessionClient();
+        const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
 
         const response = await tablesDB.listRows({
@@ -428,7 +428,7 @@ export async function getRecentEvents(): Promise<EventSummary[]> {
  */
 export async function getEvent(eventId: string): Promise<(Event & { coordinators: any[] }) | null> {
     try {
-        const { getTablesDB, getUsers } = createAdminClient();
+        const { getTablesDB, getUsers } = await createAdminClient();
         const db = getTablesDB();
         const users = getUsers();
 
@@ -459,8 +459,10 @@ export async function getEvent(eventId: string): Promise<(Event & { coordinators
             ...event,
             coordinators: coordinatorProfiles.filter(p => p !== null), // Filter out failed fetches
         };
-    } catch (error) {
-        console.error("Failed to fetch event:", error);
+    } catch (error: any) {
+        if (error.code !== 404) {
+            console.error("Failed to fetch event:", error);
+        }
         return null;
     }
 }

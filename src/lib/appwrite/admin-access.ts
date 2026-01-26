@@ -1,4 +1,5 @@
 import { createSessionClient, createAdminClient } from "@/lib/appwrite/appwrite.server";
+import { Teams, Query } from "node-appwrite";
 
 export async function verifyAdminAccess() {
     try {
@@ -18,11 +19,9 @@ export async function verifyAdminAccess() {
         const userId = user.$id;
 
         // 2. Use Admin Client to check teams (Bypass session scopes)
-        const { getClient } = createAdminClient();
+        const { getClient } = await createAdminClient();
         const client = getClient();
 
-        // Import Teams/Query dynamically
-        const { Teams, Query } = await import("node-appwrite");
         const teams = new Teams(client);
 
         // 3. Find the critical teams by name

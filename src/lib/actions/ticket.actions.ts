@@ -15,9 +15,6 @@ export async function getTicket() {
             client.setSession(sessionCookie.value);
         }
 
-        const user = await account.get();
-        const { getTablesDB } = createAdminClient();
-        const tablesDB = getTablesDB();
 
     } catch (error) {
         console.error("Error fetching ticket:", error);
