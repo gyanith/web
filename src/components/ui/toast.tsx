@@ -117,7 +117,7 @@ interface ToastContainerProps {
 
 export function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center pointer-events-none">
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-1000 flex flex-col gap-2 items-center pointer-events-none">
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <motion.div key={toast.id} layout className="pointer-events-auto">

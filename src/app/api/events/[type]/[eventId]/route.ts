@@ -32,7 +32,7 @@ export async function GET(
             day: row.day,
             location: row.location,
             prizePool: row.prize_pool,
-            imageUrl: getImageUrl(row.image_id),
+            imageUrl: getImageUrl(process.env.NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID!, row.image_id),
         }));
 
         return NextResponse.json(events);

@@ -15,6 +15,8 @@ export interface Event extends Models.Document {
     is_published: boolean;
     g_form_link?: string;
     day: number[];
+    start_time?: string;
+    end_time?: string;
 }
 
 export interface User extends Models.Document {

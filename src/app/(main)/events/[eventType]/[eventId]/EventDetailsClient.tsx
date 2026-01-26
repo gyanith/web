@@ -9,6 +9,7 @@ import {
   Wallet,
   ShoppingCart,
   ArrowRight,
+  Phone,
 } from "lucide-react";
 import ShinyText from "@/my_components/ShinyText";
 import { unispace, superRetro, blueScreen, garetBook } from "@/fonts/fonts";
@@ -162,8 +163,27 @@ export default function EventDetailsClient({
               </p>
               <p className="text-[#d4a574] text-sm mt-1">
                 {Array.isArray(eventData.day)
-                  ? `Day ${eventData.day.join(" & ")}`
+                  ? `Day ${eventData.day.sort().join(" & ")}`
                   : `Day ${eventData.day || "1"}`}
+                {eventData.start_time && (
+                  <span className="block text-white/50 text-xs mt-1 font-medium">
+                    {(() => {
+                      const formatTime = (time: string) => {
+                        if (!time) return "";
+                        if (/^\d{4}$/.test(time)) {
+                          let hours = parseInt(time.substring(0, 2));
+                          const mins = time.substring(2, 4);
+                          const period = hours >= 12 ? "PM" : "AM";
+                          if (hours > 12) hours -= 12;
+                          if (hours === 0) hours = 12;
+                          return `${hours}:${mins} ${period}`;
+                        }
+                        return time;
+                      };
+                      return `${formatTime(eventData.start_time)}${eventData.end_time ? ` - ${formatTime(eventData.end_time)}` : ""}`;
+                    })()}
+                  </span>
+                )}
               </p>
             </div>
           </motion.div>
@@ -286,8 +306,11 @@ export default function EventDetailsClient({
                     <span className="text-white/70">
                       {coordinator.name || coordinator.email || "Coordinator"}
                     </span>
-                    <span className="text-xs px-2 py-1 bg-white/5 text-white/30">
-                      Contact
+                    <span className="flex items-center gap-2 text-white/50 text-sm font-mono tracking-wider select-all">
+                      <Phone className="w-3 h-3" />
+                      {coordinator.phone
+                        ? coordinator.phone.replace(/^(\+91|91)/, "").slice(-10)
+                        : "Contact"}
                     </span>
                   </div>
                 ))}

@@ -5,23 +5,24 @@
  * @param fileId - Appwrite file ID stored in database
  * @returns Full image URL
  */
-export function getImageUrl(fileId: string | null): string {
+export function getImageUrl(bucketId: string, fileId: string | null): string {
     if (!fileId) return '/placeholder-event.png'; // fallback image
 
-    return `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID}/files/${fileId}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
+    return `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${fileId}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
 }
 
 /**
  * Get optimized image URL with width/height
  */
 export function getOptimizedImageUrl(
+    bucketId: string,
     fileId: string | null,
     width?: number,
     height?: number
 ): string {
     if (!fileId) return '/placeholder-event.png';
 
-    const baseUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID}/files/${fileId}/preview?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
+    const baseUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${fileId}/preview?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`;
 
     const params = new URLSearchParams();
     if (width) params.append('width', width.toString());

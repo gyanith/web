@@ -17,7 +17,9 @@ type EventCardProps = {
   day: string;
   location: string;
   prizePool: string;
-  imageUrl?: string;
+  imageUrl: string;
+  start_time?: string;
+  end_time?: string;
 };
 
 const EventCard: React.FC<EventCardProps> = ({
@@ -29,8 +31,30 @@ const EventCard: React.FC<EventCardProps> = ({
   location,
   prizePool,
   imageUrl,
+  start_time,
+  end_time,
 }) => {
   const router = useRouter();
+
+  const formattedDay = Array.isArray(day) ? day.sort().join(", ") : day;
+
+  const formattedTime = start_time
+    ? (() => {
+        const format = (t: string) => {
+          if (!t) return "";
+          if (/^\d{4}$/.test(t)) {
+            let h = parseInt(t.substring(0, 2));
+            const m = t.substring(2, 4);
+            const p = h >= 12 ? "PM" : "AM";
+            if (h > 12) h -= 12;
+            if (h === 0) h = 12;
+            return `${h}:${m} ${p}`;
+          }
+          return t;
+        };
+        return `${format(start_time)}${end_time ? ` - ${format(end_time)}` : ""}`;
+      })()
+    : null;
 
   // console.log("EventCard imageUrl:", imageUrl);
 
@@ -117,11 +141,20 @@ const EventCard: React.FC<EventCardProps> = ({
         viewport={{ once: true, amount: 0.3 }}
         transition={{ delay: 0.5, duration: 0.5 }}
       >
-        <motion.div
-          className={`flex-1 border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
-        >
-          DAY {day}
-        </motion.div>
+        <div className="flex-1 flex flex-col gap-1 h-full">
+          <motion.div
+            className={`flex-1 border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
+          >
+            DAY {formattedDay}
+          </motion.div>
+          {formattedTime && (
+            <motion.div
+              className={`flex-1 border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
+            >
+              {formattedTime}
+            </motion.div>
+          )}
+        </div>
 
         <motion.div
           className={`flex-1 border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}

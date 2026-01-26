@@ -3,34 +3,34 @@ import LiquidEther from "@/components/LiquidEther";
 import { garetBook, pressStart2P, superRetro } from "@/fonts/fonts";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { User } from "lucide-react";
 
 import coreBg1 from "@/assets/coreBg1.png";
 import coreBg2 from "@/assets/coreBg2.png";
 
-import samplePic from "@/assets/funEvents.png";
-
 import AnimatedStripes from "@/my_components/AnimatedStripes";
 import SpotlightCard from "@/components/SpotlightCard";
+import Footer from "@/my_components/Footer";
+import SparklesCore from "@/my_components/SparklesCore";
+import { allTeam, coreTeam } from "@/lib/info";
+import {
+  getImageUrl,
+  getOptimizedImageUrl,
+} from "@/lib/helpers/imageStorage.helper";
 
-export default function core() {
+export default function CorePage() {
   return (
     <div className="w-screen h-fit overflow-x-hidden relative">
       <div className="w-screen h-screen absolute inset-0">
-        <LiquidEther
-          colors={["#FFFFFF", "#070A10", "#D4A574"]}
-          mouseForce={40}
-          cursorSize={120}
-          isViscous={false}
-          iterationsViscous={32}
-          iterationsPoisson={32}
-          resolution={0.5}
-          isBounce={false}
-          autoDemo={false}
-          autoSpeed={0.5}
-          autoIntensity={2.2}
-          takeoverDuration={0.25}
-          autoResumeDelay={3000}
-          autoRampDuration={0.6}
+        <SparklesCore
+          id="tsparticlesfullpa"
+          speed={5}
+          background="transparent"
+          minSize={0.6}
+          maxSize={1.4}
+          particleDensity={75}
+          className="w-full h-full"
+          particleColor="#fefefe"
         />
       </div>
 
@@ -91,22 +91,6 @@ export default function core() {
         </motion.div>
       </div>
 
-      {/* <nav className="fixed z-100 w-screen h-16 bg-[#070A1075] backdrop-blur-md flex items-center justify-center px-8 ">
-        <div>
-          <ul className="flex gap-8 text-white">
-            <li className="hover:text-zinc-400 transition-colors cursor-pointer">
-              HOME
-            </li>
-            <li className="hover:text-zinc-400 transition-colors cursor-pointer">
-              CONTACT
-            </li>
-            <li className="hover:text-zinc-400 transition-colors cursor-pointer">
-              PARTNERS
-            </li>
-          </ul>
-        </div>
-      </nav> */}
-
       <div className="w-screen h-screen  z-50 flex justify-center items-center">
         <span
           className={`select-none mix-blend-difference flex items-center justify-center  w-full text-5xl lg:text-7xl text-center lg:text-left font-bold tracking-wider text-white ${superRetro.className}`}
@@ -136,7 +120,7 @@ export default function core() {
 
         <div className="w-full h-full flex flex-col justify-center items-center p-8">
           <div className="w-full grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(450px,1fr))] gap-8">
-            {[...Array(7)].map((_, index) => (
+            {coreTeam.map((member, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 50 }}
@@ -148,28 +132,39 @@ export default function core() {
                   glowRadius={250}
                   className=" rounded-none overflow-hidden relative group transition-colors duration-300 p-0"
                 >
-                  <div className="relative w-full aspect-square overflow-hidden">
-                    <Image
-                      src={samplePic}
-                      alt={`Team Member ${index + 1}`}
-                      fill
-                      className="object-cover contrast-125 transition-transform duration-500"
-                    />
+                  <div className="relative w-full aspect-square overflow-hidden bg-neutral-900 flex items-center justify-center">
+                    {member.imageId ? (
+                      <Image
+                        src={getImageUrl(
+                          process.env.NEXT_PUBLIC_APPWRITE_COREPICS_BUCKET_ID!,
+                          member.imageId,
+                        )}
+                        alt={member.name}
+                        fill
+                        unoptimized
+                        objectPosition="top"
+                        className="object-cover contrast-125 transition-transform duration-500"
+                      />
+                    ) : (
+                      <User className="w-24 h-24 text-neutral-700" />
+                    )}
                   </div>
                   <div className="p-4  bg-zinc-950/80 backdrop-blur-sm absolute bottom-0 w-full border-t border-white/10">
                     <h3
-                      className={`select-none text-xl md:text-2xl ${pressStart2P.className} mb-2 text-[#D4A574]`}
+                      className={`select-none text-xl md:text-2xl ${pressStart2P.className} mb-2 text-[#D4A574] uppercase`}
                     >
-                      ATHUL KESAV
+                      {member.name}
                     </h3>
                     <span
                       className={` flex justify-between text-sm md:text-base ${garetBook.className} text-[#D4A574] tracking-wide`}
                     >
-                      <span className="select-none font-bold">
-                        WEB TEAM LEAD
+                      <span className="select-none font-bold uppercase">
+                        {member.team}
                       </span>
-                      <span className={`${garetBook.className}`}>
-                        +91 9159775325
+                      <span
+                        className={`${garetBook.className} font-bold uppercase`}
+                      >
+                        {member.role}
                       </span>
                     </span>
                   </div>
@@ -180,30 +175,79 @@ export default function core() {
         </div>
       </div>
 
-      {/* Other Sections */}
+      {/* Teams Section */}
       <div className="w-screen min-h-screen flex flex-col items-center">
         <div
-          className={`w-screen sticky top-16 h-fit z-10 relative items-center justify-center flex bg-[#D4A574] text-7xl text-black overflow-hidden border-b-4 border-black`}
+          className={`w-screen sticky top-16 h-fit z-10 relative items-center justify-center flex bg-[#D4A574] text-black overflow-hidden border-b-4 border-black`}
         >
           <div className="absolute inset-0 w-full h-full">
             <AnimatedStripes />
           </div>
           <span
-            className={`z-20 font-black text-white bg-[#070a10] px-4 py-5 ${pressStart2P.className}`}
+            className={`z-20 font-black text-white bg-[#070a10] px-4 py-5 text-2xl md:text-4xl lg:text-5xl text-center uppercase ${pressStart2P.className}`}
           >
-            ACCOMMODATION
+            TEAMS
           </span>
         </div>
-        <span
-          className={`text-5xl lg:text-7xl text-center font-bold tracking-wider text-white ${superRetro.className}`}
-        >
-          MEET
-          <br />
-          THE
-          <br />
-          TEAM
-        </span>
+
+        <div className="w-full h-full flex flex-col justify-center items-center p-8">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(450px,1fr))] gap-8">
+            {allTeam.map((member, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <SpotlightCard
+                  glowRadius={250}
+                  className=" rounded-none overflow-hidden relative group transition-colors duration-300 p-0"
+                >
+                  <div className="relative w-full aspect-square overflow-hidden bg-neutral-900 flex items-center justify-center">
+                    {member.imageId ? (
+                      <Image
+                        src={getImageUrl(
+                          process.env.NEXT_PUBLIC_APPWRITE_COREPICS_BUCKET_ID!,
+                          member.imageId,
+                        )}
+                        alt={member.name}
+                        fill
+                        unoptimized
+                        objectPosition="top"
+                        className="object-cover contrast-125 transition-transform duration-500"
+                      />
+                    ) : (
+                      <User className="w-24 h-24 text-neutral-700" />
+                    )}
+                  </div>
+                  <div className="p-4  bg-zinc-950/80 backdrop-blur-sm absolute bottom-0 w-full border-t border-white/10">
+                    <h3
+                      className={`select-none text-xl md:text-2xl ${pressStart2P.className} mb-2 text-[#D4A574] uppercase`}
+                    >
+                      {member.name}
+                    </h3>
+                    <span
+                      className={` flex justify-between text-sm md:text-base ${garetBook.className} text-[#D4A574] tracking-wide`}
+                    >
+                      <span className="select-none font-bold uppercase">
+                        {member.team}
+                      </span>
+                      <span
+                        className={`${garetBook.className} font-bold uppercase`}
+                      >
+                        {member.role}
+                      </span>
+                    </span>
+                  </div>
+                </SpotlightCard>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

@@ -26,18 +26,14 @@ import {
   Mic,
   Gamepad2,
   Loader2,
+  Clock,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { togglePublishStatus, deleteEvent } from "@/lib/actions/events.actions";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { useToast } from "@/components/ui/toast-provider";
 
-export type EventType =
-  | "technical"
-  | "cultural"
-  | "workshop"
-  | "pro-show"
-  | "gaming";
+export type EventType = "technical" | "fun" | "workshop";
 
 export interface EventData {
   id: string;
@@ -55,6 +51,8 @@ export interface EventData {
   is_solo?: boolean;
   is_team_event?: boolean;
   day?: any;
+  start_time?: string;
+  end_time?: string;
   g_form_link?: string;
   image_id?: string;
 }
@@ -158,6 +156,20 @@ export function EventCard({ event }: EventCardProps) {
     }
   };
 
+  const formatTime = (time: string) => {
+    if (!time) return "";
+    // Check if it's 24h format (e.g., "1430")
+    if (/^\d{4}$/.test(time)) {
+      let hours = parseInt(time.substring(0, 2));
+      const mins = time.substring(2, 4);
+      const period = hours >= 12 ? "PM" : "AM";
+      if (hours > 12) hours -= 12;
+      if (hours === 0) hours = 12;
+      return `${hours}:${mins} ${period}`;
+    }
+    return time; // Return as is if already formatted or different format
+  };
+
   return (
     <Card
       className="hover:border-primary/50 transition-colors cursor-pointer mb-4"
@@ -239,6 +251,21 @@ export function EventCard({ event }: EventCardProps) {
                 day: "numeric",
                 month: "short",
               })}
+              {event.start_time && (
+                <span className="text-xs text-muted-foreground/80">
+                  • {formatTime(event.start_time)}{" "}
+                  {event.end_time ? `- ${formatTime(event.end_time)}` : ""}
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="h-3 w-3" />
+            <span className="truncate">
+              Day{" "}
+              {Array.isArray(event.day)
+                ? event.day.sort().join(", ")
+                : event.day}
             </span>
           </div>
           <div className="flex items-center gap-2">

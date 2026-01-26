@@ -15,6 +15,7 @@ import {
   Loader2,
   RefreshCcw,
 } from "lucide-react";
+import { TimePicker } from "@/components/ui/time-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -80,6 +81,31 @@ const EVENT_TYPES = [
   { id: "WORKSHOP", label: "Workshop", icon: GraduationCap },
 ];
 
+const DAYS = [
+  { id: "1", label: "Day 1" },
+  { id: "2", label: "Day 2" },
+  { id: "3", label: "Day 3" },
+];
+
+const convertTo24Hour = (time12: string) => {
+  if (!time12) return "";
+  const [time, period] = time12.split(" ");
+  let [hours, mins] = time.split(":").map(Number);
+  if (period === "PM" && hours !== 12) hours += 12;
+  if (period === "AM" && hours === 12) hours = 0;
+  return `${hours.toString().padStart(2, "0")}${mins.toString().padStart(2, "0")}`;
+};
+
+const convertTo12Hour = (time24: string) => {
+  if (!time24 || time24.length !== 4) return "";
+  let hours = parseInt(time24.substring(0, 2));
+  const mins = time24.substring(2, 4);
+  const period = hours >= 12 ? "PM" : "AM";
+  if (hours > 12) hours -= 12;
+  if (hours === 0) hours = 12;
+  return `${hours}:${mins} ${period}`;
+};
+
 export function EventFormDialog({
   mode,
   initialData,
@@ -109,7 +135,9 @@ export function EventFormDialog({
     coordinators: [] as string[],
     is_solo: true,
     is_team_event: false,
-    day: "1",
+    day: ["1"],
+    start_time: "",
+    end_time: "",
     g_form_link: "",
     image_id: "",
   });
@@ -119,6 +147,7 @@ export function EventFormDialog({
 
   // UI State
   const [isCoordinatorOpen, setIsCoordinatorOpen] = useState(false);
+  const [isDayOpen, setIsDayOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isRefreshingCoordinators, setIsRefreshingCoordinators] =
     useState(false);
@@ -135,18 +164,29 @@ export function EventFormDialog({
         fee: initialData.fee || 0,
         prize_pool: initialData.prize_pool || 0,
         num_seats: initialData.num_seats || 0,
-        coordinators: Array.isArray(
-          initialData.coordinators || initialData.coordinator,
-        )
-          ? initialData.coordinators || initialData.coordinator
-          : initialData.coordinators || initialData.coordinator
-            ? [initialData.coordinators || initialData.coordinator]
-            : [],
+        coordinators: ((): string[] => {
+          const coords = initialData.coordinators || initialData.coordinator;
+          if (!coords) return [];
+          const arr = Array.isArray(coords) ? coords : [coords];
+          return arr.map((c: any) =>
+            typeof c === "object" ? c.$id || c.id : c,
+          );
+        })(),
         is_solo: initialData.is_solo ?? true,
         is_team_event: initialData.is_team_event ?? false,
         day: Array.isArray(initialData.day)
-          ? String(initialData.day[0] || "1")
-          : String(initialData.day || "1"),
+          ? initialData.day.map(String)
+          : [String(initialData.day || "1")],
+        start_time: initialData.start_time
+          ? initialData.start_time.includes("M") // Check if already 12h (legacy/UI)
+            ? initialData.start_time
+            : convertTo12Hour(initialData.start_time)
+          : "",
+        end_time: initialData.end_time
+          ? initialData.end_time.includes("M")
+            ? initialData.end_time
+            : convertTo12Hour(initialData.end_time)
+          : "",
         g_form_link: initialData.g_form_link || "",
         image_id: initialData.image_id || "",
       };
@@ -180,18 +220,29 @@ export function EventFormDialog({
         fee: initialData.fee || 0,
         prize_pool: initialData.prize_pool || 0,
         num_seats: initialData.num_seats || 0,
-        coordinators: Array.isArray(
-          initialData.coordinators || initialData.coordinator,
-        )
-          ? initialData.coordinators || initialData.coordinator
-          : initialData.coordinators || initialData.coordinator
-            ? [initialData.coordinators || initialData.coordinator]
-            : [],
+        coordinators: ((): string[] => {
+          const coords = initialData.coordinators || initialData.coordinator;
+          if (!coords) return [];
+          const arr = Array.isArray(coords) ? coords : [coords];
+          return arr.map((c: any) =>
+            typeof c === "object" ? c.$id || c.id : c,
+          );
+        })(),
         is_solo: initialData.is_solo ?? true,
         is_team_event: initialData.is_team_event ?? false,
         day: Array.isArray(initialData.day)
-          ? String(initialData.day[0] || "1")
-          : String(initialData.day || "1"),
+          ? initialData.day.map(String)
+          : [String(initialData.day || "1")],
+        start_time: initialData.start_time
+          ? initialData.start_time.includes("M")
+            ? initialData.start_time
+            : convertTo12Hour(initialData.start_time)
+          : "",
+        end_time: initialData.end_time
+          ? initialData.end_time.includes("M")
+            ? initialData.end_time
+            : convertTo12Hour(initialData.end_time)
+          : "",
         g_form_link: initialData.g_form_link || "",
         image_id: initialData.image_id || "",
       };
@@ -224,6 +275,23 @@ export function EventFormDialog({
     if (!formData.description) return "Description is required";
     if (!formData.location) return "Location is required";
     if (mode === "create" && !selectedFile) return "Event Poster is required";
+    if (mode === "create" && !selectedFile) return "Event Poster is required";
+
+    if (formData.start_time && formData.end_time) {
+      const parseTime = (t: string) => {
+        // It's already in 12h format from state, convert to comparable minutes
+        const [time, period] = t.split(" ");
+        let [hours, mins] = time.split(":").map(Number);
+        if (period === "PM" && hours !== 12) hours += 12;
+        if (period === "AM" && hours === 12) hours = 0;
+        return hours * 60 + mins;
+      };
+
+      if (parseTime(formData.end_time) <= parseTime(formData.start_time)) {
+        return "End time must be after start time";
+      }
+    }
+
     return null;
   };
 
@@ -252,7 +320,9 @@ export function EventFormDialog({
       payload.append("num_seats", formData.num_seats.toString());
       payload.append("is_solo", String(formData.is_solo));
       payload.append("is_team_event", String(formData.is_team_event));
-      payload.append("day", formData.day);
+      formData.day.sort().forEach((d) => payload.append("day", d));
+      payload.append("start_time", convertTo24Hour(formData.start_time));
+      payload.append("end_time", convertTo24Hour(formData.end_time));
       payload.append("g_form_link", formData.g_form_link);
 
       // Explicitly log this for debugging
@@ -446,6 +516,23 @@ export function EventFormDialog({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="grid gap-2">
+                  <TimePicker
+                    label="Start Time"
+                    value={formData.start_time}
+                    onChange={(val) => handleInputChange("start_time", val)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <TimePicker
+                    label="End Time"
+                    value={formData.end_time}
+                    onChange={(val) => handleInputChange("end_time", val)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid gap-2">
                   <Label htmlFor="location">Location *</Label>
                   <Input
                     id="location"
@@ -510,20 +597,66 @@ export function EventFormDialog({
               </div>
 
               <div className="grid gap-2">
-                <Label>Day</Label>
-                <Select
-                  value={formData.day}
-                  onValueChange={(val) => handleInputChange("day", val)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Day" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Day 1</SelectItem>
-                    <SelectItem value="2">Day 2</SelectItem>
-                    <SelectItem value="3">Day 3</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Days</Label>
+                <Popover open={isDayOpen} onOpenChange={setIsDayOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="justify-between w-full"
+                    >
+                      {formData.day.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {formData.day.map((dayId) => {
+                            const day = DAYS.find((d) => d.id === dayId);
+                            return (
+                              <span
+                                key={dayId}
+                                className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs flex items-center gap-1"
+                              >
+                                {day ? day.label : `Day ${dayId}`}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        "Select days..."
+                      )}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0" align="start">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup>
+                          {DAYS.map((day) => (
+                            <CommandItem
+                              key={day.id}
+                              value={day.label}
+                              onSelect={() => {
+                                const currentDays = formData.day;
+                                const newVal = currentDays.includes(day.id)
+                                  ? currentDays.filter((id) => id !== day.id)
+                                  : [...currentDays, day.id];
+                                handleInputChange("day", newVal);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.day.includes(day.id)
+                                    ? "opacity-100"
+                                    : "opacity-0",
+                                )}
+                              />
+                              {day.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="grid gap-2">

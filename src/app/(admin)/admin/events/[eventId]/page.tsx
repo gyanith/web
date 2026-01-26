@@ -146,6 +146,25 @@ export default async function EventManagePage({
                       year: "numeric",
                     })}
                   </p>
+                  {event.start_time && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {(() => {
+                        const formatTime = (time: string) => {
+                          if (!time) return "";
+                          if (/^\d{4}$/.test(time)) {
+                            let hours = parseInt(time.substring(0, 2));
+                            const mins = time.substring(2, 4);
+                            const period = hours >= 12 ? "PM" : "AM";
+                            if (hours > 12) hours -= 12;
+                            if (hours === 0) hours = 12;
+                            return `${hours}:${mins} ${period}`;
+                          }
+                          return time;
+                        };
+                        return `${formatTime(event.start_time)}${event.end_time ? ` - ${formatTime(event.end_time)}` : ""}`;
+                      })()}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/10">
@@ -155,7 +174,7 @@ export default async function EventManagePage({
                   <p className="text-sm text-muted-foreground">
                     Day{" "}
                     {Array.isArray(event.day)
-                      ? event.day.join(", ")
+                      ? event.day.sort().join(", ")
                       : event.day}
                   </p>
                 </div>
