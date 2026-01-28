@@ -123,9 +123,9 @@ export async function createEvent(formData: FormData) {
         revalidatePath("/admin");
 
         return { success: true };
-    } catch (error) {
+    } catch (error: any) {
         console.error("Failed to create event:", error);
-        return { success: false, error: "Failed to create event" };
+        return { success: false, error: error.message || "Failed to create event" };
     }
 }
 

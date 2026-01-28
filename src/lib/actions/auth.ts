@@ -105,7 +105,47 @@ export async function loginWithEmail(data: any) {
   }
 }
 
+// 🚨 NEW: Create Profile Action (for OTP Flow)
+export async function createUserProfile(data: any) {
+  try {
+    const {
+      userId,
+      email,
+      phone,
+      gender,
+      collegeName,
+      isNITPY,
+    } = data;
+
+    const { getTablesDB } = await createAdminClient();
+    const tablesDB = getTablesDB();
+
+    console.log("📝 Creating profile for:", userId);
+
+    // Create Profile DB Entry
+    await tablesDB.createRow({
+      databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+      tableId: process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
+      rowId: userId,
+      data: {
+        email,
+        phone: parseInt(phone),
+        gender,
+        is_nitpy: isNITPY,
+        college_name: collegeName,
+      },
+    });
+
+    console.log("✅ Profile created successfully");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Create Profile Error:", error);
+    return { success: false, error: error.message || "Failed to create profile" };
+  }
+}
+
 export async function signUpWithEmail(data: any) {
+  // Legacy / Fallback
   let userId: string | null = null;
 
   try {
@@ -165,9 +205,7 @@ export async function signUpWithEmail(data: any) {
     });
 
     // 5. Auto-Login (Create Session & Set Cookie)
-    // Since we just created the user via Admin, we can trust this and create a session directly
     const session = await users.createSession({ userId });
-
     await setSessionCookie(session.secret, session.expire);
 
     console.log("✅ Signup Action: Auto-logged in");

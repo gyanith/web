@@ -120,6 +120,11 @@ const AuthClient = ({
     }
   }, [mode, oauthCompleteMode]);
 
+  // State for OTP
+  const [userId, setUserId] = useState<string | null>(null);
+  const [otp, setOtp] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   // Form data
   const [formData, setFormData] = useState({
     firstName: "",
@@ -134,7 +139,7 @@ const AuthClient = ({
   // Error states
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  type LoginMethod = "email" | "google" | "github";
+  type LoginMethod = "email";
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -204,16 +209,20 @@ const AuthClient = ({
     }
   };
 
-  // MODIFIED - Handle Email/Password Authentication
   const handleEmailAuth = async () => {
+    setIsLoading(true);
+    setErrors({});
+
     try {
       // ===========================
       // 🔐 LOGIN FLOW
       // ===========================
       if (isLogin) {
-        if (!validateLogin()) return;
+        if (!validateLogin()) {
+          setIsLoading(false);
+          return;
+        }
 
-        // ✅ Call Server Action
         const result = await loginWithEmail({
           email: formData.email,
           password: formData.password,
@@ -221,11 +230,12 @@ const AuthClient = ({
 
         if (!result.success) {
           setErrors({ general: result.error || "Login failed" });
+          setIsLoading(false);
           return;
         }
 
         console.log("Login success, redirecting...");
-        router.refresh(); // Update server components
+        router.refresh();
         navigate(redirectUrl);
         return;
       }
@@ -233,105 +243,119 @@ const AuthClient = ({
       // ===========================
       // 📝 SIGNUP FLOW
       // ===========================
+
+      // STEP 1: Basic Info
       if (signupStep === 1 && !isOAuthComplete) {
-        if (!validateStep1()) return;
-        setSignupStep(2);
-      } else {
-        if (!validateStep2()) return;
-
-        if (isOAuthComplete) {
-          // ... OAuth Completion Logic (Unchanged) ...
-
-          const result = await completeOAuthSignup({
-            phone: formData.phone,
-            gender: formData.gender,
-            collegeName: formData.collegeName,
-            isNITPY,
-          });
-
-          if (!result.success) {
-            setErrors({ general: result.error || "Failed" });
-            return;
-          }
-          router.push(sessionStorage.getItem("authRedirect") || "/");
-        } else {
-          // ✅ Call Server Action
-          const result = await signUpWithEmail({
-            email: formData.email,
-            password: formData.password,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            phone: formData.phone,
-            gender: formData.gender,
-            collegeName: formData.collegeName,
-            isNITPY,
-          });
-
-          if (!result.success) {
-            setErrors({ general: result.error || "Signup failed" });
-            return;
-          }
-
-          console.log("Signup success, redirecting...");
-          router.refresh();
-          navigate(redirectUrl);
+        if (!validateStep1()) {
+          setIsLoading(false);
+          return;
         }
+        setSignupStep(2);
+        setIsLoading(false);
+        return;
+      }
+
+      // STEP 2: Additional Info & Send OTP
+      if (signupStep === 2 && !isOAuthComplete) {
+        if (!validateStep2()) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Send OTP
+        try {
+          // IMPORTANT: Create ID here so we know the userId
+          const newUserId = "user_" + Date.now(); // or let Appwrite generate one, but ID.unique() is better if imported.
+          // Since we can't easily import ID.unique here without conflicts or extra imports,
+          // let's trust account.createEmailToken return value or rely on "unique" string.
+          // The SDK says: createEmailToken(userId, email)
+
+          const sessionToken = await account.createEmailToken(
+            "unique()",
+            formData.email,
+          );
+
+          setUserId(sessionToken.userId);
+          setSignupStep(3); // Move to OTP
+        } catch (error: any) {
+          console.error("OTP Error:", error);
+          setErrors({
+            general:
+              error.message || "Failed to send OTP. Please check your email.",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      // STEP 3: Verify OTP & Finalize
+      if (signupStep === 3) {
+        if (!otp || otp.length < 4) {
+          setErrors({ otp: "Please enter a valid OTP" });
+          setIsLoading(false);
+          return;
+        }
+
+        if (!userId) {
+          setErrors({ general: "Session lost. Please try again." });
+          setIsLoading(false);
+          return;
+        }
+
+        console.log("Verifying OTP for:", userId, "OTP:", otp);
+
+        // 1. Verify OTP -> Creates Session
+        try {
+          // 🚨 Ensure no active session conflicts
+          await account.deleteSession("current").catch(() => {});
+
+          await account.createSession(userId, otp);
+        } catch (error: any) {
+          console.error("OTP Verification Error:", error);
+          throw new Error(error.message || "Invalid OTP or expired.");
+        }
+
+        // 2. Set Password
+        await account.updatePassword(formData.password);
+
+        // 3. Set Name
+        await account.updateName(`${formData.firstName} ${formData.lastName}`);
+
+        // 4. Create Profile (DB) via Server Action
+        const result = await import("@/lib/actions/auth").then((mod) =>
+          mod.createUserProfile({
+            userId,
+            email: formData.email,
+            phone: formData.phone,
+            gender: formData.gender,
+            collegeName: formData.collegeName,
+            isNITPY,
+          }),
+        );
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        console.log("Signup success, redirecting...");
+        router.refresh();
+        navigate(redirectUrl);
       }
     } catch (err: any) {
       console.error("Auth error:", err);
       setErrors({ general: err.message || "Authentication failed" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // MODIFIED - Handle OAuth Authentication
-  const handleOAuth = async (provider: "google" | "github") => {
-    try {
-      if (isOAuthComplete) {
-        if (!validateStep2()) return;
-
-        const result = await completeOAuthSignup({
-          phone: formData.phone,
-          gender: formData.gender,
-          collegeName: formData.collegeName,
-          isNITPY,
-        });
-
-        if (!result.success) {
-          setErrors({ general: result.error || "Failed to complete profile" });
-          return;
-        }
-
-        const storedRedirect = sessionStorage.getItem("authRedirect") || "/";
-        sessionStorage.removeItem("authRedirect");
-        navigate(storedRedirect);
-      } else {
-        // START OAuth — browser redirect happens HERE
-        oAuthSignup(provider, !isLogin, redirectUrl);
-      }
-    } catch (error) {
-      console.error("OAuth error:", error);
-      setErrors({ general: "OAuth authentication failed. Please try again." });
-    }
-  };
-
-  const handleLogin = (method: LoginMethod) => {
-    if (method === "email") {
-      handleEmailAuth();
-    } else if (method === "google") {
-      handleOAuth("google");
-    } else if (method === "github") {
-      handleOAuth("github");
-    }
-  };
-
-  // MODIFIED - Handle back button
   const handleBack = () => {
-    if (isOAuthComplete) {
-      // Can't go back from OAuth completion
-      return;
+    if (isOAuthComplete) return;
+    if (signupStep > 1) {
+      setSignupStep((prev) => prev - 1);
+      setErrors({});
     }
-    setSignupStep(1);
-    setErrors({});
   };
 
   const handleModeSwitch = (mode: boolean) => {
@@ -393,15 +417,14 @@ const AuthClient = ({
           animate={{ opacity: 1 }}
           transition={{ duration: 2, ease: "circInOut" }}
         >
-          {/* MODIFIED - Dynamic title based on mode */}
           <motion.span
             key={
               isLogin
                 ? "login"
                 : isOAuthComplete
                   ? "oauth-complete"
-                  : `signup-${signupStep}`
-                    ? "oauth-complete"
+                  : signupStep === 3
+                    ? "verify"
                     : `signup-${signupStep}`
             }
             initial={{ opacity: 0, y: -20 }}
@@ -412,18 +435,13 @@ const AuthClient = ({
             {isLogin
               ? "Log In"
               : isOAuthComplete
-                ? `Complete Your Profile${
-                    userName ? `, ${userName.split(" ")[0]}` : ""
-                  }`
-                : signupStep === 1
-                  ? "Sign Up"
-                  : "Almost There"}
+                ? `Complete Your Profile`
+                : signupStep === 3
+                  ? "Verify OTP"
+                  : signupStep === 1
+                    ? "Sign Up"
+                    : "Almost There"}
           </motion.span>
-
-          {/* ADD THIS - Show user email if OAuth completion */}
-          {isOAuthComplete && userEmail && (
-            <p className="text-white/50 text-sm -mt-4 mb-2">{userEmail}</p>
-          )}
 
           {/* General Error Message */}
           {errors.general && (
@@ -438,7 +456,7 @@ const AuthClient = ({
 
           <AnimatePresence mode="wait" custom={signupStep}>
             {!isLogin && signupStep === 1 ? (
-              // Sign Up Step 1 - UNCHANGED
+              // Sign Up Step 1
               <motion.div
                 key="signup-step-1"
                 custom={1}
@@ -449,8 +467,6 @@ const AuthClient = ({
                 transition={{ duration: 0.4, ease: "easeInOut" }}
                 className="h-full w-full grid grid-rows-5 grow"
               >
-                {/* ... your existing Step 1 JSX ... */}
-                {/* (keeping it the same) */}
                 <div className="row-span-1 gap-5 flex w-full justify-between">
                   <div className="w-full">
                     <FormField
@@ -540,7 +556,7 @@ const AuthClient = ({
                     style={{
                       fontFamily: "Montserrat, 'Consolas', monospace",
                     }}
-                    onClick={() => handleLogin("email")}
+                    onClick={() => handleEmailAuth()}
                     className="group w-full h-fit px-10"
                   >
                     <div className="flex gap-2 items-center justify-center">
@@ -550,7 +566,7 @@ const AuthClient = ({
                 </div>
               </motion.div>
             ) : !isLogin && signupStep === 2 ? (
-              // Sign Up Step 2 - UNCHANGED (works for both regular and OAuth)
+              // Sign Up Step 2
               <motion.div
                 key="signup-step-2"
                 custom={2}
@@ -561,7 +577,6 @@ const AuthClient = ({
                 transition={{ duration: 0.4, ease: "easeInOut" }}
                 className="h-full w-full grid grid-rows-5 grow"
               >
-                {/* ... your existing Step 2 JSX ... */}
                 <div className="row-span-1 gap-5 flex w-full justify-between items-start">
                   <div className="w-full">
                     <FormField
@@ -632,7 +647,6 @@ const AuthClient = ({
                 </div>
 
                 <div className="row-span-2 justify-center gap-2 md:gap-5 flex flex-col w-full h-full">
-                  {/* MODIFIED - Hide back button for OAuth completion */}
                   {!isOAuthComplete && (
                     <div className="flex w-full justify-between px-4">
                       <span
@@ -647,12 +661,74 @@ const AuthClient = ({
                     style={{
                       fontFamily: "Montserrat, 'Consolas', monospace",
                     }}
-                    onClick={() => handleLogin("email")}
+                    onClick={() => handleEmailAuth()}
                     className="group w-full h-fit px-10"
                   >
                     <div className="flex gap-2 items-center justify-center">
                       <span className="">
-                        {isOAuthComplete ? "Complete Profile" : "Sign Up"}
+                        {isLoading ? "Sending..." : "Send OTP"}
+                      </span>
+                    </div>
+                  </GlowButton>
+                </div>
+              </motion.div>
+            ) : !isLogin && signupStep === 3 ? (
+              // Sign Up Step 3 (OTP)
+              <motion.div
+                key="signup-step-3"
+                custom={3}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="h-full w-full flex flex-col gap-10 justify-center grow"
+              >
+                <div className="flex flex-col gap-4 items-center">
+                  <p className="text-white/70 text-center">
+                    We've sent a 6-digit code to <br />
+                    <span className="text-white font-semibold">
+                      {formData.email}
+                    </span>
+                  </p>
+                  <div className="w-full max-w-xs">
+                    <FormField
+                      label="Enter OTP"
+                      type="text"
+                      placeholder="123456"
+                      value={otp}
+                      onChange={(e) =>
+                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
+                    />
+                    {errors.otp && (
+                      <span className="text-red-500 text-xs mt-1 block px-4">
+                        {errors.otp}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="justify-center gap-2 md:gap-5 flex flex-col w-full h-fit">
+                  <div className="flex w-full justify-between px-4">
+                    <span
+                      className="text-white font-normal hover:underline cursor-pointer"
+                      onClick={() => setSignupStep(2)}
+                    >
+                      ← Change Email/Back
+                    </span>
+                  </div>
+
+                  <GlowButton
+                    style={{
+                      fontFamily: "Montserrat, 'Consolas', monospace",
+                    }}
+                    onClick={() => handleEmailAuth()}
+                    className="group w-full h-fit px-10"
+                  >
+                    <div className="flex gap-2 items-center justify-center">
+                      <span className="">
+                        {isLoading ? "Verifying..." : "Verify & Sign Up"}
                       </span>
                     </div>
                   </GlowButton>
@@ -670,7 +746,6 @@ const AuthClient = ({
                 transition={{ duration: 0.4, ease: "easeInOut" }}
                 className="h-full w-full flex flex-col gap-10 justify-between grow"
               >
-                {/* ... your existing Login JSX ... */}
                 <div className="gap-10 flex flex-col">
                   <div className="flex w-full">
                     <div className="w-full">
@@ -727,73 +802,19 @@ const AuthClient = ({
                     style={{
                       fontFamily: "Montserrat, 'Consolas', monospace",
                     }}
-                    onClick={() => handleLogin("email")}
+                    onClick={() => handleEmailAuth()}
                     className="group w-full h-fit px-10"
                   >
                     <div className="flex gap-2 items-center justify-center">
-                      <span className="">Log In</span>
+                      <span className="">
+                        {isLoading ? "Logging in..." : "Log In"}
+                      </span>
                     </div>
                   </GlowButton>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* MODIFIED - Hide OAuth buttons during completion */}
-          {!isOAuthComplete && (
-            <>
-              <div className="flex items-center justify-between w-full gap-2">
-                <div className="w-full h-px rounded-full bg-[#FFFFFF50]" />
-                <span className="text-[#FFFFFF50]">or</span>
-                <div className="w-full h-px rounded-full bg-[#FFFFFF50]" />
-              </div>
-
-              <div className="flex w-full gap-5 justify-between max-sm:justify-around">
-                <GlowButton
-                  style={{
-                    fontFamily: "Montserrat, 'Consolas', monospace",
-                  }}
-                  onClick={() => handleLogin("google")}
-                  className="group w-full max-w-40"
-                >
-                  <div className="flex w-full gap-2 justify-center max-sm:justify-around">
-                    <Image
-                      src={googleIcon}
-                      alt="google logo"
-                      className="w-4 group-hover:brightness-150 transition-all duration-750"
-                      style={{
-                        textShadow:
-                          "0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff",
-                      }}
-                    />
-                    <span className="">Google</span>
-                  </div>
-                </GlowButton>
-
-                <GlowButton
-                  style={{
-                    fontFamily: "Montserrat, 'Consolas', monospace",
-                  }}
-                  onClick={() => handleLogin("github")}
-                  className="group w-full max-w-40"
-                >
-                  <div className="flex w-full gap-2 justify-center max-sm:justify-around">
-                    <div className="flex items-center">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="w-5 h-5 transition-colors duration-300"
-                        aria-hidden
-                      >
-                        <path d="M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.42 7.86 10.95.58.11.79-.25.79-.56 0-.27-.01-1-.02-1.97-3.2.7-3.87-1.54-3.87-1.54-.53-1.35-1.3-1.71-1.3-1.71-1.06-.73.08-.72.08-.72 1.17.08 1.78 1.2 1.78 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.75.4-1.27.73-1.56-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.3 1.2-3.11-.12-.3-.52-1.52.12-3.17 0 0 .97-.31 3.18 1.19a11.1 11.1 0 0 1 5.8 0c2.21-1.5 3.18-1.19 3.18-1.19.64 1.65.24 2.87.12 3.17.75.81 1.2 1.85 1.2 3.11 0 4.43-2.7 5.41-5.27 5.7.41.35.78 1.05.78 2.13 0 1.54-.02 2.78-.02 3.16 0 .31.21.67.8.56 4.57-1.53 7.85-5.85 7.85-10.95C23.5 5.74 18.27.5 12 .5z" />
-                      </svg>
-                    </div>
-                    <span className="">GitHub</span>
-                  </div>
-                </GlowButton>
-              </div>
-            </>
-          )}
         </motion.div>
       </div>
     </motion.div>

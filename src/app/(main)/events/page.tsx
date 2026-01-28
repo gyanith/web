@@ -9,9 +9,9 @@ import workshopEvent from "@/assets/workshopEvent.png";
 import funEvents from "@/assets/funEvents.png";
 
 const columns = [
-  { title: "Fun Events", img: funEvents, href: "/events/fun" },
-  { title: "Tech Events", img: techEvents, href: "/events/tech" },
   { title: "Workshops", img: workshopEvent, href: "/events/workshop" },
+  { title: "Tech Events", img: techEvents, href: "/events/tech" },
+  { title: "Fun Events", img: funEvents, href: "/events/fun" },
 ];
 
 const Page = () => {

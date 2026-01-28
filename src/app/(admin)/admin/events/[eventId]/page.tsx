@@ -31,7 +31,7 @@ export default async function EventManagePage({
     event = await getEvent(eventId);
 
     if (!event) {
-      throw new Error("Event not found");
+      error = "Event not found";
     }
 
     // Fetch coordinators list for the form/lookup
