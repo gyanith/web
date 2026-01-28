@@ -68,15 +68,18 @@ export function EventsView({
       </div>
 
       {/* Mobile View: Tabs */}
-      <div className="lg:hidden flex-1">
-        <Tabs defaultValue="technical" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+      <div className="lg:hidden flex-1 min-h-0 flex flex-col">
+        <Tabs defaultValue="technical" className="w-full h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-3 flex-none">
             <TabsTrigger value="technical">Tech</TabsTrigger>
             <TabsTrigger value="cultural">Fun</TabsTrigger>
             <TabsTrigger value="workshops">Workshops</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="technical" className="mt-4">
+          <TabsContent
+            value="technical"
+            className="mt-4 flex-1 overflow-y-auto min-h-0 pb-4"
+          >
             {technicalEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
@@ -86,7 +89,10 @@ export function EventsView({
               </p>
             )}
           </TabsContent>
-          <TabsContent value="cultural" className="mt-4">
+          <TabsContent
+            value="cultural"
+            className="mt-4 flex-1 overflow-y-auto min-h-0 pb-4"
+          >
             {culturalEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
@@ -96,7 +102,10 @@ export function EventsView({
               </p>
             )}
           </TabsContent>
-          <TabsContent value="workshops" className="mt-4">
+          <TabsContent
+            value="workshops"
+            className="mt-4 flex-1 overflow-y-auto min-h-0 pb-4"
+          >
             {workshopEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}

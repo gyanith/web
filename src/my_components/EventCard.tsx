@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 import testPic from "@/assets/techEvents.png";
 import ShinyText from "./ShinyText";
-import { unispace, blueScreen } from "@/fonts/fonts";
+import { unispace, garetBook } from "@/fonts/fonts";
 
 type EventCardProps = {
   eventId: string;
@@ -36,7 +36,11 @@ const EventCard: React.FC<EventCardProps> = ({
 }) => {
   const router = useRouter();
 
-  const formattedDay = Array.isArray(day) ? day.sort().join(", ") : day;
+  const formattedDay = Array.isArray(day)
+    ? Array(day.map((d) => d - 1))
+        .sort()
+        .join(", ")
+    : day;
 
   const formattedTime = start_time
     ? (() => {
@@ -61,7 +65,7 @@ const EventCard: React.FC<EventCardProps> = ({
   return (
     <motion.div
       id={eventId}
-      className="w-full max-w-[90vw] sm:max-w-[50vw] lg:max-w-full bg-[#1b1b1b] cursor-pointer border group border-[#d4a574]/40 p-4 relative overflow-hidden"
+      className="w-full max-w-[90vw] flex justify-between flex-col sm:max-w-[50vw] lg:max-w-[45vw] bg-[#1b1b1b] cursor-pointer border group border-[#d4a574]/40 p-4 relative overflow-hidden"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.3 }}
@@ -123,7 +127,7 @@ const EventCard: React.FC<EventCardProps> = ({
         transition={{ delay: 0.4, duration: 0.5 }}
       >
         <h3
-          className={`text-[#d4a574] text-2xl tracking-wider font-semibold ${blueScreen.className}`}
+          className={`text-[#d4a574] text-2xl tracking-wider font-semibold ${garetBook.className}`}
         >
           {eventName}
         </h3>
@@ -143,7 +147,7 @@ const EventCard: React.FC<EventCardProps> = ({
       >
         <div className="flex-1 flex flex-col gap-1 h-full">
           <motion.div
-            className={`flex-1 border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
+            className={`flex-1 items-center justify-center flex border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
           >
             DAY {formattedDay}
           </motion.div>

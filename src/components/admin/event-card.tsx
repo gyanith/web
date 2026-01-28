@@ -235,13 +235,15 @@ export function EventCard({ event }: EventCardProps) {
         </DropdownMenu>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-start gap-2 mb-2">
           <div
-            className={`p-2 rounded-lg ${getTypeStyle(event.type as string)}`}
+            className={`p-2 rounded-lg shrink-0 ${getTypeStyle(event.type as string)}`}
           >
             <Icon className="h-4 w-4" />
           </div>
-          <h3 className="font-semibold truncate">{event.name}</h3>
+          <h3 className="font-semibold break-words leading-tight pt-1">
+            {event.name}
+          </h3>
         </div>
         <div className="text-sm text-muted-foreground space-y-1">
           <div className="flex items-center gap-2">

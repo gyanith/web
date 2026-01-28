@@ -97,7 +97,7 @@ export const EventGrid: React.FC = () => {
         place-content-center
         grid-cols-[repeat(auto-fit,minmax(280px,1fr))]
         md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]
-        lg:grid-cols-[repeat(auto-fit,minmax(500px,1fr))]
+        lg:grid-cols-[repeat(auto-fit,minmax(450px,1fr))]
       "
     >
       {Array.isArray(filteredEvents) && filteredEvents.length > 0 ? (

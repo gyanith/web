@@ -182,28 +182,6 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
                       {/* Controls */}
                       <div className="flex gap-1 h-9 items-center">
-                        <div className="flex items-center h-full backdrop-blur-xl border overflow-hidden text-black border-black rounded bg-white/20">
-                          <button
-                            className="px-3 h-full hover:bg-black hover:scale-110 group hover:text-white flex items-center justify-center"
-                            onClick={() => setQty(Math.max(1, qty - 1))}
-                          >
-                            <Minus
-                              size={14}
-                              className="group-active:scale-95"
-                            />
-                          </button>
-                          <span
-                            className={`w-8 text-center text-xs ${unispace.className}`}
-                          >
-                            {qty}
-                          </span>
-                          <button
-                            className="px-3 h-full hover:bg-black hover:scale-110 group hover:text-white flex items-center justify-center"
-                            onClick={() => setQty(qty + 1)}
-                          >
-                            <Plus size={14} className="group-active:scale-95" />
-                          </button>
-                        </div>
                         <button className="h-full aspect-square hover:bg-red-500 backdrop-blur-xl border border-black flex items-center justify-center hover:border-red-500/50 rounded group bg-black/20">
                           <Trash2
                             size={16}
