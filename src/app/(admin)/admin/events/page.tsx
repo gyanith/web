@@ -1,9 +1,11 @@
-import { createSessionClient } from "@/lib/appwrite/appwrite.server";
+import { createAdminClient } from "@/lib/appwrite/appwrite.server";
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
 import { EventsView } from "@/components/admin/events-view";
 import { Query } from "node-appwrite";
 
 import { getCoordinators } from "@/lib/actions/events.actions";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminEventsPage() {
   let events: any[] = [];
@@ -11,13 +13,14 @@ export default async function AdminEventsPage() {
   let error = null;
 
   try {
-    const { getTablesDB } = await createSessionClient();
+    const { getTablesDB } = await createAdminClient();
     const tablesDB = getTablesDB();
 
     // Fetch all events (limit 100 for now, pagination could be added later)
     const response = await tablesDB.listRows({
       databaseId: appwriteConfig.databaseId,
       tableId: appwriteConfig.eventsCollectionId,
+      queries: [Query.orderDesc("$createdAt"), Query.limit(100)],
     });
 
     events = response.rows.map((doc: any) => ({

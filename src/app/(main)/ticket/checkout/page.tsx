@@ -1,3 +1,4 @@
+/*
 import { Suspense } from "react";
 import { createSessionClient } from "@/lib/appwrite/appwrite.server";
 import CheckoutClient from "./CheckoutClient";
@@ -32,5 +33,31 @@ export default function TicketCheckoutPage() {
     >
       <TicketCheckoutContent />
     </Suspense>
+  );
+}
+*/
+
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
+export default function TicketCheckoutPage() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 text-center space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-white">
+          Coming Soon
+        </h1>
+        <p className="max-w-[600px] text-zinc-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed mx-auto">
+          Ticket purchasing will be available shortly. Stay tuned!
+        </p>
+      </div>
+      <Link href="/">
+        <Button variant="outline" className="gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Button>
+      </Link>
+    </div>
   );
 }

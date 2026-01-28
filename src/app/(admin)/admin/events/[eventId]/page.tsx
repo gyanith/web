@@ -75,12 +75,12 @@ export default async function EventManagePage({
           </Button>
         </Link>
         <div className="flex-1 min-w-0 overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <h1 className="text-base sm:text-lg md:text-2xl text-foreground font-bold tracking-tight truncate">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 w-full min-w-0">
+            <h1 className="text-base sm:text-lg md:text-2xl text-foreground font-bold tracking-tight whitespace-normal break-words leading-tight min-w-0">
               {event.name}
             </h1>
             <span
-              className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${event.is_published ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"}`}
+              className={`inline-flex w-fit shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${event.is_published ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"}`}
             >
               {event.is_published ? "Published" : "Draft"}
             </span>

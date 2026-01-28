@@ -17,6 +17,50 @@ interface EventsViewProps {
   coordinatorsList: Coordinator[];
 }
 
+function EventGroup({
+  events,
+  emptyMessage,
+}: {
+  events: EventData[];
+  emptyMessage: string;
+}) {
+  const published = events.filter((e) => e.is_published);
+  const unpublished = events.filter((e) => !e.is_published);
+
+  if (events.length === 0) {
+    return (
+      <div className="text-center py-10 border border-dashed rounded-lg text-muted-foreground text-sm">
+        {emptyMessage}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {published.map((event) => (
+        <EventCard key={event.id} event={event} />
+      ))}
+
+      {published.length > 0 && unpublished.length > 0 && (
+        <div className="relative py-2">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-dashed border-white/10" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-[#09090b] px-2 text-muted-foreground">
+              Drafts
+            </span>
+          </div>
+        </div>
+      )}
+
+      {unpublished.map((event) => (
+        <EventCard key={event.id} event={event} />
+      ))}
+    </div>
+  );
+}
+
 export function EventsView({
   events,
   coordinatorsList: initialCoordinators,
@@ -80,40 +124,28 @@ export function EventsView({
             value="technical"
             className="mt-4 flex-1 overflow-y-auto min-h-0 pb-4"
           >
-            {technicalEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-            {technicalEvents.length === 0 && (
-              <p className="text-muted-foreground text-center py-4">
-                No technical events yet.
-              </p>
-            )}
+            <EventGroup
+              events={technicalEvents}
+              emptyMessage="No technical events yet."
+            />
           </TabsContent>
           <TabsContent
             value="cultural"
             className="mt-4 flex-1 overflow-y-auto min-h-0 pb-4"
           >
-            {culturalEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-            {culturalEvents.length === 0 && (
-              <p className="text-muted-foreground text-center py-4">
-                No cultural/fun events yet.
-              </p>
-            )}
+            <EventGroup
+              events={culturalEvents}
+              emptyMessage="No cultural/fun events yet."
+            />
           </TabsContent>
           <TabsContent
             value="workshops"
             className="mt-4 flex-1 overflow-y-auto min-h-0 pb-4"
           >
-            {workshopEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-            {workshopEvents.length === 0 && (
-              <p className="text-muted-foreground text-center py-4">
-                No workshops yet.
-              </p>
-            )}
+            <EventGroup
+              events={workshopEvents}
+              emptyMessage="No workshops yet."
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -131,14 +163,10 @@ export function EventsView({
           </div>
           <div className="flex-1 relative min-h-0">
             <div className="h-full overflow-y-auto pr-2 pb-4 pt-4">
-              {technicalEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-              {technicalEvents.length === 0 && (
-                <div className="text-center py-10 border border-dashed rounded-lg text-muted-foreground text-sm">
-                  No technical events
-                </div>
-              )}
+              <EventGroup
+                events={technicalEvents}
+                emptyMessage="No technical events"
+              />
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#070a10] to-transparent pointer-events-none z-10" />
           </div>
@@ -155,14 +183,10 @@ export function EventsView({
           </div>
           <div className="flex-1 relative min-h-0">
             <div className="h-full overflow-y-auto pr-2 pb-4 pt-4">
-              {culturalEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-              {culturalEvents.length === 0 && (
-                <div className="text-center py-10 border border-dashed rounded-lg text-muted-foreground text-sm">
-                  No fun events
-                </div>
-              )}
+              <EventGroup
+                events={culturalEvents}
+                emptyMessage="No fun events"
+              />
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#070a10] to-transparent pointer-events-none z-10" />
           </div>
@@ -179,14 +203,7 @@ export function EventsView({
           </div>
           <div className="flex-1 relative min-h-0">
             <div className="h-full overflow-y-auto pr-2 pb-4 pt-4">
-              {workshopEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-              {workshopEvents.length === 0 && (
-                <div className="text-center py-10 border border-dashed rounded-lg text-muted-foreground text-sm">
-                  No workshops
-                </div>
-              )}
+              <EventGroup events={workshopEvents} emptyMessage="No workshops" />
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-zinc-950 to-transparent pointer-events-none z-10" />
           </div>
