@@ -1,5 +1,5 @@
 
-import { Client, Account, TablesDB, Users, Storage, Teams, Query } from 'node-appwrite';
+import { Client, Account, TablesDB, Users, Storage, Teams, Query, Functions } from 'node-appwrite';
 import { cookies } from 'next/headers';
 
 
@@ -21,6 +21,7 @@ export async function createAdminClient() {
         getUsers: () => new Users(client),
         getStorage: () => new Storage(client),
         getTeams: () => new Teams(client),
+        getFunctions: () => new Functions(client),
     };
 };
 

@@ -28,7 +28,7 @@ async function uploadImage(file: File) {
  * Creates a new event in the database.
  * @param formData - The form data containing event details and file.
  */
-export async function createEvent(formData: FormData) {
+/* export async function createEvent(formData: FormData) {
     try {
         const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
@@ -127,7 +127,85 @@ export async function createEvent(formData: FormData) {
         console.error("Failed to create event:", error);
         return { success: false, error: error.message || "Failed to create event" };
     }
+} */
+
+
+export async function createEvent(formData: FormData) {
+    try {
+
+        // 1. Handle Image Upload
+        const file = formData.get("file") as File;
+        let imageId = "";
+
+        if (file && file.size > 0) {
+            imageId = await uploadImage(file);
+        } else {
+            throw new Error("Event Poster is required");
+        }
+
+        // 2. Prepare Data
+        // Confirm is_published value from formData
+        const isPublishedRaw = formData.get("is_published");
+        console.log(`[createEvent] Raw is_published: ${isPublishedRaw}, Type: ${typeof isPublishedRaw}`);
+
+        const data = {
+            name: formData.get("name") as string,
+            date: formData.get("date") as string,
+            description: formData.get("description") as string,
+            type: formData.get("type") as string,
+            location: formData.get("location") as string,
+            fee: Number(formData.get("fee")),
+            prize_pool: Number(formData.get("prize_pool")),
+            num_seats: Number(formData.get("num_seats")),
+            is_solo: formData.get("is_solo") === "true",
+            is_team_event: formData.get("is_team_event") === "true",
+            day: formData.getAll("day").map((d) => parseInt(d as string)),
+            start_time: formData.get("start_time") as string,
+            end_time: formData.get("end_time") as string,
+            g_form_link: formData.get("g_form_link") as string,
+            image_id: imageId,
+            is_published: isPublishedRaw === "true",
+        };
+
+        // Extract coordinators (could be multiple entries)
+        const coordinators = formData.getAll("coordinators") as string[];
+        console.log("[createEvent] Coordinators received:", coordinators);
+
+        const finalData = {
+            ...data,
+            coordinators: coordinators
+        };
+
+        // 3. Create Event via Function
+        // Using SDK instead of manual fetch for better security and error handling
+        const { getFunctions } = await createAdminClient();
+        const functions = getFunctions();
+
+        const functionId = "6973be1c003764a10df8"; // Event Creation Function ID
+
+        const execution = await functions.createExecution(
+            functionId,
+            JSON.stringify(finalData),
+            false // async
+        );
+
+        console.log("Function execution response:", execution);
+
+        if (execution.status === "failed") {
+            throw new Error(`Function execution failed: ${execution.responseBody}`);
+        }
+
+        // 4. Revalidate cache
+        revalidatePath("/admin/events");
+        revalidatePath("/admin");
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to create event:", error);
+        return { success: false, error: error.message || "Failed to create event" };
+    }
 }
+
 
 export async function updateEvent(eventId: string, formData: FormData) {
     try {
