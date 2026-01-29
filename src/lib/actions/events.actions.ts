@@ -183,11 +183,11 @@ export async function createEvent(formData: FormData) {
 
         const functionId = "6973be1c003764a10df8"; // Event Creation Function ID
 
-        const execution = await functions.createExecution(
-            functionId,
-            JSON.stringify(finalData),
-            false // async
-        );
+        const execution = await functions.createExecution({
+            functionId: functionId,
+            body: JSON.stringify(finalData),
+            async: false // async
+        });
 
         console.log("Function execution response:", execution);
 

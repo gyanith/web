@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { EventProvider, EventSearchBar, EventGrid } from "./EventSearch";
 
 import Footer from "@/my_components/Footer";
@@ -7,7 +8,15 @@ import FloatingLines from "@/my_components/FloatingLines";
 import DarkVeil from "@/components/DarkVeil";
 
 async function getEvents(eventType: string) {
-  const res = await fetch(`http://localhost:3000/api/events/${eventType}`);
+  // Dynamically construct base URL from request headers to work on all devices
+  const headersList = await headers();
+  const host = headersList.get("host") || "localhost:3000";
+  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+  const baseUrl = `${protocol}://${host}`;
+
+  const res = await fetch(`${baseUrl}/api/events/${eventType}`, {
+    cache: "no-store", // Prevent caching issues that might cause reloads
+  });
   const data = await res.json();
   return data;
 }

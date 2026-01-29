@@ -123,20 +123,11 @@ export default function DarkVeil({
 
     const mesh = new Mesh(gl, { geometry, program });
 
-    let resizeTimeout: ReturnType<typeof setTimeout>;
-
-    const resize = (e?: Event) => {
+    const resize = () => {
       const w = parent.clientWidth,
         h = parent.clientHeight;
       renderer.setSize(w * resolutionScale, h * resolutionScale);
       program.uniforms.uResolution.value.set(w, h);
-
-      if (e) {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-          window.location.reload();
-        }, 500);
-      }
     };
 
     window.addEventListener("resize", resize);
@@ -160,7 +151,6 @@ export default function DarkVeil({
     loop();
 
     return () => {
-      clearTimeout(resizeTimeout);
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
     };
