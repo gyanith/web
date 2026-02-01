@@ -14,6 +14,7 @@ interface TierCardProps {
   price: string;
   onBuy: () => void;
   className?: string;
+  buttonText?: string;
 }
 
 const TierCard: React.FC<TierCardProps> = ({
@@ -23,6 +24,7 @@ const TierCard: React.FC<TierCardProps> = ({
   price,
   onBuy,
   className = "",
+  buttonText = "Buy A Ticket",
 }) => {
   return (
     <div className={`relative w-full h-full group ${className}`}>
@@ -126,7 +128,7 @@ const TierCard: React.FC<TierCardProps> = ({
                 onClick={onBuy}
                 className="bg-white cursor-pointer text-black px-4 py-2 rounded-full text-sm font-bold uppercase flex items-center gap-2 hover:bg-[#E0E2D9] transition-colors"
               >
-                Buy A Ticket
+                {buttonText}
                 <MoveRight size={14} />
               </button>
             </div>

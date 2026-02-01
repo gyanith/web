@@ -14,9 +14,9 @@ const page = () => {
   return (
     <motion.div
       className="flex flex-col items-center w-screen h-screen justify-center"
-      /* initial={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 2, ease: "circInOut" }} */
+      transition={{ duration: 2, ease: "circInOut" }}
     >
       {/* <div className="w-screen h-screen absolute inset-0">
         <GridScan

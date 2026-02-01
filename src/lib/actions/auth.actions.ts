@@ -60,6 +60,23 @@ export async function setSessionCookie(secret: string, expire: string) {
 
 // --- Actions ---
 
+// 🚨 NEW: Check if user exists
+export async function checkUserExists(email: string) {
+  try {
+    const { getUsers } = await createAdminClient();
+    const users = getUsers();
+
+    const result = await users.list({
+      queries: [Query.equal("email", email)],
+    });
+
+    return { exists: result.total > 0 };
+  } catch (error: any) {
+    console.error("Check User Exists Error:", error);
+    return { exists: false, error: error.message };
+  }
+}
+
 export async function loginWithEmail(data: any) {
   try {
     const { email, password } = data;

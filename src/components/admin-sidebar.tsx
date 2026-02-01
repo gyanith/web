@@ -14,7 +14,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { signOut } from "@/lib/actions/auth";
+import { signOut } from "@/lib/actions/auth.actions";
 
 const sidebarLinks = [
   {

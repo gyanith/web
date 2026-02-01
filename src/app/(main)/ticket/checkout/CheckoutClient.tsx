@@ -13,6 +13,13 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import {
+  initiatePayment,
+  verifyPayment,
+  verifyCashfreePayment,
+  cancelPayment,
+} from "@/lib/actions/payment.actions";
+import { load } from "@cashfreepayments/cashfree-js";
 
 import { unispace, pressStart2P } from "@/fonts/fonts";
 import Footer from "@/my_components/Footer";
@@ -22,25 +29,70 @@ import tier1Pic from "@/assets/tier1.gif";
 import tier2Pic from "@/assets/tier2.gif";
 import tier3Pic from "@/assets/tier3.gif";
 import bgImage from "@/assets/GlassBag.svg";
+import { useToast } from "@/my_components/Toast";
+
+// Declare Razorpay on window object
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface CheckoutClientProps {
   user: any; // Using any for now to avoid extensive type definitions, or strictly: Models.User<Models.Preferences>
 }
 
 export default function CheckoutClient({ user }: CheckoutClientProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tierId = searchParams.get("tier");
   const selectedTier = TIERS.find((t) => t.tier.toString() === tierId);
 
+  const upgradeFromId = searchParams.get("upgradeFrom");
+  const upgradeFromTier = upgradeFromId
+    ? TIERS.find((t) => t.tier.toString() === upgradeFromId)
+    : null;
+
   // Default to 1 qty
   const [qty, setQty] = useState(1);
   const [selectedMethod, setSelectedMethod] = useState("card");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const toast = useToast();
+
+  React.useEffect(() => {
+    const orderId = searchParams.get("order_id");
+    if (orderId) {
+      const verify = async () => {
+        setIsProcessing(true);
+        try {
+          const result = await verifyCashfreePayment(orderId);
+          if (result.success) {
+            toast.success(
+              "TRANSACTION PROTOCOL COMPLETE. WELCOME TO THE FUTURE.",
+              "SYSTEM UPDATE: TICKET SECURED",
+            );
+            router.push("/events");
+          } else {
+            toast.error("Payment verification failed! Please contact support.");
+            router.replace(window.location.pathname); // Clear params
+          }
+        } catch (error) {
+          console.error(error);
+          toast.error("Error verifying payment");
+          router.replace(window.location.pathname);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+      verify();
+    }
+  }, [searchParams, toast, router]);
 
   if (!selectedTier) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-8">
         <div className={`${unispace.className} text-xl text-red-500`}>
-          Invalid Ticket Tier
+          Invalid tier selected
         </div>
       </div>
     );
@@ -57,42 +109,140 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   // Parse price: "₹100" -> 100
   const numericPrice = parseInt(selectedTier.price.replace(/[^0-9]/g, "")) || 0;
 
+  // Calculate discount if upgrading
+  let upgradeDiscount = 0;
+  if (upgradeFromTier) {
+    upgradeDiscount =
+      parseInt(upgradeFromTier.price.replace(/[^0-9]/g, "")) || 0;
+  }
+
   // Derived state
-  const subtotal = numericPrice * qty;
+  const pricePerUnit = Math.max(0, numericPrice - upgradeDiscount);
+  const subtotal = pricePerUnit * qty;
   const taxes = subtotal * 0.18;
   const total = subtotal + taxes;
 
-  const router = useRouter();
-  async function handleTicketPurchase() {
-    try {
-      const userId = user.$id;
-      console.log("Using User ID from Server:", userId);
-
-      const response = await fetch("/api/ticket", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userId,
-          tier: selectedTier?.tier,
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        alert("Ticket purchased successfully!");
-        router.push("/events");
-      } else {
-        alert("Ticket purchase failed: " + (data.message || data.error));
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong");
-    }
-  }
-
+  // Main payment handler with Razorpay integration
   const handlePayment = async () => {
-    // (Original Payment Logic - temporarily disabled/replaced by handleTicketPurchase as per current debugging)
-    await handleTicketPurchase();
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+
+    try {
+      // Step 1: Initiate Payment
+      const initResult = await initiatePayment(
+        "TICKET",
+        {
+          tier: selectedTier.tier,
+          upgradeFrom: upgradeFromTier ? upgradeFromTier.tier : null,
+          redirectUrl: window.location.href,
+        },
+        user.$id,
+        total, // This is the calculated total
+      );
+
+      if (!initResult.success) {
+        throw new Error(initResult.error || "Failed to initiate payment");
+      }
+
+      if (initResult.provider === "CASHFREE") {
+        const cashfree = await load({
+          mode:
+            process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
+              ? "production"
+              : "sandbox",
+        });
+        await cashfree.checkout({
+          paymentSessionId: initResult.paymentSessionId,
+          returnUrl: window.location.href,
+          redirectTarget: "_modal",
+        });
+
+        // Verify payment status after modal closes
+        const verifyRes = await verifyCashfreePayment(initResult.orderId);
+        if (verifyRes.success) {
+          toast.success(
+            "TRANSACTION PROTOCOL COMPLETE. WELCOME TO THE FUTURE.",
+            "SYSTEM UPDATE: TICKET SECURED",
+          );
+          router.push("/events");
+        }
+
+        setIsProcessing(false);
+        return;
+      }
+
+      // Step 2: Configure Razorpay options
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: (initResult.amount || 0) * 100,
+        currency: initResult.currency || "INR",
+        name: "Gyanith",
+        description: upgradeFromTier
+          ? `Upgrade from ${upgradeFromTier.title} to ${selectedTier.title}`
+          : `${selectedTier.title} Ticket - Tier ${selectedTier.tier}`,
+        order_id: initResult.orderId,
+        handler: async function (response: any) {
+          try {
+            // Step 3: Verify payment
+            const verifyResult = await verifyPayment(
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature,
+            );
+
+            if (verifyResult.success) {
+              toast.success(
+                "TRANSACTION PROTOCOL COMPLETE. WELCOME TO THE FUTURE.",
+                "SYSTEM UPDATE: TICKET SECURED",
+              );
+              router.push("/events");
+            } else {
+              toast.error(
+                "Payment verification failed! Please contact support.",
+              );
+            }
+          } catch (error) {
+            console.error("Payment verification error:", error);
+            toast.error("Payment verification failed! Please contact support.");
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: user.name || "",
+          email: user.email || "",
+        },
+        theme: {
+          color: "#d4a574",
+        },
+        modal: {
+          ondismiss: async function () {
+            console.log("Payment cancelled by user");
+            toast.info("Payment cancelled.");
+            setIsProcessing(false);
+            // Rollback
+            if (initResult?.orderId) {
+              await cancelPayment(initResult.orderId);
+            }
+          },
+        },
+      };
+
+      // Step 4: Open Razorpay checkout
+      if (typeof window !== "undefined" && window.Razorpay) {
+        const razorpay = new window.Razorpay(options);
+        razorpay.open();
+      } else {
+        throw new Error("Razorpay SDK not loaded");
+      }
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast.error(
+        error.message || "Failed to initiate payment. Please try again.",
+      );
+      setIsProcessing(false);
+    }
   };
 
   const paymentMethods = [
@@ -166,7 +316,10 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
                       <h3
                         className={`${pressStart2P.className} text-sm md:text-lg lg:text-xl text-white mb-2 leading-tight uppercase`}
                       >
-                        {selectedTier.title} <br /> Ticket
+                        {upgradeFromTier
+                          ? `Upgrade to ${selectedTier.title}`
+                          : selectedTier.title}{" "}
+                        <br /> Ticket
                       </h3>
                       <p className="text-white/80 text-xs">
                         Tier {selectedTier.tier}
@@ -306,14 +459,23 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
             <button
               onClick={handlePayment}
-              className={`flex items-center font-bold justify-center gap-2 text-black cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 py-3 text-center bg-[#d4a574] rounded-lg shadow-lg hover:shadow-[#d4a574]/20 ${unispace.className}`}
+              disabled={isProcessing}
+              className={`flex items-center font-bold justify-center gap-2 text-black cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 py-3 text-center bg-[#d4a574] rounded-lg shadow-lg hover:shadow-[#d4a574]/20 ${unispace.className} ${
+                isProcessing ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              <span className="text-lg">PAY ₹{total.toFixed(2)}</span>
-              <ChevronRight className="w-5 h-5" />
+              <span className="text-lg">
+                {isProcessing
+                  ? "PROCESSING..."
+                  : upgradeFromTier
+                    ? `UPGRADE ₹${total.toFixed(2)}`
+                    : `PAY ₹${total.toFixed(2)}`}
+              </span>
+              {!isProcessing && <ChevronRight className="w-5 h-5" />}
             </button>
 
             <div className="flex items-center justify-center gap-2 text-xs text-white/40">
-              Secured by Razorpay
+              Secured Payment
             </div>
           </div>
         </div>

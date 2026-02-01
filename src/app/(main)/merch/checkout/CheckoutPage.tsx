@@ -13,20 +13,58 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { unispace, pressStart2P } from "@/fonts/fonts";
 import Footer from "@/my_components/Footer";
 import Image from "next/image";
 import testPic from "@/assets/merchPic1.jpg";
 import bgImage from "@/assets/GlassBag.svg";
+import {
+  initiatePayment,
+  verifyPayment,
+  verifyCashfreePayment,
+  cancelPayment,
+} from "@/lib/actions/payment.actions";
+import { useToast } from "@/my_components/Toast";
+import { load } from "@cashfreepayments/cashfree-js";
 
-const CheckoutPage = () => {
+const CheckoutPage = ({ user }: { user: any }) => {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const paramQty = Number(searchParams.get("qty")) || 1;
   const paramSize = searchParams.get("size") || "L";
   const [qty, setQty] = useState(paramQty);
   const [selectedMethod, setSelectedMethod] = useState("card");
+  const toast = useToast();
+  const [loading, setLoading] = useState(false);
+
+  // Handle Cashfree Return
+  React.useEffect(() => {
+    const orderId = searchParams.get("order_id");
+    if (orderId) {
+      const verify = async () => {
+        setLoading(true);
+        try {
+          const result = await verifyCashfreePayment(orderId);
+          if (result.success) {
+            toast.success("Payment successful!", "Merch secured.");
+            router.replace(window.location.pathname);
+          } else {
+            toast.error(result.error || "Payment verification failed");
+            router.replace(window.location.pathname);
+          }
+        } catch (error) {
+          console.error(error);
+          toast.error("Error verifying payment");
+          router.replace(window.location.pathname);
+        } finally {
+          setLoading(false);
+        }
+      };
+      verify();
+    }
+  }, [searchParams, toast]);
 
   // Derived state for calculations
   const subtotal = 350.0 * qty;
@@ -36,73 +74,107 @@ const CheckoutPage = () => {
   const handlePayment = async () => {
     try {
       if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
-        alert(
+        toast.error(
           "Razorpay Key ID not found. Please set NEXT_PUBLIC_RAZORPAY_KEY_ID",
         );
         return;
       }
 
-      // 1. Create Order
-      const response = await fetch("/api/payment/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      // 1. Initiate Payment
+      const initResult = await initiatePayment(
+        "MERCH",
+        {
+          merchId: "some_merch_id", // We need merch ID or details.
+          quantity: qty,
+          size: paramSize,
+          redirectUrl: window.location.href,
         },
-        body: JSON.stringify({ amount: total }),
-      });
+        user.$id,
+        total,
+      );
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
+      if (!initResult.success) {
+        throw new Error(initResult.error || "Failed to initiate payment");
       }
 
-      const order = await response.json();
+      if (initResult.provider === "CASHFREE") {
+        const cashfree = await load({
+          mode:
+            process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
+              ? "production"
+              : "sandbox",
+        });
+        await cashfree.checkout({
+          paymentSessionId: initResult.paymentSessionId,
+          returnUrl: window.location.href,
+          redirectTarget: "_modal",
+        });
+
+        // Verify payment status after modal closes
+        const verifyRes = await verifyCashfreePayment(initResult.orderId);
+        if (verifyRes.success) {
+          toast.success("Payment successful!", "Merch secured.");
+          router.replace(window.location.pathname);
+          // router.refresh(); // Maybe needed if we show order history?
+        }
+
+        setLoading(false);
+        return;
+      }
+
+      if (!initResult.success) {
+        throw new Error(initResult.error || "Failed to initiate payment");
+      }
 
       // 2. Initialize Razorpay
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
+        amount: (initResult.amount || 0) * 100,
+        currency: initResult.currency || "INR",
         name: "Gyanith",
         description: "Merchandise Purchase",
-        order_id: order.id,
+        order_id: initResult.orderId,
         handler: async function (response: any) {
-          // 3. Verify Payment
-          const verifyResponse = await fetch("/api/payment/verify", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            }),
-          });
+          try {
+            // 3. Verify Payment
+            const verifyResult = await verifyPayment(
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature,
+            );
 
-          const verifyData = await verifyResponse.json();
-
-          if (verifyResponse.ok) {
-            alert("Payment successful!");
-            // Redirect or show success state
-          } else {
-            alert("Payment verification failed: " + verifyData.message);
+            if (verifyResult.success) {
+              toast.success("Payment successful!", "Merch secured.");
+              // Redirect or show success state
+            } else {
+              toast.error("Payment verification failed: " + verifyResult.error);
+            }
+          } catch (error: any) {
+            console.error("Payment verification error:", error);
+            toast.error("Payment verification failed");
           }
         },
         prefill: {
-          name: "User Name", // You might want to get this from user context
-          email: "user@example.com",
-          contact: "9999999999",
+          name: user.name || "",
+          email: user.email || "",
+          contact: user.phone || "",
         },
-        theme: {
-          color: "#d4a574",
+        modal: {
+          ondismiss: async function () {
+            console.log("Payment cancelled");
+            toast.info("Payment cancelled");
+            if (initResult?.orderId) {
+              await cancelPayment(initResult.orderId);
+            }
+          },
         },
       };
 
       const rzp1 = new (window as any).Razorpay(options);
       rzp1.open();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment failed:", error);
-      alert("Payment initiation failed");
+      toast.error(error.message || "Payment initiation failed");
     }
   };
 
@@ -146,7 +218,7 @@ const CheckoutPage = () => {
               <h1
                 className={`text-[#d4a574] text-3xl md:text-4xl uppercase tracking-wider ${pressStart2P.className}`}
               >
-                Checkout
+                Secure Checkout
               </h1>
 
               {/* Product Card */}
@@ -355,7 +427,7 @@ const CheckoutPage = () => {
             </button>
 
             <div className="flex items-center justify-center gap-2 text-xs text-white/40">
-              Secured by Razorpay
+              Secured Payment
             </div>
           </div>
         </div>

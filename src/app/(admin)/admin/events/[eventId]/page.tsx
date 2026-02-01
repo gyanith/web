@@ -14,7 +14,7 @@ import Link from "next/link";
 import { EventDetailClient } from "@/components/admin/event-detail-client";
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
 import { getCoordinators, getEvent } from "@/lib/actions/events.actions";
-import { Event } from "@/lib/types";
+import { Event } from "@/types/db";
 import { RefreshButton } from "@/components/admin/refresh-button";
 
 export default async function EventManagePage({
@@ -270,17 +270,28 @@ export default async function EventManagePage({
             </CardHeader>
             <CardContent>
               <div className="text-center py-6">
-                <div className="text-4xl font-bold text-primary">124</div>
+                <div className="text-4xl font-bold text-primary">
+                  {await (async () => {
+                    const { getEventRegistrationCount } =
+                      await import("@/lib/actions/events.actions");
+                    return await getEventRegistrationCount(eventId);
+                  })()}
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Confirmed Participants
                 </p>
               </div>
-              <Button
-                variant="outline"
-                className="w-full flex-wrap justify-center border-primary/20 hover:bg-primary/10 hover:text-primary"
+              <Link
+                href={`/admin/events/${eventId}/registrations`}
+                className="w-full"
               >
-                View List
-              </Button>
+                <Button
+                  variant="outline"
+                  className="w-full flex-wrap justify-center border-primary/20 hover:bg-primary/10 hover:text-primary"
+                >
+                  View List
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

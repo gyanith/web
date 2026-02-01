@@ -27,7 +27,7 @@ export function proxy(request: NextRequest) {
     `a_session_${projectId.toLowerCase()}`
   );
 
-  const protectedRoutes = ["/residence", "/merch", "/user/cart"];
+  const protectedRoutes = ["/residence", "/merch", "/user"];
   const isProtected =
     protectedRoutes.some(
       (route) => pathname === route || pathname.startsWith(`${route}/`)

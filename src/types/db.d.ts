@@ -13,8 +13,8 @@ export interface Event extends Models.Document {
     is_solo: boolean;
     is_team_event: boolean;
     is_published: boolean;
-    g_form_link?: string;
-    day: number[];
+    rulebook_link?: string;
+    day: number;
     start_time?: string;
     end_time?: string;
 }
@@ -27,6 +27,7 @@ export interface User extends Models.Document {
     college_name?: string;
     tech_credits?: number;
     fun_credits?: number;
+    tier?: number; // 1, 2, or 3 corresponding to TIERS
 }
 
 export interface EventCoordinator extends Models.Document {
@@ -39,12 +40,25 @@ export interface Registration extends Models.Document {
     user_id: string;
 }
 
+export interface Team extends Models.Document {
+    name: string;
+    leader_id: string;
+    event_id: string;
+}
+
+export interface TeamMember extends Models.Document {
+    team_id: string;
+    user_id: string;
+    event_id: string;
+    role: "leader" | "member";
+}
+
 export type EventSummary = {
     id: string;
     name: string;
     date: string;
     type: string;
     fee: number;
-    day: string[]; // Dashboard expects string[] for display, so we will map numbers to strings in getRecentEvents
+    day: string; // Dashboard expects string for display
     status: "Published" | "Draft";
 };

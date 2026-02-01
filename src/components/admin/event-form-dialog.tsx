@@ -84,7 +84,6 @@ const EVENT_TYPES = [
 const DAYS = [
   { id: "1", label: "Day 1" },
   { id: "2", label: "Day 2" },
-  { id: "3", label: "Day 3" },
 ];
 
 const convertTo24Hour = (time12: string) => {
@@ -135,11 +134,12 @@ export function EventFormDialog({
     coordinators: [] as string[],
     is_solo: true,
     is_team_event: false,
-    day: ["1"],
+    day: "1",
     start_time: "",
     end_time: "",
-    g_form_link: "",
+    rulebook_link: "",
     image_id: "",
+    is_published: false,
   });
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -174,9 +174,7 @@ export function EventFormDialog({
         })(),
         is_solo: initialData.is_solo ?? true,
         is_team_event: initialData.is_team_event ?? false,
-        day: Array.isArray(initialData.day)
-          ? initialData.day.map(String)
-          : [String(initialData.day || "1")],
+        day: String(initialData.day || "1"),
         start_time: initialData.start_time
           ? initialData.start_time.includes("M") // Check if already 12h (legacy/UI)
             ? initialData.start_time
@@ -187,21 +185,17 @@ export function EventFormDialog({
             ? initialData.end_time
             : convertTo12Hour(initialData.end_time)
           : "",
-        g_form_link: initialData.g_form_link || "",
+        rulebook_link: initialData.rulebook_link || "",
         image_id: initialData.image_id || "",
+        is_published:
+          initialData.is_published === true ||
+          initialData.is_published === "true",
       };
-      console.log(
-        "[EventFormDialog] Init coordinators:",
-        initData.coordinators,
-      );
-      console.log("[EventFormDialog] Coordinators list:", coordinatorsList);
+
       setFormData(initData);
 
       if (initialData.image_id) {
-        // If we had a helper to get URL, we'd use it here.
-        // For now, we assume preview isn't critical unless they upload a NEW file,
-        // OR we can construct the URL if we want to show current image.
-        // setPreviewImage(getImageUrl(initialData.image_id));
+        // ...
       }
     }
   }, [mode, initialData, open]);
@@ -230,9 +224,7 @@ export function EventFormDialog({
         })(),
         is_solo: initialData.is_solo ?? true,
         is_team_event: initialData.is_team_event ?? false,
-        day: Array.isArray(initialData.day)
-          ? initialData.day.map(String)
-          : [String(initialData.day || "1")],
+        day: String(initialData.day || "1"),
         start_time: initialData.start_time
           ? initialData.start_time.includes("M")
             ? initialData.start_time
@@ -243,8 +235,11 @@ export function EventFormDialog({
             ? initialData.end_time
             : convertTo12Hour(initialData.end_time)
           : "",
-        g_form_link: initialData.g_form_link || "",
+        rulebook_link: initialData.rulebook_link || "",
         image_id: initialData.image_id || "",
+        is_published:
+          initialData.is_published === true ||
+          initialData.is_published === "true",
       };
       const initial = JSON.stringify(initData);
 
@@ -275,7 +270,6 @@ export function EventFormDialog({
     if (!formData.description) return "Description is required";
     if (!formData.location) return "Location is required";
     if (mode === "create" && !selectedFile) return "Event Poster is required";
-    if (mode === "create" && !selectedFile) return "Event Poster is required";
 
     if (formData.start_time && formData.end_time) {
       const parseTime = (t: string) => {
@@ -297,8 +291,21 @@ export function EventFormDialog({
 
   const handleSubmit = async (
     actionType: "draft" | "publish",
-    isPublished: boolean = true,
+    isPublishedInput?: boolean,
   ) => {
+    // Logic: If isPublishedInput is provided, use it.
+    // If NOT provided:
+    //   - If create mode: default to true (Publish Event button) - Wait, button passes it explicitly.
+    //   - If update mode: use formData.is_published
+
+    // Safer approach: Require explicit passing or derive locally
+    const isPublished =
+      isPublishedInput !== undefined
+        ? isPublishedInput
+        : mode === "create"
+          ? true
+          : formData.is_published;
+
     const error = validateForm();
     if (error) {
       showToast(error, "error");
@@ -320,15 +327,13 @@ export function EventFormDialog({
       payload.append("num_seats", formData.num_seats.toString());
       payload.append("is_solo", String(formData.is_solo));
       payload.append("is_team_event", String(formData.is_team_event));
-      formData.day.sort().forEach((d) => payload.append("day", d));
+      payload.append("day", formData.day);
       payload.append("start_time", convertTo24Hour(formData.start_time));
       payload.append("end_time", convertTo24Hour(formData.end_time));
-      payload.append("g_form_link", formData.g_form_link);
+      payload.append("rulebook_link", formData.rulebook_link);
 
       // Explicitly log this for debugging
-      console.log(
-        `[EventFormDialog] Submitting as: ${actionType}, is_published: ${isPublished}`,
-      );
+      // console.log(\`[EventFormDialog] Submitting as: \${actionType}, is_published: \${isPublished}\`);
       payload.append("is_published", String(isPublished));
 
       if (formData.image_id) {
@@ -336,10 +341,6 @@ export function EventFormDialog({
       }
 
       // Append coordinators
-      console.log(
-        "[EventFormDialog] Coordinators to submit:",
-        formData.coordinators,
-      );
       formData.coordinators.forEach((c) => payload.append("coordinators", c));
 
       // Append file if selected
@@ -544,13 +545,13 @@ export function EventFormDialog({
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="g_form">Google Form Link (Optional)</Label>
+                  <Label htmlFor="g_form">Rulebook Link (Optional)</Label>
                   <Input
                     id="g_form"
-                    placeholder="https://forms.google.com/..."
-                    value={formData.g_form_link}
+                    placeholder="https://drive.google.com/..."
+                    value={formData.rulebook_link}
                     onChange={(e) =>
-                      handleInputChange("g_form_link", e.target.value)
+                      handleInputChange("rulebook_link", e.target.value)
                     }
                   />
                 </div>
@@ -597,66 +598,22 @@ export function EventFormDialog({
               </div>
 
               <div className="grid gap-2">
-                <Label>Days</Label>
-                <Popover open={isDayOpen} onOpenChange={setIsDayOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="justify-between w-full"
-                    >
-                      {formData.day.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {formData.day.map((dayId) => {
-                            const day = DAYS.find((d) => d.id === dayId);
-                            return (
-                              <span
-                                key={dayId}
-                                className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs flex items-center gap-1"
-                              >
-                                {day ? day.label : `Day ${dayId}`}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        "Select days..."
-                      )}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0" align="start">
-                    <Command>
-                      <CommandList>
-                        <CommandGroup>
-                          {DAYS.map((day) => (
-                            <CommandItem
-                              key={day.id}
-                              value={day.label}
-                              onSelect={() => {
-                                const currentDays = formData.day;
-                                const newVal = currentDays.includes(day.id)
-                                  ? currentDays.filter((id) => id !== day.id)
-                                  : [...currentDays, day.id];
-                                handleInputChange("day", newVal);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  formData.day.includes(day.id)
-                                    ? "opacity-100"
-                                    : "opacity-0",
-                                )}
-                              />
-                              {day.label}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Label>Day</Label>
+                <Select
+                  value={formData.day}
+                  onValueChange={(val) => handleInputChange("day", val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select day" />
+                  </SelectTrigger>
+                  <SelectContent className="dark bg-zinc-950 text-white border-zinc-800">
+                    {DAYS.map((day) => (
+                      <SelectItem key={day.id} value={day.id}>
+                        {day.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid gap-2">
@@ -844,7 +801,12 @@ export function EventFormDialog({
             </Button>
           )}
           <Button
-            onClick={() => handleSubmit("publish", true)}
+            onClick={() =>
+              handleSubmit(
+                "publish",
+                mode === "create" ? true : formData.is_published,
+              )
+            }
             disabled={actionLoading !== null || (mode === "update" && !isDirty)}
           >
             {actionLoading === "publish" && (

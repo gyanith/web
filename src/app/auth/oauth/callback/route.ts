@@ -1,7 +1,7 @@
 // app/auth/oauth/callback/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { checkUserProfile, setSessionCookie } from "@/lib/actions/auth";
+import { checkUserProfile, setSessionCookie } from "@/lib/actions/auth.actions";
 import { Client, Account } from "node-appwrite";
 import { headers } from "next/headers";
 

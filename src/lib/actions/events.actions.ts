@@ -4,7 +4,7 @@ import { createSessionClient, createAdminClient } from "@/lib/appwrite/appwrite.
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
 import { ID, Query } from "node-appwrite";
 import { revalidatePath } from "next/cache";
-import { Event, EventSummary } from "@/lib/types";
+import { Event, EventSummary } from "@/types/db";
 
 /**
  * Uploads a file to the configured events bucket.
@@ -62,7 +62,7 @@ async function uploadImage(file: File) {
             day: formData.getAll("day").map((d) => parseInt(d as string)),
             start_time: formData.get("start_time") as string,
             end_time: formData.get("end_time") as string,
-            g_form_link: formData.get("g_form_link") as string,
+            rulebook_link: formData.get("rulebook_link") as string,
             image_id: imageId,
             is_published: isPublishedRaw === "true",
         };
@@ -159,10 +159,10 @@ export async function createEvent(formData: FormData) {
             num_seats: Number(formData.get("num_seats")),
             is_solo: formData.get("is_solo") === "true",
             is_team_event: formData.get("is_team_event") === "true",
-            day: formData.getAll("day").map((d) => parseInt(d as string)),
+            day: Number(formData.get("day")) || 1,
             start_time: formData.get("start_time") as string,
             end_time: formData.get("end_time") as string,
-            g_form_link: formData.get("g_form_link") as string,
+            rulebook_link: formData.get("rulebook_link") as string,
             image_id: imageId,
             is_published: isPublishedRaw === "true",
         };
@@ -239,10 +239,10 @@ export async function updateEvent(eventId: string, formData: FormData) {
             num_seats: Number(formData.get("num_seats")),
             is_solo: formData.get("is_solo") === "true",
             is_team_event: formData.get("is_team_event") === "true",
-            day: formData.getAll("day").map((d) => parseInt(d as string)),
+            day: parseInt(formData.get("day") as string) || 1,
             start_time: formData.get("start_time") as string,
             end_time: formData.get("end_time") as string,
-            g_form_link: formData.get("g_form_link") as string,
+            rulebook_link: formData.get("rulebook_link") as string,
             image_id: imageId,
             is_published: isPublishedRaw === "true",
         };
@@ -397,10 +397,10 @@ export async function togglePublishStatus(eventId: string, currentStatus: boolea
             num_seats: existingEvent.num_seats ?? 0,
             is_solo: existingEvent.is_solo ?? true,
             is_team_event: existingEvent.is_team_event ?? false,
-            day: existingEvent.day ?? [1],
+            day: existingEvent.day ?? 1,
             start_time: existingEvent.start_time ?? "",
             end_time: existingEvent.end_time ?? "",
-            g_form_link: existingEvent.g_form_link ?? "",
+            rulebook_link: existingEvent.rulebook_link ?? (existingEvent.g_form_link ?? ""),
             image_id: existingEvent.image_id ?? "",
             is_published: !currentStatus
         };
@@ -491,7 +491,7 @@ export async function getRecentEvents(): Promise<EventSummary[]> {
             }),
             type: doc.type,
             fee: doc.fee,
-            day: Array.isArray(doc.day) ? doc.day.map(String) : [String(doc.day)],
+            day: String(doc.day || "1"),
             status: (doc.is_published ? "Published" : "Draft") as "Published" | "Draft",
         }));
     } catch (err) {
@@ -542,5 +542,118 @@ export async function getEvent(eventId: string): Promise<(Event & { coordinators
             console.error("Failed to fetch event:", error);
         }
         return null;
+    }
+}
+
+
+// Get Registration Count
+export async function getEventRegistrationCount(eventId: string) {
+    try {
+        const { getTablesDB } = await createAdminClient();
+        const tablesDB = getTablesDB();
+
+        // Use listRows with Query.equal to count. 
+        // Optimization: limit to 1 row if we only need count? Appwrite list returns 'total'.
+        // Yes, listRows returns { total, rows }. We can set limit to 1 to save bandwidth.
+        const registrations = await tablesDB.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.registrationsCollectionId,
+            [Query.equal("event_id", eventId)]
+        );
+
+        return registrations.total;
+    } catch (error) {
+        console.error("Error fetching registration count:", error);
+        return 0;
+    }
+}
+
+/**
+ * Fetches all registrations for a specific event, including user details.
+ * @param eventId - The ID of the event.
+ * @returns Array of registrations with user details.
+ */
+export async function getEventRegistrations(eventId: string) {
+    try {
+        const { getTablesDB, getUsers } = await createAdminClient();
+        const db = getTablesDB();
+        const usersAPI = getUsers();
+
+        // 1. Fetch Registrations
+        // Consider pagination later if list grows too large (limit defaults to 25 usually, set higher)
+        const registrationList = await db.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.registrationsCollectionId,
+            [Query.equal("event_id", eventId), Query.limit(1000)]
+        );
+
+        if (registrationList.total === 0) {
+            return [];
+        }
+
+        // 2. Fetch User Details for each registration
+        // Fetch from both Auth Users API (for name, email) and custom users collection (for additional fields)
+        const registrationsWithUsers = await Promise.all(
+            registrationList.rows.map(async (reg: any) => {
+                try {
+                    // Fetch from Auth Users API for name and email
+                    const authUser = await usersAPI.get(reg.user_id);
+
+                    // Try to fetch additional fields from custom users collection
+                    let userProfile: any = {};
+                    try {
+                        userProfile = await db.getRow(
+                            appwriteConfig.databaseId,
+                            appwriteConfig.usersCollectionId,
+                            reg.user_id
+                        );
+                    } catch (err) {
+                        console.warn(`Custom user profile not found for ${reg.user_id}, using Auth data only`);
+                    }
+
+                    return {
+                        ...reg,
+                        user: {
+                            name: authUser.name || "Unknown User",
+                            email: authUser.email || userProfile.email || "N/A",
+                            phone: userProfile.phone || "",
+                            college: userProfile.college_name || "N/A",
+                            gender: userProfile.gender || ""
+                        }
+                    };
+                } catch (err) {
+                    // If Auth user fetch fails, try custom collection as fallback
+                    console.warn(`Auth user not found for ${reg.user_id}, trying custom collection`);
+                    try {
+                        const userProfile = await db.getRow(
+                            appwriteConfig.databaseId,
+                            appwriteConfig.usersCollectionId,
+                            reg.user_id
+                        );
+                        return {
+                            ...reg,
+                            user: {
+                                name: userProfile.name || "Unknown User",
+                                email: userProfile.email || "N/A",
+                                phone: userProfile.phone || "",
+                                college: userProfile.college_name || "N/A",
+                                gender: userProfile.gender || ""
+                            }
+                        };
+                    } catch (fallbackErr) {
+                        console.error(`Failed to fetch user data for ${reg.user_id}`);
+                        return {
+                            ...reg,
+                            user: { name: "Unknown User", email: "N/A", phone: "", college: "N/A", gender: "" }
+                        };
+                    }
+                }
+            })
+        );
+
+        return registrationsWithUsers;
+    } catch (error) {
+        console.error("Failed to fetch event registrations:", error);
+        return [];
     }
 }

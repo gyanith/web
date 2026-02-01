@@ -6,6 +6,7 @@ import Noise from "@/my_components/Noise";
 import { montserrat } from "@/fonts/fonts";
 
 import { LoaderProvider } from "@/my_components/LoaderContext";
+import { ToastProvider } from "@/my_components/Toast";
 
 export const metadata: Metadata = {
   title: "Gyanith 2026",
@@ -23,8 +24,10 @@ export default function RootLayout({
         className={`${montserrat.className} bg-[#070a10]  antialiased flex flex-col items-center`}
       >
         <LoaderProvider>
-{/* Noise removed from RootLayout to prevent it showing in Admin */ }
-          {children}
+          <ToastProvider>
+            {/* Noise removed from RootLayout to prevent it showing in Admin */}
+            {children}
+          </ToastProvider>
         </LoaderProvider>
       </body>
     </html>

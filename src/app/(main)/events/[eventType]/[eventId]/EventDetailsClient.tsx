@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   MapPin,
@@ -10,12 +10,36 @@ import {
   ShoppingCart,
   ArrowRight,
   Phone,
+  X,
+  CheckCircle,
+  AlertTriangle,
+  CreditCard,
+  FileText,
 } from "lucide-react";
 import ShinyText from "@/my_components/ShinyText";
-import { unispace, superRetro, blueScreen, garetBook } from "@/fonts/fonts";
+import { unispace, superRetro, garetBook } from "@/fonts/fonts";
 import Image from "next/image";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { load } from "@cashfreepayments/cashfree-js";
+import Script from "next/script";
 
-import { Event } from "@/lib/types";
+import {
+  initiatePayment,
+  verifyPayment,
+  verifyCashfreePayment,
+  cancelPayment,
+} from "@/lib/actions/payment.actions";
+
+import { Event } from "@/types/db";
+import { useToast } from "@/my_components/Toast";
+
+// Declare Razorpay on window object
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 type EventDetailsClientProps = {
   eventData: Event & {
@@ -23,12 +47,30 @@ type EventDetailsClientProps = {
     imageUrl?: string;
   };
   eventType: string;
+  user: any;
+  initialIsRegistered: boolean;
+  initialUserTeam?: any;
 };
 
 export default function EventDetailsClient({
   eventData,
   eventType,
+  user,
+  initialIsRegistered,
+  initialUserTeam,
 }: EventDetailsClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const toast = useToast();
+  const [isRegistered, setIsRegistered] = useState(initialIsRegistered);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Sync state with server prop
+  useEffect(() => {
+    setIsRegistered(initialIsRegistered);
+  }, [initialIsRegistered]);
+
   // Stagger animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -46,9 +88,216 @@ export default function EventDetailsClient({
     show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
+  const handleRegisterClick = () => {
+    if (!user) {
+      router.push("/auth?redirect=/events/" + eventType + "/" + eventData.$id);
+      return;
+    }
+
+    if (isRegistered) {
+      // If already registered, confirm unregister
+      setShowConfirmModal(true);
+    } else {
+      // Confirm register
+      setShowConfirmModal(true);
+    }
+  };
+
+  // Handle Cashfree Return
+  useEffect(() => {
+    const orderId = searchParams.get("order_id");
+    if (orderId && !isRegistered) {
+      const verify = async () => {
+        setLoading(true);
+        try {
+          const result = await verifyCashfreePayment(orderId);
+          if (result.success) {
+            setIsRegistered(true);
+            toast.success("Successfully registered!");
+            router.replace(window.location.pathname); // Clear Query Params
+            router.refresh();
+          } else {
+            toast.error(result.error || "Payment verification failed");
+            router.replace(window.location.pathname);
+            router.refresh(); // Sync with server state
+          }
+        } catch (error) {
+          console.error(error);
+          toast.error("Error verifying payment");
+          router.replace(window.location.pathname);
+          router.refresh();
+        } finally {
+          setLoading(false);
+        }
+      };
+      verify();
+    }
+  }, [searchParams, isRegistered, router, toast]);
+
+  const handlePayment = async () => {
+    if (loading) return;
+    setLoading(true);
+    setShowConfirmModal(false);
+
+    try {
+      const amount = Number(eventData.fee);
+
+      // Step 1: Initiate Payment
+      const initResult = await initiatePayment(
+        isWorkshop ? "WORKSHOP" : "EVENT",
+        {
+          eventId: eventData.$id,
+          redirectUrl: window.location.href,
+        },
+        user.$id,
+        amount,
+      );
+
+      if (!initResult.success) {
+        throw new Error(initResult.error || "Failed to initiate payment");
+      }
+
+      if (initResult.provider === "CASHFREE") {
+        const cashfree = await load({
+          mode:
+            process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
+              ? "production"
+              : "sandbox",
+        });
+
+        await cashfree.checkout({
+          paymentSessionId: initResult.paymentSessionId,
+          returnUrl: window.location.href,
+          redirectTarget: "_modal",
+        });
+
+        // Verify payment status after modal closes
+        const verifyRes = await verifyCashfreePayment(initResult.orderId);
+        if (verifyRes.success) {
+          setIsRegistered(true);
+          toast.success("Successfully registered!");
+          router.refresh();
+        }
+
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: Configure Razorpay
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: (initResult.amount || 0) * 100,
+        currency: initResult.currency || "INR",
+        name: "Gyanith Event",
+        description: `Registration for ${eventData.name}`,
+        order_id: initResult.orderId,
+        handler: async function (response: any) {
+          try {
+            // Step 3: Verify Payment
+            const verifyResult = await verifyPayment(
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature,
+            );
+
+            if (verifyResult.success) {
+              // Registration is created in verifyPayment now. Use router.refresh to show state.
+              setIsRegistered(true);
+              toast.success("Successfully registered!");
+              router.refresh();
+            } else {
+              toast.error(verifyResult.error || "Payment verification failed!");
+            }
+          } catch (error: any) {
+            console.error("Payment verification error:", error);
+            toast.error("Payment verification failed!");
+          } finally {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+        },
+        theme: {
+          color: "#d4a574",
+        },
+        modal: {
+          ondismiss: async function () {
+            toast.info("Payment cancelled");
+            setLoading(false);
+            if (initResult?.orderId) {
+              await cancelPayment(initResult.orderId);
+            }
+          },
+        },
+      };
+
+      if (typeof window !== "undefined" && window.Razorpay) {
+        const razorpay = new window.Razorpay(options);
+        razorpay.open();
+      } else {
+        throw new Error("Razorpay SDK not loaded");
+      }
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast.error(error.message || "Failed to initiate payment");
+      setLoading(false);
+    }
+  };
+
+  const confirmAction = async (paymentId?: string) => {
+    setShowConfirmModal(false);
+    if (!paymentId) setLoading(true); // If paymentId exists, we are already loading
+
+    try {
+      const method = isRegistered ? "DELETE" : "POST";
+      const body: any = {};
+      if (paymentId) body.paymentId = paymentId;
+
+      const response = await fetch(
+        `/api/events/${eventType}/${eventData.$id}/register`,
+        {
+          method: method,
+          body: JSON.stringify(body),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Action failed");
+      }
+
+      if (isRegistered) {
+        setIsRegistered(false);
+        toast.success("Successfully unregistered!");
+      } else {
+        setIsRegistered(true);
+        toast.success("Successfully registered!");
+      }
+
+      router.refresh();
+    } catch (error: any) {
+      console.error("Action error:", error);
+      toast.error(error.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isWorkshop = eventType.toLowerCase().includes("workshop");
+  const isTech = eventType.toLowerCase().includes("tech");
+  const isFree = !eventData.fee || Number(eventData.fee) === 0;
+
   return (
     <div className="relative min-h-screen w-full text-[#d4a574]">
-      {/* Background with overlaid gradient for depth (matches reference 'soft glow') */}
+      <Script
+        id="razorpay-checkout-js"
+        src="https://checkout.razorpay.com/v1/checkout.js"
+      />
+
+      {/* Background */}
       <div className="absolute inset-0 z-0">
         <Image
           src={eventData.imageUrl || "/api/placeholder/1920/1080"}
@@ -84,7 +333,7 @@ export default function EventDetailsClient({
           </div>
 
           <h1
-            className={`${superRetro.className} text-6xl md:text-8xl lg:text-9xl text-white leading-none tracking-tighter mix-blend-overlay opacity-90`}
+            className={`${superRetro.className} text-4xl sm:text-6xl md:text-8xl text-white leading-none mix-blend-overlay opacity-90 max-w-full break-words text-center px-4`}
           >
             {eventData.name}
           </h1>
@@ -93,27 +342,82 @@ export default function EventDetailsClient({
             {eventData.description}
           </p>
 
-          {/* MAIN CTA - Shiny Button Style from EventCard */}
+          {/* MAIN CTA */}
           <motion.div
-            className="pt-8 flex flex-col items-center justify-center gap-2"
+            className="pt-8 flex flex-col items-center justify-center gap-4 w-full max-w-2xl mx-auto px-4"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
           >
-            <div className="group relative">
-              <button
-                className="relative flex items-center gap-3 bg-[#0a0a0a] border border-[#d4a574]/50 hover:bg-[#d4a574]/10 transition-all px-8 py-4 overflow-hidden group/btn cursor-pointer"
-                onClick={() => console.log("Add to cart (Combo)")}
+            {/* Row 1: Register + Rulebook Side by Side */}
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Register Button */}
+              <div className="group relative">
+                <button
+                  disabled={loading}
+                  className={`relative flex items-center justify-center gap-3 border transition-all  py-4 overflow-hidden group/btn cursor-pointer w-full ${
+                    isRegistered
+                      ? "bg-red-900/10 border-red-500/50 hover:bg-red-900/30"
+                      : "bg-[#0a0a0a] border-[#d4a574]/50 hover:bg-[#d4a574]/10"
+                  }`}
+                  onClick={handleRegisterClick}
+                >
+                  <motion.div className="flex items-center gap-3 relative z-10">
+                    {isRegistered ? (
+                      <X className="w-5 h-5 text-red-500" />
+                    ) : isWorkshop && !isRegistered ? (
+                      <CreditCard className="w-5 h-5 text-[#d4a574]" />
+                    ) : (
+                      <ShoppingCart className="w-5 h-5 text-[#d4a574]" />
+                    )}
+                    <ShinyText
+                      text={
+                        loading
+                          ? "Processing..."
+                          : isRegistered
+                            ? "Unregister"
+                            : isWorkshop && !isFree
+                              ? "Pay & Register"
+                              : "Register"
+                      }
+                      className={`text-base md:text-lg ${unispace.className}`}
+                      color={isRegistered ? "#ef4444" : "#d4a574"}
+                      shineColor={isRegistered ? "#fca5a5" : "#ffffff"}
+                      delay={1}
+                    />
+                    {!isRegistered && !loading && (
+                      <ArrowRight className="w-5 h-5 text-[#d4a574] group-hover/btn:translate-x-1 transition-transform" />
+                    )}
+                  </motion.div>
+
+                  {/* Button shine effect */}
+                  <motion.div
+                    className={`absolute inset-0 bg-gradient-to-r skew-x-12 ${
+                      isRegistered
+                        ? "from-transparent via-red-500/10 to-transparent"
+                        : "from-transparent via-white/10 to-transparent"
+                    }`}
+                    initial={{ x: "-100%" }}
+                    whileHover={{ x: "200%" }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </button>
+              </div>
+
+              {/* Rulebook Button */}
+              <a
+                href={eventData.rulebook_link ? eventData.rulebook_link : "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative flex items-center justify-center gap-3 border border-[#d4a574]/50 bg-[#0a0a0a] hover:bg-[#d4a574]/10 transition-all px-6 py-4 overflow-hidden group/btn cursor-pointer"
               >
                 <motion.div className="flex items-center gap-3 relative z-10">
-                  <ShoppingCart className="w-5 h-5 text-[#d4a574]" />
-                  <ShinyText
-                    text="Add to Cart"
-                    className={`text-xl ${unispace.className}`}
-                    color="#d4a574"
-                    shineColor="#ffffff"
-                    delay={1}
-                  />
+                  <FileText className="w-5 h-5 text-[#d4a574]" />
+                  <span
+                    className={`text-base md:text-lg ${unispace.className} text-[#d4a574]`}
+                  >
+                    Rulebook
+                  </span>
                   <ArrowRight className="w-5 h-5 text-[#d4a574] group-hover/btn:translate-x-1 transition-transform" />
                 </motion.div>
 
@@ -124,15 +428,61 @@ export default function EventDetailsClient({
                   whileHover={{ x: "200%" }}
                   transition={{ duration: 0.3 }}
                 />
-              </button>
+              </a>
             </div>
+
+            {/* Row 2: Join/Create Team Button (Full Width, Team Events Only) */}
+            {eventData.is_team_event && (
+              <button
+                className="relative flex items-center justify-center gap-3 border border-purple-500/50 bg-purple-900/10 hover:bg-purple-900/30 transition-all px-6 py-4 overflow-hidden group/btn cursor-pointer w-full"
+                onClick={() => {
+                  if (!user) {
+                    router.push(
+                      "/auth?redirect=/events/" +
+                        eventType +
+                        "/" +
+                        eventData.$id,
+                    );
+                    return;
+                  }
+                  router.push(`/events/${eventType}/${eventData.$id}/team`);
+                }}
+              >
+                <motion.div className="flex items-center gap-3 relative z-10">
+                  <Users className="w-5 h-5 text-purple-400" />
+                  <span
+                    className={`text-base md:text-lg ${unispace.className} text-purple-400 uppercase`}
+                  >
+                    {initialUserTeam ? "View Team" : "Join / Create Team"}
+                  </span>
+                  <ArrowRight className="w-5 h-5 text-purple-400 group-hover/btn:translate-x-1 transition-transform" />
+                </motion.div>
+
+                {/* Button shine effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent skew-x-12"
+                  initial={{ x: "-100%" }}
+                  whileHover={{ x: "200%" }}
+                  transition={{ duration: 0.3 }}
+                />
+              </button>
+            )}
+
+            {/* Status Messages */}
+            {isRegistered && (
+              <p
+                className={`text-xs text-center text-green-500 uppercase tracking-widest border-b border-green-500/20 pb-0.5 ${unispace.className}`}
+              >
+                <CheckCircle className="inline w-3 h-3 mr-1" /> Registered
+              </p>
+            )}
             <p className="text-xs text-center text-white/30 uppercase tracking-widest border-b border-[#d4a574]/20 pb-0.5">
               *Exclusive to Combos
             </p>
           </motion.div>
         </motion.div>
 
-        {/* BENTO GRID - Reference Style */}
+        {/* BENTO GRID */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -197,17 +547,22 @@ export default function EventDetailsClient({
               <div className="p-3 w-fit bg-[#d4a574]/10 text-[#d4a574]">
                 <Wallet className="w-8 h-8" />
               </div>
-              {/* Only show 'Best Value' if needed, or maybe dynamic based on fee? Keeping it static for now or removing */}
             </div>
             <div>
               <h3 className="text-white/40 text-sm uppercase tracking-wider font-semibold mb-1">
                 Entry Fee
               </h3>
               <div className="flex items-baseline gap-2">
-                {!eventData.fee || Number(eventData.fee) === 0 ? (
-                  <span className="text-3xl font-bold text-white">
-                    FREE ENTRY
-                  </span>
+                {isFree ? (
+                  isTech ? (
+                    <span className="text-xl md:text-2xl font-bold text-white uppercase">
+                      Included in Combo
+                    </span>
+                  ) : (
+                    <span className="text-3xl font-bold text-white">
+                      FREE ENTRY
+                    </span>
+                  )
                 ) : (
                   <>
                     <span className="text-4xl font-bold text-white">
@@ -322,6 +677,90 @@ export default function EventDetailsClient({
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Confirm Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="w-full max-w-md bg-[#0a0a0a] border border-[#d4a574]/30 p-6 rounded-lg shadow-2xl relative"
+            >
+              <h2 className={`text-xl text-white mb-4 ${unispace.className}`}>
+                {isRegistered ? "Confirm Cancel?" : "Confirm Registration?"}
+              </h2>
+              <div className="text-white/60 mb-8">
+                {(() => {
+                  if (isRegistered) {
+                    if (isWorkshop) {
+                      return (
+                        <>
+                          Are you sure you want to unregister from this
+                          workshop?
+                          <span className="text-red-400 block mt-2 font-bold">
+                            NOTE: No refunds are applicable for this
+                            cancellation.
+                          </span>
+                        </>
+                      );
+                    }
+                    return "Are you sure you want to unregister? 1 Credit will be refunded.";
+                  } else {
+                    if (isWorkshop && !isFree) {
+                      return (
+                        <>
+                          Register for this workshop? You will be redirected to
+                          pay ₹{eventData.fee}.
+                          <span className="text-red-400 block mt-2 font-bold">
+                            NOTE: This payment is non-refundable.
+                          </span>
+                        </>
+                      );
+                    }
+                    return "Are you sure you want to register? 1 Credit will be deducted from your account.";
+                  }
+                })()}
+              </div>
+
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-4 py-2 text-sm text-white/40 hover:text-white transition-colors"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={() => {
+                    if (!isRegistered && isWorkshop && !isFree) {
+                      handlePayment();
+                    } else {
+                      confirmAction();
+                    }
+                  }}
+                  className={`px-6 py-2 text-black font-bold uppercase tracking-wider ${
+                    isRegistered
+                      ? "bg-red-500 hover:bg-red-400"
+                      : "bg-[#d4a574] hover:bg-[#d4a574]/80"
+                  }`}
+                >
+                  {isRegistered
+                    ? "Unregister"
+                    : isWorkshop && !isFree
+                      ? "Pay Now"
+                      : "Confirm"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -5,24 +5,54 @@ import { NextRequest, NextResponse } from "next/server";
 import { TablesDB } from "node-appwrite";
 
 
-const updateCredits = async (userId: string, techCredits: number, funCredits: number, tablesDB: TablesDB) => {
+const updateCredits = async (userId: string, techCredits: number, funCredits: number, tier: number, tablesDB: TablesDB) => {
     console.log(userId)
 
     try {
+        // Fetch current user details to calculate delta
+        const userDoc = await tablesDB.getRow({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.usersCollectionId,
+            rowId: userId
+        });
+
+        let finalTechCredits = techCredits;
+        let finalFunCredits = funCredits;
+
+        // If user already has a tier, calculate the difference (delta)
+        // NewBalance = CurrentBalance + (NewTierLimit - OldTierLimit)
+        if (userDoc.tier) {
+            const oldTier = TIERS.find(t => t.tier === userDoc.tier);
+            if (oldTier) {
+                const techDiff = techCredits - oldTier.techCredits;
+                const funDiff = funCredits - oldTier.funCredits;
+
+                finalTechCredits = (userDoc.tech_credits || 0) + techDiff;
+                finalFunCredits = (userDoc.fun_credits || 0) + funDiff;
+
+                console.log(`[Upgrade] Delta Update: Tech ${userDoc.tech_credits} -> ${finalTechCredits} (Diff: ${techDiff})`);
+            }
+        }
+
+        // Safety clamp
+        if (finalTechCredits < 0) finalTechCredits = 0;
+        if (finalFunCredits < 0) finalFunCredits = 0;
+
         const res = await tablesDB.updateRow({
             databaseId: appwriteConfig.databaseId,
             tableId: appwriteConfig.usersCollectionId,
             rowId: userId,
             data: {
-                tech_credits: techCredits,
-                fun_credits: funCredits,
+                tech_credits: finalTechCredits,
+                fun_credits: finalFunCredits,
+                tier: tier,
             }
         });
 
 
-        return { status: 200, message: "Credits updated successfully" };
+        return { status: 200, message: "Credits and Tier updated successfully" };
     } catch (error) {
-        console.error("Error updating credits:", error);
+        console.error("Error updating credits and tier:", error);
         return { status: 500, error: "Internal Server Error" };
     }
 };
@@ -53,7 +83,7 @@ export async function POST(request: NextRequest) {
     console.log("Selected Tier:", selectedTier);
 
 
-    const res = await updateCredits(userId, selectedTier.techCredits, selectedTier.funCredits, tablesDB);
+    const res = await updateCredits(userId, selectedTier.techCredits, selectedTier.funCredits, selectedTier.tier, tablesDB);
 
 
     if (res.status === 200) {

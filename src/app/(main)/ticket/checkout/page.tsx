@@ -1,4 +1,3 @@
-/*
 import { Suspense } from "react";
 import { createSessionClient } from "@/lib/appwrite/appwrite.server";
 import CheckoutClient from "./CheckoutClient";
@@ -35,8 +34,8 @@ export default function TicketCheckoutPage() {
     </Suspense>
   );
 }
-*/
 
+/*
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -61,3 +60,4 @@ export default function TicketCheckoutPage() {
     </div>
   );
 }
+*/

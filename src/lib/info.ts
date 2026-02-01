@@ -272,3 +272,60 @@ export const allTeam = [
         phone: ""
     }
 ]
+
+export const contactDetails: Record<string, { name: string; contact: string }[]> = {
+    "Web Team": [
+        {
+            name: "Athul Kesav",
+            contact: "+91 98765 43210"
+        },
+        {
+            name: "Rameez",
+            contact: "+91 98765 43219"
+        }
+    ],
+    "Core Team": [
+        {
+            name: "A M Barath",
+            contact: "+91 98765 43211"
+        },
+        {
+            name: "A M Barath",
+            contact: "+91 98765 43211"
+        },
+        {
+            name: "A M Barath",
+            contact: "+91 98765 43211"
+        },
+        {
+            name: "A M Barath",
+            contact: "+91 98765 43211"
+        },
+        {
+            name: "A M Barath",
+            contact: "+91 98765 43211"
+        }
+    ],
+    "Events": [
+        {
+            name: "Sailaja G",
+            contact: "+91 98765 43212"
+        },
+        {
+            name: "K Lokesh",
+            contact: "+91 98765 43220"
+        }
+    ],
+    "Marketing": [
+        {
+            name: "Aneruthan S",
+            contact: "+91 98765 43213"
+        }
+    ],
+    "Hospitality": [
+        {
+            name: "Jeeviga K",
+            contact: "+91 98765 43214"
+        }
+    ]
+}

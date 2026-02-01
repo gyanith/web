@@ -1,10 +1,20 @@
 import { Suspense } from "react";
 import CheckoutPage from "./CheckoutPage";
+import { createSessionClient } from "@/lib/appwrite/appwrite.server";
+import { redirect } from "next/navigation";
 
-const page = () => {
+const page = async () => {
+  const { getAccount } = await createSessionClient();
+  const account = getAccount();
+  const user = await account.get();
+
+  if (!user) {
+    redirect("/auth?redirect=/merch/checkout");
+  }
+
   return (
     <Suspense>
-      <CheckoutPage />
+      <CheckoutPage user={user} />
     </Suspense>
   );
 };

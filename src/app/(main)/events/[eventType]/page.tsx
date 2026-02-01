@@ -11,7 +11,7 @@ async function getEvents(eventType: string) {
   // Dynamically construct base URL from request headers to work on all devices
   const headersList = await headers();
   const host = headersList.get("host") || "localhost:3000";
-  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+  const protocol = host.includes("localhost") ? "http" : "https";
   const baseUrl = `${protocol}://${host}`;
 
   const res = await fetch(`${baseUrl}/api/events/${eventType}`, {

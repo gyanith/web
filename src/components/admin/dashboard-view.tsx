@@ -38,7 +38,7 @@ type EventSummary = {
   type: string;
   fee: number;
   status: "Published" | "Draft";
-  day: string[];
+  day: string;
 };
 
 interface Coordinator {
@@ -212,16 +212,9 @@ export function DashboardView({
                           </span>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          <div className="flex gap-1">
-                            {event?.day.map((d, i) => (
-                              <span
-                                key={i}
-                                className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-secondary text-xs font-medium"
-                              >
-                                {d}
-                              </span>
-                            ))}
-                          </div>
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-secondary text-xs font-medium">
+                            {event?.day}
+                          </span>
                         </TableCell>
                         <TableCell className="hidden md:table-cell text-muted-foreground">
                           {event?.date}

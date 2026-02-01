@@ -13,14 +13,16 @@ import SpotlightCard from "@/components/SpotlightCard";
 import Footer from "@/my_components/Footer";
 import SparklesCore from "@/my_components/SparklesCore";
 import { allTeam, coreTeam } from "@/lib/info";
-import {
-  getImageUrl,
-  getOptimizedImageUrl,
-} from "@/lib/helpers/imageStorage.helper";
+import { getImageUrl } from "@/lib/helpers/imageStorage.helper";
 
 export default function CorePage() {
   return (
-    <div className="w-screen h-fit overflow-x-hidden relative">
+    <motion.div
+      className="w-screen h-fit overflow-x-hidden relative"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 2, ease: "circInOut" }}
+    >
       <div className="w-screen h-screen absolute inset-0">
         <SparklesCore
           id="tsparticlesfullpa"
@@ -248,6 +250,6 @@ export default function CorePage() {
       </div>
 
       <Footer />
-    </div>
+    </motion.div>
   );
 }
