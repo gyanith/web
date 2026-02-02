@@ -3,16 +3,8 @@
 import { createAdminClient, createSessionClient } from "../appwrite/appwrite.server";
 import { appwriteConfig } from "../appwrite/appwrite.config";
 import { ID, Query } from "node-appwrite";
-import Razorpay from "razorpay";
 import { Cashfree, CFEnvironment } from "cashfree-pg"; // Import Cashfree
-import crypto from "crypto";
 import { revalidatePath } from "next/cache";
-
-// Initialize Razorpay
-const razorpay = new Razorpay({
-    key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
-    key_secret: process.env.RAZORPAY_KEY_SECRET || "",
-});
 
 // Initialize Cashfree
 const cashfree = new Cashfree(
@@ -27,7 +19,7 @@ export type PaymentType = 'EVENT' | 'WORKSHOP' | 'MERCH' | 'ACCOM' | 'TICKET';
 /**
  * Initiates a payment process.
  * 1. Creates the specific item record (Registration, MerchOrder, etc.)
- * 2. Creates a Razorpay/Cashfree Order
+ * 2. Creates a Cashfree Order
  * 3. Creates a Transaction record
  */
 export async function initiatePayment(
@@ -126,85 +118,64 @@ export async function initiatePayment(
                 break;
         }
 
-        const gateway = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY === "CASHFREE" ? "CASHFREE" : "RAZORPAY";
         let orderId = "";
         let paymentSessionId = "";
         let orderCurrency = "INR";
 
-        if (gateway === "CASHFREE") {
-            // Determine return URL
-            let baseUrl = process.env.NEXT_PUBLIC_APP_URL || "";
-            // Enforce HTTPS for Cashfree if not explicitly explicitly localhost (though user said prod is https)
-            // Or simply replace http:// with https:// which handles both if the user is testing on a real server that might suffer from mixed content config or bad env var.
-            if (process.env.NODE_ENV === "production" && baseUrl.startsWith("http://")) {
-                baseUrl = baseUrl.replace("http://", "https://");
+        // Determine return URL
+        let baseUrl = process.env.NEXT_PUBLIC_APP_URL || "";
+        // Enforce HTTPS for Cashfree
+        if (process.env.NODE_ENV === "production" && baseUrl.startsWith("http://")) {
+            baseUrl = baseUrl.replace("http://", "https://");
+        }
+        if (baseUrl.startsWith("http://") && !baseUrl.includes("localhost")) {
+            baseUrl = baseUrl.replace("http://", "https://");
+        }
+
+        let returnUrl = `${baseUrl}/api/payment/callback?order_id={order_id}`;
+        if (data?.redirectUrl) {
+            let redirectBase = data.redirectUrl;
+            if (redirectBase.startsWith("http://") && !redirectBase.includes("localhost")) {
+                redirectBase = redirectBase.replace("http://", "https://");
             }
-            // Actually, simply replacing it is safer for Cashfree compliance
-            if (baseUrl.startsWith("http://") && !baseUrl.includes("localhost")) {
-                baseUrl = baseUrl.replace("http://", "https://");
+            const hasParams = redirectBase.includes("?");
+            returnUrl = `${redirectBase}${hasParams ? "&" : "?"}order_id={order_id}`;
+        }
+
+        // Create Cashfree Order
+        const request: any = {
+            order_amount: amount,
+            order_currency: "INR",
+            customer_details: {
+                customer_id: userId,
+                customer_name: user.name || "User",
+                customer_email: userEmail,
+                customer_phone: userPhone,
+            },
+            order_meta: {
+                return_url: returnUrl,
+                notify_url: `${baseUrl}/api/payment/webhook`,
+            },
+            order_note: `Payment for ${type}`,
+            order_tags: {
+                paymentType: type,
+                userId: userId,
+                itemId: itemId
             }
+        };
 
-            let returnUrl = `${baseUrl}/api/payment/callback?order_id={order_id}`;
-            if (data?.redirectUrl) {
-                let redirectBase = data.redirectUrl;
-                if (redirectBase.startsWith("http://") && !redirectBase.includes("localhost")) {
-                    redirectBase = redirectBase.replace("http://", "https://");
-                }
-                const hasParams = redirectBase.includes("?");
-                returnUrl = `${redirectBase}${hasParams ? "&" : "?"}order_id={order_id}`;
-            }
+        try {
+            // Cashfree SDK V4: first arg is request
+            const response = await cashfree.PGCreateOrder(request);
+            orderId = response.data.order_id || "";
+            paymentSessionId = response.data.payment_session_id || "";
+        } catch (error: any) {
+            console.error("Cashfree Order Creation Error:", error.response?.data || error);
 
-            // Create Cashfree Order
-            const request: any = {
-                order_amount: amount,
-                order_currency: "INR",
-                customer_details: {
-                    customer_id: userId,
-                    customer_name: user.name || "User",
-                    customer_email: userEmail,
-                    customer_phone: userPhone,
-                },
-                order_meta: {
-                    return_url: returnUrl,
-                    notify_url: `${baseUrl}/api/payment/webhook`,
-                },
-                order_note: `Payment for ${type}`,
-                order_tags: {
-                    paymentType: type,
-                    userId: userId,
-                    itemId: itemId
-                }
-            };
+            // Rollback: Delete the item created in Step 1
+            await rollbackItem(db, type, itemId);
 
-            try {
-                // Cashfree SDK V4: first arg is request
-                const response = await cashfree.PGCreateOrder(request);
-                orderId = response.data.order_id || "";
-                paymentSessionId = response.data.payment_session_id || "";
-            } catch (error: any) {
-                console.error("Cashfree Order Creation Error:", error.response?.data || error);
-
-                // Rollback: Delete the item created in Step 1
-                await rollbackItem(db, type, itemId);
-
-                throw new Error("Failed to create Cashfree order: " + (error.response?.data?.message || error.message));
-            }
-        } else {
-            // Create Razorpay Order
-            const orderOptions = {
-                amount: amount * 100, // amount in smallest currency unit (paise)
-                currency: "INR",
-                receipt: `receipt_${Date.now()}_${userId.substring(0, 5)}`,
-                notes: {
-                    paymentType: type,
-                    userId: userId,
-                    itemId: itemId
-                }
-            };
-
-            const order = await razorpay.orders.create(orderOptions);
-            orderId = order.id;
-            orderCurrency = orderOptions.currency;
+            throw new Error("Failed to create Cashfree order: " + (error.response?.data?.message || error.message));
         }
 
         // 3. Create Transaction Record
@@ -220,33 +191,16 @@ export async function initiatePayment(
                     item_type: type,
                     item_id: itemId,
                     status: "PENDING",
-                    razorpay_order_id: orderId, // Storing orderId here (reused column for now)
-                    razorpay_payment_id: "WAITING",
-                    mode: gateway === "CASHFREE" ? "CF" : "RZR",
+                    cashfree_order_id: orderId,
+                    cashfree_payment_id: "WAITING", // Placeholder as it is required
+                    mode: "CF",
                     description: `Payment for ${type}`
                 }
             );
         } catch (txError) {
             console.error("Failed to create transaction record. Rolling back item creation.", txError);
             // Rollback: Delete the item created in Step 1
-            if (itemId && !itemId.startsWith("ticket_")) {
-                let collectionId = "";
-                switch (type) {
-                    case 'EVENT':
-                    case 'WORKSHOP':
-                        collectionId = appwriteConfig.registrationsCollectionId;
-                        break;
-                    case 'ACCOM':
-                        collectionId = appwriteConfig.accommodationCollectionId;
-                        break;
-                    case 'MERCH':
-                        collectionId = appwriteConfig.merchCollectionId;
-                        break;
-                }
-                if (collectionId) {
-                    await db.deleteRow(appwriteConfig.databaseId, collectionId, itemId);
-                }
-            }
+            await rollbackItem(db, type, itemId);
             throw txError;
         }
 
@@ -267,7 +221,7 @@ export async function initiatePayment(
 
         return {
             success: true,
-            provider: gateway,
+            provider: "CASHFREE",
             orderId: orderId,
             paymentSessionId: paymentSessionId, // Only for Cashfree
             amount: amount,
@@ -278,49 +232,6 @@ export async function initiatePayment(
     } catch (error: any) {
         console.error("Error initiating payment:", error);
         return { success: false, error: error.message || "Failed to initiate payment" };
-    }
-}
-
-/**
- * Verifies a Razorpay payment.
- */
-export async function verifyPayment(
-    razorpay_order_id: string,
-    razorpay_payment_id: string,
-    razorpay_signature: string
-) {
-    try {
-        const { getTablesDB } = await createAdminClient();
-        const db = getTablesDB();
-
-        // 1. Verify Signature
-        const sign = razorpay_order_id + "|" + razorpay_payment_id;
-        const expectedSign = crypto
-            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-            .update(sign.toString())
-            .digest("hex");
-
-        if (razorpay_signature !== expectedSign) {
-            console.error("Invalid Razorpay Signature");
-            await cancelPayment(razorpay_order_id);
-            return { success: false, error: "Invalid signature" };
-        }
-
-        // 2. Update Transaction to SUCCESS
-        const transaction = await updateTransactionStatus(razorpay_order_id, "SUCCESS", razorpay_payment_id);
-
-        if (!transaction) {
-            throw new Error("Transaction not found for this order ID");
-        }
-
-        // 3. Post-Payment Actions
-        await handlePostPaymentActions(db, transaction);
-
-        return { success: true };
-
-    } catch (error: any) {
-        console.error("Error verifying payment:", error);
-        return { success: false, error: error.message || "Verification failed" };
     }
 }
 
@@ -384,7 +295,7 @@ export async function cancelPayment(orderId: string) {
         const list = await db.listRows(
             appwriteConfig.databaseId,
             appwriteConfig.transactionsCollectionId,
-            [Query.equal("razorpay_order_id", orderId)]
+            [Query.equal("cashfree_order_id", orderId)]
         );
 
         if (list.total === 0) {
@@ -401,34 +312,9 @@ export async function cancelPayment(orderId: string) {
             { status: "FAILED" }
         );
 
-        // Rollback: Delete the created item
-        if (transaction.item_id && !transaction.item_id.startsWith("ticket_")) {
-            let collectionId = "";
-            switch (transaction.item_type) {
-                case 'EVENT':
-                case 'WORKSHOP':
-                    collectionId = appwriteConfig.registrationsCollectionId;
-                    break;
-                case 'ACCOM':
-                    collectionId = appwriteConfig.accommodationCollectionId;
-                    break;
-                case 'MERCH':
-                    collectionId = appwriteConfig.merchCollectionId;
-                    break;
-            }
-
-            if (collectionId) {
-                try {
-                    await db.deleteRow(
-                        appwriteConfig.databaseId,
-                        collectionId,
-                        transaction.item_id
-                    );
-                    console.log(`[cancelPayment] Rolled back item ${transaction.item_id}`);
-                } catch (delError) {
-                    console.error(`[cancelPayment] Failed to rollback item ${transaction.item_id}:`, delError);
-                }
-            }
+        // Rollback: Delete the created item (using helper)
+        if (transaction.item_id) {
+            await rollbackItem(db, transaction.item_type as PaymentType, transaction.item_id);
         }
 
         return { success: true };
@@ -446,7 +332,7 @@ async function updateTransactionStatus(orderId: string, status: string, paymentI
     const list = await db.listRows(
         appwriteConfig.databaseId,
         appwriteConfig.transactionsCollectionId,
-        [Query.equal("razorpay_order_id", orderId)]
+        [Query.equal("cashfree_order_id", orderId)]
     );
 
     if (list.total === 0) return null;
@@ -459,7 +345,7 @@ async function updateTransactionStatus(orderId: string, status: string, paymentI
         transaction.$id,
         {
             status: status,
-            razorpay_payment_id: paymentId
+            cashfree_payment_id: paymentId
         }
     );
 }

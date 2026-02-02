@@ -15,7 +15,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
   initiatePayment,
-  verifyPayment,
   verifyCashfreePayment,
   cancelPayment,
 } from "@/lib/actions/payment.actions";
@@ -30,13 +29,6 @@ import tier2Pic from "@/assets/tier2.gif";
 import tier3Pic from "@/assets/tier3.gif";
 import bgImage from "@/assets/GlassBag.svg";
 import { useToast } from "@/my_components/Toast";
-
-// Declare Razorpay on window object
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
 
 interface CheckoutClientProps {
   user: any; // Using any for now to avoid extensive type definitions, or strictly: Models.User<Models.Preferences>
@@ -122,7 +114,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const taxes = subtotal * 0.18;
   const total = subtotal + taxes;
 
-  // Main payment handler with Razorpay integration
+  // Main payment handler with Cashfree integration
   const handlePayment = async () => {
     if (isProcessing) return;
 
@@ -145,97 +137,24 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
         throw new Error(initResult.error || "Failed to initiate payment");
       }
 
-      if (initResult.provider === "CASHFREE") {
-        const cashfree = await load({
-          mode:
-            process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
-              ? "production"
-              : "sandbox",
-        });
-        await cashfree.checkout({
-          paymentSessionId: initResult.paymentSessionId,
-          returnUrl: window.location.href,
-          redirectTarget: "_modal",
-        });
+      // Cashfree Flow
+      const cashfree = await load({
+        mode:
+          process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
+            ? "production"
+            : "sandbox",
+      });
+      await cashfree.checkout({
+        paymentSessionId: initResult.paymentSessionId || "",
+        returnUrl: window.location.href,
+        redirectTarget: "_modal",
+      });
 
-        // Verify payment status after modal closes
-        const verifyRes = await verifyCashfreePayment(initResult.orderId);
-        if (verifyRes.success) {
-          toast.success(
-            "TRANSACTION PROTOCOL COMPLETE. WELCOME TO THE FUTURE.",
-            "SYSTEM UPDATE: TICKET SECURED",
-          );
-          router.push("/events");
-        }
+      // Verify payment status after modal closes or redirects
+      // Note: Cashfree usually handles this via returnUrl redirect.
 
-        setIsProcessing(false);
-        return;
-      }
-
-      // Step 2: Configure Razorpay options
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: (initResult.amount || 0) * 100,
-        currency: initResult.currency || "INR",
-        name: "Gyanith",
-        description: upgradeFromTier
-          ? `Upgrade from ${upgradeFromTier.title} to ${selectedTier.title}`
-          : `${selectedTier.title} Ticket - Tier ${selectedTier.tier}`,
-        order_id: initResult.orderId,
-        handler: async function (response: any) {
-          try {
-            // Step 3: Verify payment
-            const verifyResult = await verifyPayment(
-              response.razorpay_order_id,
-              response.razorpay_payment_id,
-              response.razorpay_signature,
-            );
-
-            if (verifyResult.success) {
-              toast.success(
-                "TRANSACTION PROTOCOL COMPLETE. WELCOME TO THE FUTURE.",
-                "SYSTEM UPDATE: TICKET SECURED",
-              );
-              router.push("/events");
-            } else {
-              toast.error(
-                "Payment verification failed! Please contact support.",
-              );
-            }
-          } catch (error) {
-            console.error("Payment verification error:", error);
-            toast.error("Payment verification failed! Please contact support.");
-          } finally {
-            setIsProcessing(false);
-          }
-        },
-        prefill: {
-          name: user.name || "",
-          email: user.email || "",
-        },
-        theme: {
-          color: "#d4a574",
-        },
-        modal: {
-          ondismiss: async function () {
-            console.log("Payment cancelled by user");
-            toast.info("Payment cancelled.");
-            setIsProcessing(false);
-            // Rollback
-            if (initResult?.orderId) {
-              await cancelPayment(initResult.orderId);
-            }
-          },
-        },
-      };
-
-      // Step 4: Open Razorpay checkout
-      if (typeof window !== "undefined" && window.Razorpay) {
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
-      } else {
-        throw new Error("Razorpay SDK not loaded");
-      }
+      setIsProcessing(false);
+      return;
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(
@@ -268,11 +187,6 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
   return (
     <div className="min-h-screen w-full flex flex-col relative overflow-x-hidden bg-black">
-      <Script
-        id="razorpay-checkout-js"
-        src="https://checkout.razorpay.com/v1/checkout.js"
-      />
-
       <div className="flex flex-col md:flex-row w-full grow min-h-screen">
         {/* LEFT SIDE: Product & Summary */}
         <div className="w-full md:w-1/2 flex flex-col p-6 md:p-12 lg:p-20 lg:pt-36 relative border-r border-white/10">
@@ -398,7 +312,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
                 Choose payment method
               </h2>
               <p className="text-white/45 text-sm">
-                Complete your purchase securely with Razorpay.
+                Complete your purchase securely with Cashfree.
               </p>
             </div>
 

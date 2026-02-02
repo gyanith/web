@@ -22,7 +22,6 @@ import testPic from "@/assets/merchPic1.jpg";
 import bgImage from "@/assets/GlassBag.svg";
 import {
   initiatePayment,
-  verifyPayment,
   verifyCashfreePayment,
   cancelPayment,
 } from "@/lib/actions/payment.actions";
@@ -73,13 +72,6 @@ const CheckoutPage = ({ user }: { user: any }) => {
 
   const handlePayment = async () => {
     try {
-      if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
-        toast.error(
-          "Razorpay Key ID not found. Please set NEXT_PUBLIC_RAZORPAY_KEY_ID",
-        );
-        return;
-      }
-
       // 1. Initiate Payment
       const initResult = await initiatePayment(
         "MERCH",
@@ -97,81 +89,23 @@ const CheckoutPage = ({ user }: { user: any }) => {
         throw new Error(initResult.error || "Failed to initiate payment");
       }
 
-      if (initResult.provider === "CASHFREE") {
-        const cashfree = await load({
-          mode:
-            process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
-              ? "production"
-              : "sandbox",
-        });
-        await cashfree.checkout({
-          paymentSessionId: initResult.paymentSessionId,
-          returnUrl: window.location.href,
-          redirectTarget: "_modal",
-        });
+      // Cashfree Flow
+      const cashfree = await load({
+        mode:
+          process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
+            ? "production"
+            : "sandbox",
+      });
+      await cashfree.checkout({
+        paymentSessionId: initResult.paymentSessionId || "",
+        returnUrl: window.location.href,
+        redirectTarget: "_modal",
+      });
 
-        // Verify payment status after modal closes
-        const verifyRes = await verifyCashfreePayment(initResult.orderId);
-        if (verifyRes.success) {
-          toast.success("Payment successful!", "Merch secured.");
-          router.replace(window.location.pathname);
-          // router.refresh(); // Maybe needed if we show order history?
-        }
+      // Verification is handled by returnUrl or useEffect
 
-        setLoading(false);
-        return;
-      }
-
-      if (!initResult.success) {
-        throw new Error(initResult.error || "Failed to initiate payment");
-      }
-
-      // 2. Initialize Razorpay
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: (initResult.amount || 0) * 100,
-        currency: initResult.currency || "INR",
-        name: "Gyanith",
-        description: "Merchandise Purchase",
-        order_id: initResult.orderId,
-        handler: async function (response: any) {
-          try {
-            // 3. Verify Payment
-            const verifyResult = await verifyPayment(
-              response.razorpay_order_id,
-              response.razorpay_payment_id,
-              response.razorpay_signature,
-            );
-
-            if (verifyResult.success) {
-              toast.success("Payment successful!", "Merch secured.");
-              // Redirect or show success state
-            } else {
-              toast.error("Payment verification failed: " + verifyResult.error);
-            }
-          } catch (error: any) {
-            console.error("Payment verification error:", error);
-            toast.error("Payment verification failed");
-          }
-        },
-        prefill: {
-          name: user.name || "",
-          email: user.email || "",
-          contact: user.phone || "",
-        },
-        modal: {
-          ondismiss: async function () {
-            console.log("Payment cancelled");
-            toast.info("Payment cancelled");
-            if (initResult?.orderId) {
-              await cancelPayment(initResult.orderId);
-            }
-          },
-        },
-      };
-
-      const rzp1 = new (window as any).Razorpay(options);
-      rzp1.open();
+      setLoading(false);
+      return;
     } catch (error: any) {
       console.error("Payment failed:", error);
       toast.error(error.message || "Payment initiation failed");
@@ -201,10 +135,6 @@ const CheckoutPage = ({ user }: { user: any }) => {
 
   return (
     <div className="min-h-screen w-full flex flex-col relative overflow-x-hidden">
-      <Script
-        id="razorpay-checkout-js"
-        src="https://checkout.razorpay.com/v1/checkout.js"
-      />
       <div className="flex flex-col md:flex-row w-full grow min-h-screen">
         {/* =======================
             LEFT SIDE: Product & Summary 
@@ -359,7 +289,7 @@ const CheckoutPage = ({ user }: { user: any }) => {
                 Choose payment method
               </h2>
               <p className="text-white/45 text-sm">
-                Complete your purchase securely with Razorpay.
+                Complete your purchase securely with Cashfree.
               </p>
             </div>
 

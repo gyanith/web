@@ -26,20 +26,12 @@ import Script from "next/script";
 
 import {
   initiatePayment,
-  verifyPayment,
   verifyCashfreePayment,
   cancelPayment,
 } from "@/lib/actions/payment.actions";
 
 import { Event } from "@/types/db";
 import { useToast } from "@/my_components/Toast";
-
-// Declare Razorpay on window object
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
 
 type EventDetailsClientProps = {
   eventData: Event & {
@@ -157,88 +149,26 @@ export default function EventDetailsClient({
         throw new Error(initResult.error || "Failed to initiate payment");
       }
 
-      if (initResult.provider === "CASHFREE") {
-        const cashfree = await load({
-          mode:
-            process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
-              ? "production"
-              : "sandbox",
-        });
+      // Cashfree Flow (Default)
+      const cashfree = await load({
+        mode:
+          process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
+            ? "production"
+            : "sandbox",
+      });
 
-        await cashfree.checkout({
-          paymentSessionId: initResult.paymentSessionId,
-          returnUrl: window.location.href,
-          redirectTarget: "_modal",
-        });
+      await cashfree.checkout({
+        paymentSessionId: initResult.paymentSessionId || "",
+        returnUrl: window.location.href,
+        redirectTarget: "_modal",
+      });
 
-        // Verify payment status after modal closes
-        const verifyRes = await verifyCashfreePayment(initResult.orderId);
-        if (verifyRes.success) {
-          setIsRegistered(true);
-          toast.success("Successfully registered!");
-          router.refresh();
-        }
+      // Verify payment status after modal closes or redirects
+      // Note: Cashfree modal redirect usually reloads the page or hits the returnUrl.
+      // If using '_modal' with correct setup, it might just close.
+      // However, usually returnURL handles the verification via useEffect.
 
-        setLoading(false);
-        return;
-      }
-
-      // Step 2: Configure Razorpay
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: (initResult.amount || 0) * 100,
-        currency: initResult.currency || "INR",
-        name: "Gyanith Event",
-        description: `Registration for ${eventData.name}`,
-        order_id: initResult.orderId,
-        handler: async function (response: any) {
-          try {
-            // Step 3: Verify Payment
-            const verifyResult = await verifyPayment(
-              response.razorpay_order_id,
-              response.razorpay_payment_id,
-              response.razorpay_signature,
-            );
-
-            if (verifyResult.success) {
-              // Registration is created in verifyPayment now. Use router.refresh to show state.
-              setIsRegistered(true);
-              toast.success("Successfully registered!");
-              router.refresh();
-            } else {
-              toast.error(verifyResult.error || "Payment verification failed!");
-            }
-          } catch (error: any) {
-            console.error("Payment verification error:", error);
-            toast.error("Payment verification failed!");
-          } finally {
-            setLoading(false);
-          }
-        },
-        prefill: {
-          name: user?.name || "",
-          email: user?.email || "",
-        },
-        theme: {
-          color: "#d4a574",
-        },
-        modal: {
-          ondismiss: async function () {
-            toast.info("Payment cancelled");
-            setLoading(false);
-            if (initResult?.orderId) {
-              await cancelPayment(initResult.orderId);
-            }
-          },
-        },
-      };
-
-      if (typeof window !== "undefined" && window.Razorpay) {
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
-      } else {
-        throw new Error("Razorpay SDK not loaded");
-      }
+      setLoading(false);
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(error.message || "Failed to initiate payment");
@@ -292,11 +222,6 @@ export default function EventDetailsClient({
 
   return (
     <div className="relative min-h-screen w-full text-[#d4a574]">
-      <Script
-        id="razorpay-checkout-js"
-        src="https://checkout.razorpay.com/v1/checkout.js"
-      />
-
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <Image
