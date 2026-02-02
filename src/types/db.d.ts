@@ -59,6 +59,6 @@ export type EventSummary = {
     date: string;
     type: string;
     fee: number;
-    day: string; // Dashboard expects string for display
+    day: number; // Dashboard expects number for display
     status: "Published" | "Draft";
 };

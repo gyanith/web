@@ -2,7 +2,7 @@
 
 import { createSessionClient, createAdminClient } from "@/lib/appwrite/appwrite.server";
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
-import { ID, Query } from "node-appwrite";
+import { ID, Query, ExecutionMethod } from "node-appwrite";
 import { revalidatePath } from "next/cache";
 import { Event, EventSummary } from "@/types/db";
 
@@ -207,7 +207,7 @@ export async function createEvent(formData: FormData) {
 }
 
 
-export async function updateEvent(eventId: string, formData: FormData) {
+/* export async function updateEvent(eventId: string, formData: FormData) {
     try {
         console.log("[updateEvent] Starting update for event:", eventId);
         const { getTablesDB } = await createAdminClient();
@@ -327,7 +327,99 @@ export async function updateEvent(eventId: string, formData: FormData) {
         console.error("Failed to update event:", error);
         return { success: false, error: "Failed to update event" };
     }
+} */
+
+// Appwrite function
+export async function updateEvent(eventId: string, formData: FormData) {
+    try {
+        console.log("[updateEvent] Starting update for event via function:", eventId);
+        const { getFunctions } = await createAdminClient();
+        const functions = getFunctions();
+
+        // 1. Handle Image Upload (Optional)
+        const file = formData.get("file") as File;
+        let imageId = formData.get("image_id") as string;
+
+        if (file && file.size > 0) {
+            console.log("[updateEvent] Uploading new image...");
+            imageId = await uploadImage(file);
+            console.log("[updateEvent] New image uploaded:", imageId);
+        }
+
+        // 2. Prepare Data
+        const isPublishedRaw = formData.get("is_published");
+
+        const data: any = {
+            name: formData.get("name") as string,
+            date: formData.get("date") as string,
+            description: formData.get("description") as string,
+            // type is immutable, do not include
+            location: formData.get("location") as string,
+            fee: Number(formData.get("fee")),
+            prize_pool: Number(formData.get("prize_pool")),
+            num_seats: Number(formData.get("num_seats")),
+            is_solo: formData.get("is_solo") === "true",
+            is_team_event: formData.get("is_team_event") === "true",
+            day: Number(formData.get("day")) || 1,
+            start_time: formData.get("start_time") as string,
+            end_time: formData.get("end_time") as string,
+            rulebook_link: formData.get("rulebook_link") as string,
+            image_id: imageId,
+            is_published: isPublishedRaw === "true",
+        };
+
+        const coordinators = formData.getAll("coordinators") as string[];
+        if (coordinators.length > 0) {
+            data.coordinators = coordinators;
+        }
+
+        // Filter out undefined properties
+        Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
+
+        console.log("[updateEvent] Sending payload to function:", data);
+
+        // 3. Call Function
+        const functionId = "6973ce95000836f2b0be";
+
+        const execution = await functions.createExecution({
+            functionId: functionId,
+            body: JSON.stringify(data),
+            async: false,
+            xpath: `/?event_id=${eventId}`,
+            method: ExecutionMethod.POST
+        });
+
+        if (execution.status === "failed") {
+            console.error("Function execution failed:", execution.responseBody);
+            throw new Error(`Function execution failed: ${execution.responseBody}`);
+        }
+
+        // Parse response to ensure logical success
+        let responseBody;
+        try {
+            responseBody = JSON.parse(execution.responseBody);
+        } catch (e) {
+            console.warn("Could not parse function response:", execution.responseBody);
+        }
+
+        if (responseBody && !responseBody.success) {
+            throw new Error(responseBody.message || "Update failed");
+        }
+
+        console.log("[updateEvent] Update successful via function.");
+
+        // 4. Revalidate cache
+        revalidatePath(`/admin/events/${eventId}`);
+        revalidatePath("/admin/events");
+        revalidatePath("/admin");
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to update event:", error);
+        return { success: false, error: error.message || "Failed to update event" };
+    }
 }
+
 
 /**
  * Fetches all coordinators from the Appwrite Team.
@@ -367,7 +459,7 @@ export async function getCoordinators(): Promise<{ id: string; name: string }[]>
  * @param currentStatus - The current publish status.
  * @returns Success or error response.
  */
-export async function togglePublishStatus(eventId: string, currentStatus: boolean) {
+/* export async function togglePublishStatus(eventId: string, currentStatus: boolean) {
     try {
         const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
@@ -422,6 +514,55 @@ export async function togglePublishStatus(eventId: string, currentStatus: boolea
         console.error("Failed to toggle publish status:", error);
         return { success: false, error: "Failed to toggle publish status" };
     }
+} */
+
+
+// Appwrite function
+export async function togglePublishStatus(eventId: string, currentStatus: boolean) {
+    try {
+        console.log(`[togglePublishStatus] Toggling status for event ${eventId}, currently: ${currentStatus}`);
+        const { getFunctions } = await createAdminClient();
+        const functions = getFunctions();
+
+        const functionId = "6973d86f00039b3c7545"; // Toggle Publish Status Function ID
+
+        const execution = await functions.createExecution({
+            functionId: functionId,
+            body: JSON.stringify({ eventId }),
+            async: false,
+            method: ExecutionMethod.POST
+        });
+
+        if (execution.status === "failed") {
+            console.error("Function execution failed:", execution.responseBody);
+            throw new Error(`Function execution failed: ${execution.responseBody}`);
+        }
+
+        // Parse response to ensure logical success
+        let responseBody;
+        try {
+            responseBody = JSON.parse(execution.responseBody);
+        } catch (e) {
+            console.warn("Could not parse function response:", execution.responseBody);
+        }
+
+        if (responseBody && !responseBody.success) {
+            throw new Error(responseBody.message || "Toggle failed");
+        }
+
+        const newStatus = responseBody.newStatus;
+        console.log("[togglePublishStatus] Status toggled successfully via function. New status:", newStatus);
+
+        // Revalidate cache
+        revalidatePath(`/admin/events/${eventId}`);
+        revalidatePath("/admin/events");
+        revalidatePath("/admin");
+
+        return { success: true, newStatus: newStatus };
+    } catch (error: any) {
+        console.error("Failed to toggle publish status:", error);
+        return { success: false, error: error.message || "Failed to toggle publish status" };
+    }
 }
 
 /*
@@ -429,7 +570,7 @@ export async function togglePublishStatus(eventId: string, currentStatus: boolea
  * @param eventId - The ID of the event to delete.
  * @returns Success or error response.
  */
-export async function deleteEvent(eventId: string) {
+/* export async function deleteEvent(eventId: string) {
     try {
         const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
@@ -465,6 +606,52 @@ export async function deleteEvent(eventId: string) {
         console.error("Failed to delete event:", error);
         return { success: false, error: "Failed to delete event" };
     }
+} */
+
+// Appwrite function
+export async function deleteEvent(eventId: string) {
+    try {
+        console.log("[deleteEvent] Starting deletion for event:", eventId);
+        const { getFunctions } = await createAdminClient();
+        const functions = getFunctions();
+
+        const functionId = "6973d2f90006f203a9a1"; // Delete Event Function ID
+
+        const execution = await functions.createExecution({
+            functionId: functionId,
+            async: false,
+            xpath: `/?event_id=${eventId}`,
+            method: ExecutionMethod.GET
+        });
+
+        if (execution.status === "failed") {
+            console.error("Function execution failed:", execution.responseBody);
+            throw new Error(`Function execution failed: ${execution.responseBody}`);
+        }
+
+        // Parse response to ensure logical success
+        let responseBody;
+        try {
+            responseBody = JSON.parse(execution.responseBody);
+        } catch (e) {
+            console.warn("Could not parse function response:", execution.responseBody);
+        }
+
+        if (responseBody && !responseBody.success) {
+            throw new Error(responseBody.message || "Deletion failed");
+        }
+
+        console.log("[deleteEvent] Event deleted successfully via function.");
+
+        // Revalidate cache
+        revalidatePath("/admin/events");
+        revalidatePath("/admin");
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Failed to delete event:", error);
+        return { success: false, error: error.message || "Failed to delete event" };
+    }
 }
 
 /**
@@ -491,7 +678,7 @@ export async function getRecentEvents(): Promise<EventSummary[]> {
             }),
             type: doc.type,
             fee: doc.fee,
-            day: String(doc.day || "1"),
+            day: doc.day || 1,
             status: (doc.is_published ? "Published" : "Draft") as "Published" | "Draft",
         }));
     } catch (err) {

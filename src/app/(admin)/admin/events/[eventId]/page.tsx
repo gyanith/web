@@ -48,7 +48,9 @@ export default async function EventManagePage({
           {error || "Event not found"}
         </p>
         <Link href="/admin/events">
-          <Button variant="outline">Back to Events</Button>
+          <Button variant="outline" className="text-white">
+            Back to Events
+          </Button>
         </Link>
       </div>
     );
@@ -172,10 +174,7 @@ export default async function EventManagePage({
                 <div>
                   <p className="text-sm font-medium">Day</p>
                   <p className="text-sm text-muted-foreground">
-                    Day{" "}
-                    {Array.isArray(event.day)
-                      ? event.day.sort().join(", ")
-                      : event.day}
+                    Day {event.day}
                   </p>
                 </div>
               </div>

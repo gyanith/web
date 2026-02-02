@@ -512,9 +512,15 @@ export default function EventDetailsClient({
                 })}
               </p>
               <p className="text-[#d4a574] text-sm mt-1">
-                {Array.isArray(eventData.day)
-                  ? `Day ${eventData.day.sort().join(" & ")}`
-                  : `Day ${eventData.day || "1"}`}
+                {(() => {
+                  const day = eventData.day;
+                  if (Array.isArray(day)) {
+                    return day.length > 0
+                      ? `Day ${day.sort().join(" & ")}`
+                      : "Day 1";
+                  }
+                  return `Day ${day || "1"}`;
+                })()}
                 {eventData.start_time && (
                   <span className="block text-white/50 text-xs mt-1 font-medium">
                     {(() => {

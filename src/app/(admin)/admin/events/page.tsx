@@ -31,6 +31,7 @@ export default async function AdminEventsPage() {
       location: doc.location,
       status: doc.is_published ? "Published" : "Draft",
       is_published: doc.is_published,
+      day: doc.day || 1,
     }));
 
     // Fetch coordinators

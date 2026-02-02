@@ -120,8 +120,7 @@ export function EventCard({ event }: EventCardProps) {
       if (result.success) {
         showToast(`"${event.name}" has been deleted successfully`, "success");
         setShowDeleteModal(false);
-        // Redirect to events list to avoid staying on deleted event's page
-        router.push("/admin/events");
+        // Just refresh the list, don't push (avoids navigation issues)
         router.refresh();
       } else {
         showToast(result.error || "Failed to delete event", "error");
@@ -263,12 +262,7 @@ export function EventCard({ event }: EventCardProps) {
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-3 w-3" />
-            <span className="truncate">
-              Day{" "}
-              {Array.isArray(event.day)
-                ? event.day.sort().join(", ")
-                : event.day}
-            </span>
+            <span className="truncate">Day {event.day}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-3 w-3" />
@@ -278,13 +272,15 @@ export function EventCard({ event }: EventCardProps) {
       </CardContent>
 
       {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        open={showDeleteModal}
-        onOpenChange={setShowDeleteModal}
-        onConfirm={handleDelete}
-        title={event.name}
-        isLoading={isLoading}
-      />
+      <div onClick={(e) => e.stopPropagation()}>
+        <DeleteConfirmationModal
+          open={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          onConfirm={handleDelete}
+          title={event.name}
+          isLoading={isLoading}
+        />
+      </div>
     </Card>
   );
 }

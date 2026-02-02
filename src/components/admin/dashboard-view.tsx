@@ -38,7 +38,7 @@ type EventSummary = {
   type: string;
   fee: number;
   status: "Published" | "Draft";
-  day: string;
+  day: number;
 };
 
 interface Coordinator {

@@ -14,21 +14,45 @@ const columns = [
   { title: "Fun Events", img: funEvents, href: "/events/fun" },
 ];
 
+/* New imports */
+import { useState } from "react";
+import SimpleSpinner from "@/my_components/SimpleSpinner";
+
 const Page = () => {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
+
   return (
     <motion.div
-      className="w-screen h-screen bg-black flex flex-col md:flex-row overflow-hidden"
+      className="w-screen h-screen bg-black flex flex-col md:flex-row overflow-hidden relative"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 2, ease: "circInOut" }}
     >
+      {/* Global Loader Overlay if desired, currently using per-column logic but blocking interaction */}
+      {loading && (
+        <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center cursor-wait">
+          {/* Optional: Generic loader if not using the per-column one, 
+                but based on design we might want to just show it over the clicked item or full screen.
+                Let's do full screen simplified loader for clarity.
+            */}
+          <SimpleSpinner size={80} className="z-60" />
+        </div>
+      )}
+
       {columns.map((col, index) => (
         <motion.div
           key={index}
           className="relative w-full h-full flex-1 border-r border-white/10 last:border-r-0 group cursor-pointer"
           onClick={() => {
-            router.push(col.href);
+            if (loading) return;
+            setLoading(true);
+            setLoadingIndex(index);
+            // Small delay to show the loader before navigating
+            setTimeout(() => {
+              router.push(col.href);
+            }, 500);
           }}
         >
           {/* Gradient */}

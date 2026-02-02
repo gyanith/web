@@ -14,7 +14,7 @@ type EventCardProps = {
   eventName: string;
   eventType: "FUN" | "TECH";
   description: string;
-  day: string;
+  day: number;
   location: string;
   prizePool: string;
   imageUrl: string;
@@ -36,11 +36,7 @@ const EventCard: React.FC<EventCardProps> = ({
 }) => {
   const router = useRouter();
 
-  const formattedDay = Array.isArray(day)
-    ? Array(day.map((d) => d - 1))
-        .sort()
-        .join(", ")
-    : day;
+  const formattedDay = day || 1;
 
   const formattedTime = start_time
     ? (() => {
@@ -161,7 +157,7 @@ const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         <motion.div
-          className={`flex-1 border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
+          className={`flex-1 flex items-center justify-center border border-[#d4a574]/60 text-[#d4a574] text-sm py-2 text-center bg-[#d4a57450] ${unispace.className}`}
         >
           {location}
         </motion.div>

@@ -25,11 +25,11 @@ export const LoaderProvider = ({ children }: { children: React.ReactNode }) => {
   const [ready, setReady] = useState(true);
   const [text, setText] = useState("Loading...");
   const [isNavigating, setIsNavigating] = useState(false);
-  
+
   const pathname = usePathname();
   const previousPathname = useRef(pathname);
   const navigationStartTime = useRef<number | null>(null);
-  
+
   // Constants for dynamic loading
   const MIN_LOAD_TIME = 500; // Minimum time to show loader to prevent flicker
   const MAX_LOAD_TIME = 5000; // Emergency timeout
@@ -39,17 +39,17 @@ export const LoaderProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (previousPathname.current !== pathname && isNavigating) {
       const startTime = navigationStartTime.current || Date.now();
-      
+
       const checkContentReady = () => {
         const timeElapsed = Date.now() - startTime;
-        
+
         // Check if document is complete
-        const isDocReady = document.readyState === 'complete';
-        
+        const isDocReady = document.readyState === "complete";
+
         // Check if all images are loaded
         const images = Array.from(document.images);
-        const areImagesLoaded = images.every(img => img.complete);
-        
+        const areImagesLoaded = images.every((img) => img.complete);
+
         const isReady = isDocReady && areImagesLoaded;
         const isMinTimeElapsed = timeElapsed >= MIN_LOAD_TIME;
         const isMaxTimeElapsed = timeElapsed >= MAX_LOAD_TIME;
@@ -76,13 +76,17 @@ export const LoaderProvider = ({ children }: { children: React.ReactNode }) => {
     setVisible(true);
     setIsNavigating(true);
     navigationStartTime.current = Date.now();
-    document.documentElement.classList.add("loader-active");
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.add("loader-active");
+    }
   }, []);
 
   const finish = useCallback(() => {
     setVisible(false);
     setTimeout(() => {
-      document.documentElement.classList.remove("loader-active");
+      if (typeof document !== "undefined") {
+        document.documentElement.classList.remove("loader-active");
+      }
     }, 500);
     setReady(true);
   }, []);
