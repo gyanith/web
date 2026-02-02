@@ -133,10 +133,25 @@ export async function initiatePayment(
 
         if (gateway === "CASHFREE") {
             // Determine return URL
-            let returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/callback?order_id={order_id}`;
+            let baseUrl = process.env.NEXT_PUBLIC_APP_URL || "";
+            // Enforce HTTPS for Cashfree if not explicitly explicitly localhost (though user said prod is https)
+            // Or simply replace http:// with https:// which handles both if the user is testing on a real server that might suffer from mixed content config or bad env var.
+            if (process.env.NODE_ENV === "production" && baseUrl.startsWith("http://")) {
+                baseUrl = baseUrl.replace("http://", "https://");
+            }
+            // Actually, simply replacing it is safer for Cashfree compliance
+            if (baseUrl.startsWith("http://") && !baseUrl.includes("localhost")) {
+                baseUrl = baseUrl.replace("http://", "https://");
+            }
+
+            let returnUrl = `${baseUrl}/api/payment/callback?order_id={order_id}`;
             if (data?.redirectUrl) {
-                const hasParams = data.redirectUrl.includes("?");
-                returnUrl = `${data.redirectUrl}${hasParams ? "&" : "?"}order_id={order_id}`;
+                let redirectBase = data.redirectUrl;
+                if (redirectBase.startsWith("http://") && !redirectBase.includes("localhost")) {
+                    redirectBase = redirectBase.replace("http://", "https://");
+                }
+                const hasParams = redirectBase.includes("?");
+                returnUrl = `${redirectBase}${hasParams ? "&" : "?"}order_id={order_id}`;
             }
 
             // Create Cashfree Order
@@ -151,7 +166,7 @@ export async function initiatePayment(
                 },
                 order_meta: {
                     return_url: returnUrl,
-                    notify_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/webhook`,
+                    notify_url: `${baseUrl}/api/payment/webhook`,
                 },
                 order_note: `Payment for ${type}`,
                 order_tags: {
@@ -168,8 +183,10 @@ export async function initiatePayment(
                 paymentSessionId = response.data.payment_session_id || "";
             } catch (error: any) {
                 console.error("Cashfree Order Creation Error:", error.response?.data || error);
-                // Rollback item if order creation fails (critical)
-                // We'll throw and let the catch block handle rollback
+
+                // Rollback: Delete the item created in Step 1
+                await rollbackItem(db, type, itemId);
+
                 throw new Error("Failed to create Cashfree order: " + (error.response?.data?.message || error.message));
             }
         } else {
@@ -445,4 +462,32 @@ async function updateTransactionStatus(orderId: string, status: string, paymentI
             razorpay_payment_id: paymentId
         }
     );
+}
+
+// Helper for rollback
+async function rollbackItem(db: any, type: PaymentType, itemId: string) {
+    if (!itemId || itemId.startsWith("ticket_")) return; // Tickets don't have a separate collection like others, or handled differently
+
+    let collectionId = "";
+    switch (type) {
+        case 'EVENT':
+        case 'WORKSHOP':
+            collectionId = appwriteConfig.registrationsCollectionId;
+            break;
+        case 'ACCOM':
+            collectionId = appwriteConfig.accommodationCollectionId;
+            break;
+        case 'MERCH':
+            collectionId = appwriteConfig.merchCollectionId;
+            break;
+    }
+
+    if (collectionId) {
+        try {
+            await db.deleteRow(appwriteConfig.databaseId, collectionId, itemId);
+            console.log(`[rollbackItem] Successfully deleted item ${itemId} after payment failure.`);
+        } catch (delError) {
+            console.error(`[rollbackItem] FAILED to delete item ${itemId}:`, delError);
+        }
+    }
 }
