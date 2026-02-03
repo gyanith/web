@@ -12,8 +12,6 @@ export async function createAdminClient() {
         .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
         .setKey(process.env.APPWRITE_API_KEY!);
 
-
-
     return {
         getClient: () => client,
         getTablesDB: () => new TablesDB(client),
@@ -47,6 +45,7 @@ export async function createSessionClient() {
         getAccount: () => new Account(client),
         getTablesDB: () => new TablesDB(client),
         getStorage: () => new Storage(client),
+        getFunctions: () => new Functions(client),
     };
 }
 

@@ -22,7 +22,6 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { load } from "@cashfreepayments/cashfree-js";
-import Script from "next/script";
 
 import {
   initiatePayment,
@@ -105,7 +104,14 @@ export default function EventDetailsClient({
           const result = await verifyCashfreePayment(orderId);
           if (result.success) {
             setIsRegistered(true);
-            toast.success("Successfully registered!");
+            setIsRegistered(true);
+            if (isWorkshop) {
+              toast.success(
+                "Successfully registered! 1 Tech Credit added to your account. You get to register for 1 tech event",
+              );
+            } else {
+              toast.success("Successfully registered!");
+            }
             router.replace(window.location.pathname); // Clear Query Params
             router.refresh();
           } else {
@@ -169,10 +175,12 @@ export default function EventDetailsClient({
       // However, usually returnURL handles the verification via useEffect.
 
       setLoading(false);
+      router.refresh();
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(error.message || "Failed to initiate payment");
       setLoading(false);
+      router.refresh();
     }
   };
 

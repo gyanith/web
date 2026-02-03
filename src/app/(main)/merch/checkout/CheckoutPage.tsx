@@ -49,14 +49,17 @@ const CheckoutPage = ({ user }: { user: any }) => {
           if (result.success) {
             toast.success("Payment successful!", "Merch secured.");
             router.replace(window.location.pathname);
+            router.refresh();
           } else {
             toast.error(result.error || "Payment verification failed");
             router.replace(window.location.pathname);
+            router.refresh();
           }
         } catch (error) {
           console.error(error);
           toast.error("Error verifying payment");
           router.replace(window.location.pathname);
+          router.refresh();
         } finally {
           setLoading(false);
         }

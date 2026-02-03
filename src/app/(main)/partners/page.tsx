@@ -8,6 +8,13 @@ import Footer from "@/my_components/Footer";
 import DecayCard from "@/my_components/DecayCard";
 import "@/my_components/crt/TestCRT.css";
 
+import gyPic1 from "@/assets/gy24pics/pic1.jpg";
+import gyPic2 from "@/assets/gy24pics/pic2.jpg";
+import gyPic3 from "@/assets/gy24pics/pic3.jpg";
+import gyPic4 from "@/assets/gy24pics/pic4.jpg";
+import gyPic5 from "@/assets/gy24pics/pic5.jpg";
+import gyPic6 from "@/assets/gy24pics/pic6.jpg";
+
 const page = () => {
   // Spring animations for smooth magnetic effect
   const x = useSpring(0, { stiffness: 150, damping: 15 });
@@ -524,7 +531,7 @@ const page = () => {
               dampness={0.08}
               offsetY={-50}
               proximityRadius={400}
-              image="https://picsum.photos/300/400?random=1"
+              image={gyPic1}
             />
 
             <DecayCard
@@ -533,7 +540,7 @@ const page = () => {
               seedAngle={10}
               dampness={0.08}
               proximityRadius={400}
-              image="https://picsum.photos/300/400?random=5"
+              image={gyPic3}
             />
 
             <DecayCard
@@ -542,7 +549,7 @@ const page = () => {
               seedAngle={-15}
               dampness={0.12}
               proximityRadius={500}
-              image="https://picsum.photos/300/400?random=2"
+              image={gyPic5}
             />
           </div>
 
@@ -554,7 +561,7 @@ const page = () => {
               seedAngle={-5}
               dampness={0.08}
               proximityRadius={400}
-              image="https://picsum.photos/300/400?random=3"
+              image={gyPic2}
             />
 
             <DecayCard
@@ -562,7 +569,7 @@ const page = () => {
               seedAngle={5}
               dampness={0.08}
               proximityRadius={400}
-              image="https://picsum.photos/300/400?random=6"
+              image={gyPic4}
             />
 
             <DecayCard
@@ -571,7 +578,7 @@ const page = () => {
               seedAngle={15}
               dampness={0.12}
               proximityRadius={500}
-              image="https://picsum.photos/300/400?random=4"
+              image={gyPic6}
             />
           </div>
         </div>

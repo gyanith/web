@@ -2,11 +2,12 @@
 
 import React, { useEffect, useRef, ReactNode, useState } from "react";
 import { gsap } from "gsap";
+import { StaticImageData } from "next/image";
 
 interface DecayCardProps {
   width?: number;
   height?: number;
-  image?: string;
+  image?: StaticImageData | string;
   children?: ReactNode;
   seed?: number;
   seedAngle?: number;
@@ -68,7 +69,7 @@ const DecayCard: React.FC<DecayCardProps> = ({
       a: number,
       b: number,
       c: number,
-      d: number
+      d: number,
     ): number => ((x - a) * (d - c)) / (b - a) + c;
 
     const distance = (x1: number, x2: number, y1: number, y2: number): number =>
@@ -83,7 +84,7 @@ const DecayCard: React.FC<DecayCardProps> = ({
         cursor.current.x,
         cardCenterX,
         cursor.current.y,
-        cardCenterY
+        cardCenterY,
       );
 
       if (dist > proximityRadius) return 0;
@@ -127,9 +128,9 @@ const DecayCard: React.FC<DecayCardProps> = ({
           0,
           winsize.current.width,
           -120 * rv.movementScale,
-          120 * rv.movementScale
+          120 * rv.movementScale,
         ) * proximityFactor,
-        rv.lerpSpeed
+        rv.lerpSpeed,
       );
 
       let targetY = lerp(
@@ -140,10 +141,10 @@ const DecayCard: React.FC<DecayCardProps> = ({
             0,
             winsize.current.height,
             -120 * rv.movementScale,
-            120 * rv.movementScale
+            120 * rv.movementScale,
           ) *
             proximityFactor,
-        rv.lerpSpeed
+        rv.lerpSpeed,
       );
 
       let targetRz = lerp(
@@ -154,10 +155,10 @@ const DecayCard: React.FC<DecayCardProps> = ({
             0,
             winsize.current.width,
             -10 * rv.rotationScale * rv.rotationDirection,
-            10 * rv.rotationScale * rv.rotationDirection
+            10 * rv.rotationScale * rv.rotationDirection,
           ) *
             proximityFactor,
-        rv.lerpSpeed
+        rv.lerpSpeed,
       );
 
       // Apply Constraints/Soft Bounds
@@ -206,7 +207,7 @@ const DecayCard: React.FC<DecayCardProps> = ({
         ref={cardRef}
         className="relative w-full h-full will-change-transform overflow-hidden rounded-xl shadow-lg shadow-black"
         style={{
-          backgroundImage: `url(${image})`,
+          backgroundImage: `url(${typeof image === "string" ? image : image?.src})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}

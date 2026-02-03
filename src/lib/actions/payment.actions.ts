@@ -2,7 +2,7 @@
 
 import { createAdminClient, createSessionClient } from "../appwrite/appwrite.server";
 import { appwriteConfig } from "../appwrite/appwrite.config";
-import { ID, Query } from "node-appwrite";
+import { ID, Query, ExecutionMethod } from "node-appwrite";
 import { Cashfree, CFEnvironment } from "cashfree-pg"; // Import Cashfree
 import { revalidatePath } from "next/cache";
 
@@ -29,208 +29,66 @@ export async function initiatePayment(
     amount: number
 ) {
     try {
-        const { getTablesDB, getUsers } = await createAdminClient();
-        const db = getTablesDB();
-        const users = getUsers();
+        const { getFunctions } = await createSessionClient();
+        const functions = getFunctions();
+        const FUNCTION_ID = '697d1058001561c91266';
 
-        console.log(`[initiatePayment] Starting ${type} payment for user ${userId}`);
+        // Prepare Payload
+        let payload: any = { type: type };
 
-        // Fetch user details for Cashfree (required)
-        let user;
-        try {
-            user = await users.get(userId);
-        } catch (e) {
-            console.error("Failed to fetch user details for payment", e);
-            user = { name: "User", email: "test@example.com", phone: "9999999999" };
+        // Map EVENT to WORKSHOP for the function spec
+        if (type === 'EVENT') {
+            payload.type = 'WORKSHOP';
         }
 
-        const userPhone = user.phone || "9999999999";
-        const userEmail = user.email || "test@example.com";
-
-        // 1. Create the specific item record
-        let itemId = "";
-
-        switch (type) {
-            case 'EVENT':
-            case 'WORKSHOP':
-                // Check if already registered
-                const existingReg = await db.listRows(
-                    appwriteConfig.databaseId,
-                    appwriteConfig.registrationsCollectionId,
-                    [
-                        Query.equal("event_id", data.eventId),
-                        Query.equal("user_id", userId)
-                    ]
-                );
-
-                if (existingReg.total > 0) {
-                    throw new Error("Already registered for this event.");
-                }
-
-                // Create Registration
-                const regPrefix = type === 'WORKSHOP' ? 'workshop_' : 'registration_';
-                const regId = regPrefix + ID.unique();
-
-                const reg = await db.createRow(
-                    appwriteConfig.databaseId,
-                    appwriteConfig.registrationsCollectionId,
-                    regId,
-                    {
-                        event_id: data.eventId,
-                        user_id: userId,
-                    }
-                );
-                itemId = reg.$id;
-                break;
-
-            case 'ACCOM':
-                const accomId = 'accom_' + ID.unique();
-                const accom = await db.createRow(
-                    appwriteConfig.databaseId,
-                    appwriteConfig.accommodationCollectionId,
-                    accomId,
-                    {
-                        user_id: userId,
-                        hostel: data.hostel,
-                        day: data.day,
-                    }
-                );
-                itemId = accom.$id;
-                break;
-
-            case 'MERCH':
-                const merchId = 'merch_' + ID.unique();
-                const merch = await db.createRow(
-                    appwriteConfig.databaseId,
-                    appwriteConfig.merchCollectionId,
-                    merchId,
-                    {
-                        user_id: userId,
-                        quantity: data.quantity,
-                        size: data.size,
-                    }
-                );
-                itemId = merch.$id;
-                break;
-
-            case 'TICKET':
-                itemId = `ticket_${userId}`;
-                break;
+        if (payload.type === 'WORKSHOP') {
+            payload.event_id = data.eventId;
+        } else if (payload.type === 'ACCOM') {
+            payload.hostel = data.hostel;
+            payload.day = data.day;
+        } else if (payload.type === 'MERCH') {
+            payload.quantity = data.quantity;
+            payload.size = data.size;
+        } else if (type === 'TICKET') {
+            payload.tier = data.tier;
+            payload.quantity = data.quantity || 1;
         }
 
-        let orderId = "";
-        let paymentSessionId = "";
-        let orderCurrency = "INR";
+        console.log(`[initiatePayment] Calling Appwrite Function for ${type}`, payload);
 
-        // Determine return URL
-        let baseUrl = process.env.NEXT_PUBLIC_APP_URL || "";
-        // Enforce HTTPS for Cashfree
-        if (process.env.NODE_ENV === "production" && baseUrl.startsWith("http://")) {
-            baseUrl = baseUrl.replace("http://", "https://");
-        }
-        if (baseUrl.startsWith("http://") && !baseUrl.includes("localhost")) {
-            baseUrl = baseUrl.replace("http://", "https://");
-        }
+        const execution = await functions.createExecution({
+            functionId: FUNCTION_ID,
+            body: JSON.stringify(payload),
+            async: false, // false = synchronous execution to wait for response
+            xpath: '/',
+            method: ExecutionMethod.POST,
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-        let returnUrl = `${baseUrl}/api/payment/callback?order_id={order_id}`;
-        if (data?.redirectUrl) {
-            let redirectBase = data.redirectUrl;
-            if (redirectBase.startsWith("http://") && !redirectBase.includes("localhost")) {
-                redirectBase = redirectBase.replace("http://", "https://");
+        if (execution.status === 'completed') {
+            const responseBody = JSON.parse(execution.responseBody);
+
+            if (responseBody.success) {
+                return {
+                    success: true,
+                    provider: "CASHFREE",
+                    orderId: responseBody.orderId,
+                    paymentSessionId: responseBody.paymentSessionId,
+                    amount: responseBody.amount,
+                    currency: "INR",
+                    transactionId: responseBody.transactionId
+                };
+            } else {
+                console.error("Function execution returned error:", responseBody);
+                return { success: false, error: responseBody.error || "Payment initialization failed." };
             }
-            const hasParams = redirectBase.includes("?");
-            returnUrl = `${redirectBase}${hasParams ? "&" : "?"}order_id={order_id}`;
+        } else {
+            console.error("Function execution failed (status not completed):", execution);
+            return { success: false, error: "System busy, please try again." };
         }
-
-        // Create Cashfree Order
-        const request: any = {
-            order_amount: amount,
-            order_currency: "INR",
-            customer_details: {
-                customer_id: userId,
-                customer_name: user.name || "User",
-                customer_email: userEmail,
-                customer_phone: userPhone,
-            },
-            order_meta: {
-                return_url: returnUrl,
-                notify_url: `${baseUrl}/api/payment/webhook`,
-            },
-            order_note: `Payment for ${type}`,
-            order_tags: {
-                paymentType: type,
-                userId: userId,
-                itemId: itemId
-            }
-        };
-
-        try {
-            // Cashfree SDK V4: first arg is request
-            const response = await cashfree.PGCreateOrder(request);
-            orderId = response.data.order_id || "";
-            paymentSessionId = response.data.payment_session_id || "";
-        } catch (error: any) {
-            console.error("Cashfree Order Creation Error:", error.response?.data || error);
-
-            // Rollback: Delete the item created in Step 1
-            await rollbackItem(db, type, itemId);
-
-            throw new Error("Failed to create Cashfree order: " + (error.response?.data?.message || error.message));
-        }
-
-        // 3. Create Transaction Record
-        let transaction;
-        try {
-            transaction = await db.createRow(
-                appwriteConfig.databaseId,
-                appwriteConfig.transactionsCollectionId,
-                ID.unique(),
-                {
-                    user: userId,
-                    amount: amount,
-                    item_type: type,
-                    item_id: itemId,
-                    status: "PENDING",
-                    cashfree_order_id: orderId,
-                    cashfree_payment_id: "WAITING", // Placeholder as it is required
-                    mode: "CF",
-                    description: `Payment for ${type}`
-                }
-            );
-        } catch (txError) {
-            console.error("Failed to create transaction record. Rolling back item creation.", txError);
-            // Rollback: Delete the item created in Step 1
-            await rollbackItem(db, type, itemId);
-            throw txError;
-        }
-
-        // 4. Update item with transaction_id
-        try {
-            if (transaction && (type === 'ACCOM' || type === 'MERCH')) {
-                const collectionId = type === 'ACCOM' ? appwriteConfig.accommodationCollectionId : appwriteConfig.merchCollectionId;
-                await db.updateRow(
-                    appwriteConfig.databaseId,
-                    collectionId,
-                    itemId,
-                    { transaction_id: transaction.$id }
-                );
-            }
-        } catch (updateError) {
-            console.error("Failed to link transaction ID.", updateError);
-        }
-
-        return {
-            success: true,
-            provider: "CASHFREE",
-            orderId: orderId,
-            paymentSessionId: paymentSessionId, // Only for Cashfree
-            amount: amount,
-            currency: orderCurrency,
-            transactionId: transaction.$id
-        };
 
     } catch (error: any) {
-        console.error("Error initiating payment:", error);
+        console.error("Error initiating payment via function:", error);
         return { success: false, error: error.message || "Failed to initiate payment" };
     }
 }
@@ -240,22 +98,63 @@ export async function verifyCashfreePayment(orderId: string) {
         const { getTablesDB } = await createAdminClient();
         const db = getTablesDB();
 
-        const response = await cashfree.PGOrderFetchPayments(orderId);
-        // Find a successful payment
-        const payments = response.data;
-        const successPayment = payments?.find((p: any) => p.payment_status === "SUCCESS");
+        // 1. Fetch Transaction first to verify existence and type
+        const list = await db.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.transactionsCollectionId,
+            [Query.equal("cashfree_order_id", orderId)]
+        );
 
-        if (successPayment) {
-            const transaction = await updateTransactionStatus(orderId, "SUCCESS", successPayment.cf_payment_id || "CF_SUCCESS");
-            if (!transaction) throw new Error("Transaction not found");
-
-            await handlePostPaymentActions(db, transaction);
-            return { success: true, paymentId: successPayment.cf_payment_id };
-        } else {
-            console.log("No successful Cashfree payment found. Rolling back...");
-            await cancelPayment(orderId);
-            return { success: false, error: "Payment failed or cancelled." };
+        if (list.total === 0) {
+            return { success: false, error: "Transaction not found" };
         }
+        const transaction = list.rows[0];
+
+        // 2. Call Verification Function (For ALL types: TICKET, MERCH, WORKSHOP, ACCOM)
+        try {
+            const { getFunctions } = await createSessionClient();
+            const functions = getFunctions();
+            const FUNCTION_ID = '697d932a000da2291474';
+
+            console.log(`[verifyCashfreePayment] Calling verification function for ${transaction.item_type}`);
+
+            const execution = await functions.createExecution({
+                functionId: FUNCTION_ID,
+                body: JSON.stringify({ transactionId: transaction.$id }),
+                async: false,
+                xpath: '/',
+                method: ExecutionMethod.POST,
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (execution.status === 'completed') {
+                const responseBody = JSON.parse(execution.responseBody);
+
+                if (responseBody.success) {
+                    console.log("[verifyCashfreePayment] Verification successful via function");
+
+                    // 3. Post-Payment Actions (Fulfilment & Credits)
+                    await handlePostPaymentActions(db, transaction);
+
+                    return {
+                        success: true,
+                        paymentId: "VERIFIED_BY_FUNCTION",
+                        transactionId: responseBody.transactionId
+                    };
+                } else {
+                    console.error("[verifyCashfreePayment] Verification function returned failure:", responseBody);
+                    return { success: false, error: responseBody.message || responseBody.error || "Payment verification failed" };
+                }
+            } else {
+                console.error("[verifyCashfreePayment] Verification function execution failed:", execution);
+                return { success: false, error: "System busy. Verification status unknown." };
+            }
+
+        } catch (funcErr: any) {
+            console.error("[verifyCashfreePayment] Function execution error:", funcErr);
+            return { success: false, error: "Verification service unavailable: " + funcErr.message };
+        }
+
     } catch (error: any) {
         console.error("Error verifying Cashfree payment:", error);
         return { success: false, error: error.message };
@@ -263,25 +162,84 @@ export async function verifyCashfreePayment(orderId: string) {
 }
 
 // Helper for post-payment actions
+// Helper for post-payment actions
 async function handlePostPaymentActions(db: any, transaction: any) {
-    switch (transaction.item_type) {
-        case 'TICKET':
-            const tierMatch = transaction.description.match(/Tier (\d+)/);
-            if (tierMatch) {
-                const tier = parseInt(tierMatch[1]);
-                await db.updateRow(
-                    appwriteConfig.databaseId,
-                    appwriteConfig.usersCollectionId,
-                    transaction.item_id.replace("ticket_", ""),
-                    { tier: tier }
-                );
+    if (transaction.item_type === 'TICKET') {
+        const tierMatch = transaction.description.match(/Tier (\d+)/);
+        if (tierMatch) {
+            const tier = parseInt(tierMatch[1]);
+            await db.updateRow(
+                appwriteConfig.databaseId,
+                appwriteConfig.usersCollectionId,
+                transaction.item_id.replace("ticket_", ""),
+                { tier: tier }
+            );
+        }
+        return;
+    }
+
+    // Handle MERCH, ACCOM, WORKSHOP via Fulfilment Function
+    try {
+        const { getFunctions } = await createSessionClient();
+        const functions = getFunctions();
+        const FUNCTION_ID = '697dc3e900397f2a6036';
+
+        console.log(`[handlePostPaymentActions] Calling fulfilment function for ${transaction.item_type}`);
+
+        const execution = await functions.createExecution({
+            functionId: FUNCTION_ID,
+            body: JSON.stringify({ transactionId: transaction.$id }),
+            async: false,
+            xpath: '/',
+            method: ExecutionMethod.POST,
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (execution.status === 'completed') {
+            const responseBody = JSON.parse(execution.responseBody);
+
+            // Check success OR "already fulfilled" error (Status 409 from function typically returns success: false)
+            const isSuccess = responseBody.success;
+            const isAlreadyFulfilled = !isSuccess && (responseBody.error === "Order already fulfilled" || responseBody.message === "Order already fulfilled");
+
+            if (isSuccess || isAlreadyFulfilled) {
+                console.log(`[handlePostPaymentActions] Order fulfilled for ${transaction.item_type} (Already Fulfilled: ${isAlreadyFulfilled})`);
+
+                // WORKSHOP SPECIFIC: Award Tech Credits
+                if (transaction.item_type === 'WORKSHOP') {
+                    try {
+                        const userId = transaction.user;
+                        const userDoc = await db.getDocument(
+                            appwriteConfig.databaseId,
+                            appwriteConfig.usersCollectionId,
+                            userId
+                        );
+
+                        if (userDoc) {
+                            await db.updateRow(
+                                appwriteConfig.databaseId,
+                                appwriteConfig.usersCollectionId,
+                                userId,
+                                {
+                                    credits: (userDoc.credits || 0) + 1
+                                }
+                            );
+                            console.log(`[handlePostPaymentActions] Awarded 1 credit to user ${userId} for workshop.`);
+                        }
+                    } catch (err) {
+                        console.error("[handlePostPaymentActions] Failed to award credit:", err);
+                    }
+                }
+
+            } else {
+                console.error("[handlePostPaymentActions] Fulfilment failed:", responseBody.error);
             }
-            break;
-        case 'EVENT':
-        case 'WORKSHOP':
-        case 'ACCOM':
-        case 'MERCH':
-            break;
+        } else {
+            console.error("[handlePostPaymentActions] Fulfilment execution failed status:", execution.status);
+        }
+
+    } catch (error) {
+        console.error("[handlePostPaymentActions] Error calling fulfilment function:", error);
     }
 }
 
