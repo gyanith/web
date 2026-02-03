@@ -27,16 +27,25 @@ export async function POST(req: NextRequest) {
 
         // Verify Signature
         try {
-            // @ts-ignore
-            (Cashfree as any).PGVerifyWebhookSignature(signature, rawBody, timestamp);
+            const crypto = require('crypto');
+            // Cashfree usually signs 'timestamp + rawBody' according to recent docs.
+            // Ensure we use the exact same secret key as configured.
+            const secret = process.env.CASHFREE_SECRET_KEY!;
+            const payload = timestamp + rawBody;
+            const generatedSignature = crypto.createHmac('sha256', secret)
+                .update(payload)
+                .digest('base64');
+
+            if (generatedSignature !== signature) {
+                // Debugging help: Log what we generated vs received
+                console.error(`Signature Mismatch. \nReceived: ${signature}\nGenerated: ${generatedSignature}\nTimestamp: ${timestamp}`);
+                throw new Error("Signature Mismatch");
+            }
         } catch (err: any) {
             console.error("Webhook Signature Verification Failed", err);
             return NextResponse.json({
                 message: "Invalid signature",
                 error: err.message,
-                stack: err.stack,
-                // @ts-ignore
-                methodExists: typeof (Cashfree as any).PGVerifyWebhookSignature === 'function'
             }, { status: 403 });
         }
 
