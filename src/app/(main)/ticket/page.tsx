@@ -62,25 +62,12 @@ export default function TicketPage() {
 
   return (
     <motion.div
-      className="w-screen min-h-screen flex flex-col relative bg-black overflow-x-hidden"
+      className="w-screen min-h-screen flex flex-col relative overflow-x-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 2, ease: "circInOut" }}
     >
       {/* Background Prism */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
-        <Prism
-          animationType="3drotate"
-          timeScale={0.2}
-          height={6}
-          baseWidth={10}
-          scale={1.5}
-          hueShift={-0.34}
-          colorFrequency={1.5}
-          noise={0.1}
-          glow={0.75}
-        />
-      </div>
 
       {/* Main Content */}
       <main className="flex-grow flex min-h-screen pb-32 lg:pb-auto items-center justify-center z-10 w-full p-4 md:p-8 md:pt-10">

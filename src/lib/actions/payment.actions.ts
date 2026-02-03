@@ -52,6 +52,7 @@ export async function initiatePayment(
         } else if (type === 'TICKET') {
             payload.tier = data.tier;
             payload.quantity = data.quantity || 1;
+            payload.item_id = `ticket_${userId}`;
         }
 
         console.log(`[initiatePayment] Calling Appwrite Function for ${type}`, payload);

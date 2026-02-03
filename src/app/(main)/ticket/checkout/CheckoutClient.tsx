@@ -221,6 +221,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
                       alt={selectedTier.title}
                       fill
                       className="object-cover"
+                      unoptimized
                     />
                   </div>
 

@@ -67,6 +67,7 @@ const TierCard: React.FC<TierCardProps> = ({
               src={tierPic}
               alt="tier pic"
               fill
+              unoptimized
               className="w-full absolute object-cover h-full mix-blend-difference"
             />
           </div>
