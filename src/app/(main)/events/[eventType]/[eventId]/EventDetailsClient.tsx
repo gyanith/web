@@ -165,7 +165,7 @@ export default function EventDetailsClient({
       await cashfree.checkout({
         paymentSessionId: initResult.paymentSessionId || "",
         // returnUrl: window.location.href,
-        redirectTarget: "_blank",
+        redirectTarget: "_modal",
       });
 
       // Verify payment status after modal closes or redirects
