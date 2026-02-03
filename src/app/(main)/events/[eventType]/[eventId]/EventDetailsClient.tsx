@@ -95,7 +95,7 @@ export default function EventDetailsClient({
   };
 
   // Handle Cashfree Return
-  useEffect(() => {
+  /* useEffect(() => {
     const orderId = searchParams.get("order_id");
     if (orderId && !isRegistered) {
       const verify = async () => {
@@ -103,7 +103,6 @@ export default function EventDetailsClient({
         try {
           const result = await verifyCashfreePayment(orderId);
           if (result.success) {
-            setIsRegistered(true);
             setIsRegistered(true);
             if (isWorkshop) {
               toast.success(
@@ -130,7 +129,7 @@ export default function EventDetailsClient({
       };
       verify();
     }
-  }, [searchParams, isRegistered, router, toast]);
+  }, [searchParams, isRegistered, router, toast]); */
 
   const handlePayment = async () => {
     if (loading) return;
@@ -166,7 +165,7 @@ export default function EventDetailsClient({
       await cashfree.checkout({
         paymentSessionId: initResult.paymentSessionId || "",
         // returnUrl: window.location.href,
-        redirectTarget: "_self",
+        redirectTarget: "_blank",
       });
 
       // Verify payment status after modal closes or redirects
