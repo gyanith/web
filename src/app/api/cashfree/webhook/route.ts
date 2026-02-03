@@ -51,27 +51,37 @@ export async function POST(req: NextRequest) {
 
         const body = JSON.parse(rawBody);
         const type = body.type;
+        const logs: string[] = [];
+
+        let fulfillmentResult = { status: "skipped", message: "Not a success webhook" };
 
         if (type === "PAYMENT_SUCCESS_WEBHOOK") {
             const orderId = body.data.order.order_id;
             const paymentStatus = body.data.payment.payment_status;
 
             if (paymentStatus === "SUCCESS") {
-                await fulfillOrder(orderId, body.data.payment.cf_payment_id);
+                fulfillmentResult = await fulfillOrder(orderId, body.data.payment.cf_payment_id, logs);
+            } else {
+                fulfillmentResult = { status: "skipped", message: `Payment status is ${paymentStatus}` };
             }
         }
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({
+            success: true,
+            fulfillment: fulfillmentResult,
+            logs: logs
+        });
     } catch (error: any) {
         console.error("Webhook Error:", error);
-        return NextResponse.json({ message: error.message }, { status: 500 });
+        return NextResponse.json({ message: error.message, stack: error.stack }, { status: 500 });
     }
 }
 
-async function fulfillOrder(orderId: string, paymentId: string) {
+async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) {
     const { getTablesDB } = await createAdminClient();
     const db = getTablesDB();
 
+    logs.push(`Processing fulfillment for Cashfree Order ID: ${orderId}`);
     console.log(`[Webhook] Processing fulfillment for Cashfree Order ID: ${orderId}`);
 
     // 1. Fetch Transaction using cashfree_order_id
@@ -82,13 +92,15 @@ async function fulfillOrder(orderId: string, paymentId: string) {
     );
 
     if (list.total === 0) {
+        logs.push(`Transaction not found for orderId: ${orderId}`);
         console.error(`[Webhook] Transaction not found for orderId: ${orderId}`);
-        return;
+        return { status: "failed", message: "Transaction not found in Appwrite" };
     }
 
     const transaction = list.rows[0];
     const transactionId = transaction.$id;
 
+    logs.push(`Found Transaction: ${transactionId} (Current Status: ${transaction.status})`);
     console.log(`[Webhook] Found Transaction: ${transactionId} (Current Status: ${transaction.status})`);
 
     // 2. Update Transaction Status if not already SUCCESS
@@ -102,8 +114,10 @@ async function fulfillOrder(orderId: string, paymentId: string) {
                 cashfree_payment_id: paymentId
             }
         );
+        logs.push(`Updated Transaction ${transactionId} to SUCCESS`);
         console.log(`[Webhook] Updated Transaction ${transactionId} to SUCCESS`);
     } else {
+        logs.push(`Transaction ${transactionId} already SUCCESS.`);
         console.log(`[Webhook] Transaction ${transactionId} already SUCCESS. Ensuring item fulfillment.`);
     }
 
@@ -112,6 +126,7 @@ async function fulfillOrder(orderId: string, paymentId: string) {
     const itemId = transaction.item_id;
     const userId = transaction.user; // User ID from transaction
 
+    logs.push(`Fulfilling order for Item Type: ${itemType}, Item ID: ${itemId}, User ID: ${userId}`);
     console.log(`[Webhook] Fulfilling order for ${itemType} - ${itemId}`);
 
     try {
@@ -130,12 +145,17 @@ async function fulfillOrder(orderId: string, paymentId: string) {
                     targetUserId,
                     { tier: tier }
                 );
+                logs.push(`Updated Tier to ${tier} for user ${targetUserId}`);
                 console.log(`[Webhook] Updated Tier to ${tier} for user ${targetUserId}`);
+                return { status: "success", message: "Ticket fulfilled" };
             }
+            logs.push("Ticket tier verification failed (regex mismatch)");
+            return { status: "warning", message: "Ticket regex mismatch" };
         }
 
         // --- MERCH ---
         else if (itemType === 'MERCH') {
+            logs.push(`Checking Merch Order ${itemId}`);
             const merchOrder = await db.getRow(
                 appwriteConfig.databaseId,
                 appwriteConfig.merchCollectionId,
@@ -149,12 +169,17 @@ async function fulfillOrder(orderId: string, paymentId: string) {
                     itemId,
                     { status: "SUCCESS" }
                 );
+                logs.push(`Merch order ${itemId} marked SUCCESS`);
                 console.log(`[Webhook] Merch order ${itemId} marked SUCCESS`);
+                return { status: "success", message: "Merch fulfilled" };
             }
+            logs.push("Merch order already success or not found");
+            return { status: "ignored", message: "Merch already success" };
         }
 
         // --- ACCOM ---
         else if (itemType === 'ACCOMM' || itemType === 'ACCOM') {
+            logs.push(`Checking Accom Order ${itemId}`);
             const accomOrder = await db.getRow(
                 appwriteConfig.databaseId,
                 appwriteConfig.accommodationCollectionId,
@@ -168,8 +193,12 @@ async function fulfillOrder(orderId: string, paymentId: string) {
                     itemId,
                     { status: "SUCCESS" }
                 );
+                logs.push(`Accommodation order ${itemId} marked SUCCESS`);
                 console.log(`[Webhook] Accommodation order ${itemId} marked SUCCESS`);
+                return { status: "success", message: "Accommodation fulfilled" };
             }
+            logs.push("Accommodation order already success or not found");
+            return { status: "ignored", message: "Accommodation already success" };
         }
 
         // --- WORKSHOP ---
@@ -195,8 +224,10 @@ async function fulfillOrder(orderId: string, paymentId: string) {
                         user_id: userId
                     }
                 );
+                logs.push(`Created registration for Workshop ${itemId}`);
                 console.log(`[Webhook] Created registration for Workshop ${itemId}`);
             } else {
+                logs.push(`Registration already exists for Workshop ${itemId}`);
                 console.log(`[Webhook] Registration already exists for Workshop ${itemId}`);
             }
 
@@ -217,11 +248,18 @@ async function fulfillOrder(orderId: string, paymentId: string) {
                         credits: newCredits
                     }
                 );
+                logs.push(`Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
                 console.log(`[Webhook] Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
             }
+            return { status: "success", message: "Workshop fulfilled" };
         }
 
+        logs.push(`Unknown Item Type: ${itemType}`);
+        return { status: "warning", message: `Unknown item type ${itemType}` };
+
     } catch (fulfillErr: any) {
-        console.error("[Webhook] Fulfillment Error Details:", fulfillErr);
+        console.error("[Webhook] Fulfillment Error Details:", fulfillErr.message);
+        logs.push(`Fulfillment Exception: ${fulfillErr.message}`);
+        return { status: "error", message: fulfillErr.message };
     }
 }
