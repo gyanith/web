@@ -27,11 +27,17 @@ export async function POST(req: NextRequest) {
 
         // Verify Signature
         try {
-            // @ts-ignore: PGVerifyWebhookSignature exists at runtime but is missing in type definitions
-            Cashfree.PGVerifyWebhookSignature(signature, rawBody, timestamp);
-        } catch (err) {
+            // @ts-ignore
+            (Cashfree as any).PGVerifyWebhookSignature(signature, rawBody, timestamp);
+        } catch (err: any) {
             console.error("Webhook Signature Verification Failed", err);
-            return NextResponse.json({ message: "Invalid signature" }, { status: 403 });
+            return NextResponse.json({
+                message: "Invalid signature",
+                error: err.message,
+                stack: err.stack,
+                // @ts-ignore
+                methodExists: typeof (Cashfree as any).PGVerifyWebhookSignature === 'function'
+            }, { status: 403 });
         }
 
         const body = JSON.parse(rawBody);
