@@ -111,7 +111,6 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
             transactionId,
             {
                 status: "SUCCESS",
-                cashfree_payment_id: paymentId
             }
         );
         logs.push(`Updated Transaction ${transactionId} to SUCCESS`);
