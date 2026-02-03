@@ -244,7 +244,7 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
                     appwriteConfig.usersCollectionId,
                     userId,
                     {
-                        credits: newCredits
+                        tech_credits: newCredits
                     }
                 );
                 logs.push(`Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
