@@ -89,7 +89,7 @@ export default function TicketPage() {
             <div className="relative">
               <div className="absolute inset-0 bg-[#d4a574] blur-[100px] opacity-20 animate-pulse" />
               <h2
-                className={`relative z-10 ${pressStart2P.className} text-2xl md:text-4xl lg:text-5xl text-[#d4a574] leading-relaxed`}
+                className={`relative z-10 ${pressStart2P.className} text-2xl md:text-4xl text-[#d4a574] leading-relaxed`}
               >
                 MAXIMUM SYNC <br /> REACHED
               </h2>
@@ -103,7 +103,7 @@ export default function TicketPage() {
             </p>
 
             <div className="mt-8 p-6 border border-[#d4a574]/30 bg-black/50 backdrop-blur-md rounded-xl shadow-[0_0_30px_-5px_#d4a57440]">
-              <div className="flex flex-col gap-2 items-center">
+              <div className="flex flex-row gap-2 items-center">
                 <span className="w-2 h-2 rounded-full bg-[#d4a574] animate-ping" />
                 <span
                   className={`${unispace.className} text-[#d4a574] text-xs md:text-sm tracking-[0.3em]`}

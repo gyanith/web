@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Phone } from "lucide-react";
-import { contactDetails } from "@/lib/info"; // Now returns Record<string, []>
+import { contactDetails } from "@/data/info"; // Now returns Record<string, []>
 import { unispace, pressStart2P } from "@/fonts/fonts";
 import Footer from "@/my_components/Footer";
 

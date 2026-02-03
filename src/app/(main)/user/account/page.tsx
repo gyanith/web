@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -11,11 +11,14 @@ import {
   Terminal,
   Gamepad2,
   GraduationCap,
+  QrCode,
+  X,
 } from "lucide-react";
+import { QRCodeGenerator } from "@/lib/helpers/qrcode.helper";
 
 import { unispace, blueScreen, garetBook } from "@/fonts/fonts";
 import { signOut, getLoggedInUser } from "@/lib/actions/auth.actions";
-import { contactDetails } from "@/lib/info";
+import { contactDetails } from "@/data/info";
 import {
   getCurrentUserDetails,
   getUserRegisteredEvents,
@@ -29,6 +32,7 @@ const Page = () => {
   const [registeredEvents, setRegisteredEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("account");
+  const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -162,14 +166,12 @@ const Page = () => {
               {/* Initials Avatar + Tier Badge - Sharp (Only show on Account tab) */}
               {activeTab === "account" && user && (
                 <div className="flex flex-col items-end gap-2 shrink-0">
-                  <div className="w-16 h-16 bg-[#d4a574] text-black flex items-center justify-center font-bold text-2xl border-2 border-white/20 shadow-[0_0_20px_rgba(212,165,116,0.5)]">
-                    {user.name
-                      .split(" ")
-                      .map((n: string) => n[0])
-                      .join("")
-                      .substring(0, 2)
-                      .toUpperCase()}
-                  </div>
+                  <button
+                    onClick={() => setShowQrModal(true)}
+                    className="w-16 h-16 bg-[#d4a574] text-black flex items-center justify-center border-2 border-white/20 shadow-[0_0_20px_rgba(212,165,116,0.5)] hover:bg-[#b88654] transition-colors"
+                  >
+                    <QrCode size={32} />
+                  </button>
                   {/* Tier Badge */}
                   {userDetails?.tier && (
                     <div
@@ -340,6 +342,18 @@ const Page = () => {
           </div>
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {showQrModal && user && (
+          <QrModal
+            open={showQrModal}
+            onClose={() => setShowQrModal(false)}
+            userId={user.$id}
+            userName={user.name}
+            onLogout={handleLogout}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -430,6 +444,88 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+const QrModal = ({
+  open,
+  onClose,
+  userId,
+  userName,
+  onLogout,
+}: {
+  open: boolean;
+  onClose: () => void;
+  userId: string;
+  userName: string;
+  onLogout: () => void;
+}) => {
+  if (!open) return null;
+
+  return (
+    <motion.div
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      className="fixed inset-0 z-[200] flex flex-col bg-[#ff4600] max-w-md  text-black overflow-hidden font-sans"
+    >
+      {/* Top Bar */}
+      <div className="flex justify-between items-start p-6 pt-12 md:p-8">
+        <div>
+          <p className="font-bold text-sm tracking-wide mb-1">YOUR PASS</p>
+          <p className="text-xs opacity-60 font-medium">Valid for GYANITH 26</p>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center -mt-10 px-6">
+        <h1 className="font-black text-5xl md:text-7xl tracking-tighter leading-none text-center mb-2 uppercase">
+          GYANITH <br /> 2026
+        </h1>
+        <p className="font-medium text-sm md:text-lg tracking-widest uppercase mb-10 opacity-80">
+          INSPIRE . INNOVATE . INVENT
+        </p>
+
+        <div className="relative p-4 bg-white/20 backdrop-blur-sm rounded-xl">
+          {/* QR Code */}
+          <div className="relative">
+            <QRCodeGenerator
+              value={userId}
+              size={256}
+              bgColor="transparent"
+              fgColor="#000000"
+              className="w-64 h-64 md:w-80 md:h-80 opacity-90"
+            />
+            {/* Center Logo/Icon Placeholder */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              {/*  <div className="w-10 h-10 bg-black rounded-full" /> */}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 text-center">
+          <h2 className="font-bold text-2xl uppercase tracking-tight">
+            {userName || "USER"}
+          </h2>
+          <p className="text-xs font-mono opacity-60 mt-1 uppercase tracking-wider">
+            {userId}
+          </p>
+        </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="p-6 pb-12 md:p-10 flex gap-4">
+        <button
+          onClick={onClose}
+          className="w-full h-14 bg-black text-[#ff4600] font-bold uppercase tracking-wider flex items-center justify-center gap-2 rounded-2xl transition-all"
+        >
+          Close
+        </button>
+      </div>
+
+      {/* Close Button (Absolute) */}
+    </motion.div>
+  );
+};
 
 function TeamGroup({
   teamName,

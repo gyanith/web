@@ -11,7 +11,7 @@ import appstoreLogo from "@/assets/appstore.svg";
 import linkedInLogo from "@/assets/linkedin.svg";
 import instagramLogo from "@/assets/instagram.svg";
 import facebookLogo from "@/assets/facebook.svg";
-import mailLogo from "@/assets/mailIcon.svg"
+import mailLogo from "@/assets/mailIcon.svg";
 
 const Footer = () => {
   return (
@@ -57,6 +57,12 @@ const Footer = () => {
                 alt="LinkedIn Logo"
                 width={35}
                 height={35}
+                onClick={() => {
+                  window.open(
+                    "https://www.linkedin.com/company/gyanith-nitpy",
+                    "_blank",
+                  );
+                }}
                 className="object-contain w-5 sm:w-7 md:w-9 cursor-pointer group-hover:brightness-50 hover:brightness-125 hover:rotate-2 origin-bottom-right transition-all duration-500 ease-in-out"
               />
 
@@ -65,6 +71,12 @@ const Footer = () => {
                 alt="Instagram Logo"
                 width={35}
                 height={35}
+                onClick={() => {
+                  window.open(
+                    "https://www.instagram.com/nitpy.gyanith/",
+                    "_blank",
+                  );
+                }}
                 className="object-contain w-5 sm:w-7 md:w-9 cursor-pointer group-hover:brightness-50 hover:brightness-125 hover:rotate-2 origin-bottom-right transition-all duration-500 ease-in-out"
               />
 
@@ -73,6 +85,12 @@ const Footer = () => {
                 alt="Facebook Logo"
                 width={35}
                 height={35}
+                onClick={() => {
+                  window.open(
+                    "https://www.facebook.com/gyanith.nitpy/",
+                    "_blank",
+                  );
+                }}
                 className="object-contain w-5 sm:w-7 md:w-9 cursor-pointer group-hover:brightness-50 hover:brightness-125 hover:rotate-2 origin-bottom-right transition-all duration-500 ease-in-out"
               />
 
@@ -81,13 +99,20 @@ const Footer = () => {
                 alt="GMail Logo"
                 width={35}
                 height={35}
+                onClick={() => {
+                  window.open(
+                    "https://mail.google.com/mail/u/0/?view=cm&fs=1&to=gyanith@nitpy.ac.in",
+                    "_blank",
+                  );
+                }}
                 className="object-contain w-5 sm:w-7 md:w-9 cursor-pointer group-hover:brightness-50 hover:brightness-125 hover:rotate-2 origin-bottom-right transition-all duration-500 ease-in-out"
               />
             </div>
           </div>
         </div>
 
-        <div className="w-1/3 flex h-full b">
+        {/* Removed the app/play store section as it is not completed  */}
+        {/* <div className="w-1/3 flex h-full b">
           <div className="w-full flex flex-col justify-between relative h-full ">
             <div className="">
               <div className="flex justify-end gap-2 md:gap-10 items-center my-2">
@@ -115,7 +140,7 @@ const Footer = () => {
               </span>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* BACKGROUND */}

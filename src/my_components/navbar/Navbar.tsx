@@ -7,8 +7,7 @@ import GlassSurface from "../GlassSurface";
 
 import { AnimatePresence, motion } from "framer-motion";
 
-import bagIcon from "@/assets/bag.svg";
-import phoneIcon from "@/assets/phone.svg";
+import proshowIcon from "@/assets/proshows.svg";
 import userIcon from "@/assets/user.svg";
 import menuIcon from "@/assets/menu.svg";
 import dollarIcon from "@/assets/dollar.svg";
@@ -164,7 +163,7 @@ const Navbar: React.FC = () => {
 
           {/* Icon Buttons */}
           <div className="flex items-center gap-2 ">
-            {["bag", "partners", "user"].map((icon) => (
+            {["proshow", "partners", "user"].map((icon) => (
               <GlassSurface
                 key={icon}
                 width={60}
@@ -181,7 +180,7 @@ const Navbar: React.FC = () => {
                     } else if (icon === "user") {
                       navigate("/user/account");
                     } else {
-                      navigate("/user/cart");
+                      navigate("/proshows");
                     }
                   }}
                   className="group relative w-12 h-12 sm:w-14 cursor-pointer sm:h-14 rounded-full  backdrop-blur-xl border border-amber-700/30 shadow-2xl flex items-center justify-center transition-all duration-300  hover:shadow-amber-500/30 shrink-0 overflow-hidden"
@@ -202,9 +201,9 @@ const Navbar: React.FC = () => {
                         className="w-full h-full"
                       />
                     )}
-                    {icon === "bag" && (
+                    {icon === "proshow" && (
                       <Image
-                        src={bagIcon}
+                        src={proshowIcon}
                         alt="Bag Icon"
                         className="w-full h-full"
                       />
