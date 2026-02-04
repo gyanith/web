@@ -51,34 +51,8 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const toast = useToast();
 
-  React.useEffect(() => {
-    const orderId = searchParams.get("order_id");
-    if (orderId) {
-      const verify = async () => {
-        setIsProcessing(true);
-        try {
-          const result = await verifyCashfreePayment(orderId);
-          if (result.success) {
-            toast.success(
-              "TRANSACTION PROTOCOL COMPLETE. WELCOME TO THE FUTURE.",
-              "SYSTEM UPDATE: TICKET SECURED",
-            );
-            router.push("/events");
-          } else {
-            toast.error("Payment verification failed! Please contact support.");
-            router.replace(window.location.pathname); // Clear params
-          }
-        } catch (error) {
-          console.error(error);
-          toast.error("Error verifying payment");
-          router.replace(window.location.pathname);
-        } finally {
-          setIsProcessing(false);
-        }
-      };
-      verify();
-    }
-  }, [searchParams, toast, router]);
+  // Removed local verification useEffect as we check out directly to /events
+  // The webhook handles fulfillment.
 
   if (!selectedTier) {
     return (
@@ -121,13 +95,16 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
     setIsProcessing(true);
 
     try {
+      const returnUrl = `${window.location.origin}/events`;
+
       // Step 1: Initiate Payment
       const initResult = await initiatePayment(
         "TICKET",
         {
           tier: selectedTier.tier,
+          quantity: qty,
           upgradeFrom: upgradeFromTier ? upgradeFromTier.tier : null,
-          redirectUrl: window.location.href,
+          redirectUrl: returnUrl,
         },
         user.$id,
       );
@@ -143,17 +120,33 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
             ? "production"
             : "sandbox",
       });
-      await cashfree.checkout({
+
+      cashfree.checkout({
         paymentSessionId: initResult.paymentSessionId || "",
-        returnUrl: window.location.href,
-        redirectTarget: "_modal",
+        returnUrl: returnUrl,
+        redirectTarget: "_modal", // changed to modal to keep context alive
       });
 
-      // Verify payment status after modal closes or redirects
-      // Note: Cashfree usually handles this via returnUrl redirect.
+      // Start Polling
+      const orderId = initResult.orderId;
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await verifyCashfreePayment(orderId!);
+          if (status.success) {
+            clearInterval(pollInterval);
+            toast.success("Payment Successful!", "Redirecting ...");
+            router.push("/events");
+          }
+        } catch (e) {
+          console.error("Polling error", e);
+        }
+      }, 2000);
 
-      setIsProcessing(false);
-      return;
+      // Stop polling after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setIsProcessing(false);
+      }, 300000);
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(

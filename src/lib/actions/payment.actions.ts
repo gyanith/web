@@ -53,7 +53,10 @@ export async function initiatePayment(
         }
 
         // Prepare Payload
-        let payload: any = { type: type };
+        let payload: any = {
+            type: type,
+            return_url: data.redirectUrl // Pass redirectUrl as return_url
+        };
 
         // Map EVENT to WORKSHOP for the function spec
         if (type === 'EVENT') {
@@ -124,58 +127,14 @@ export async function verifyCashfreePayment(orderId: string) {
         const list = await db.listRows(
             appwriteConfig.databaseId,
             appwriteConfig.transactionsCollectionId,
-            [Query.equal("cashfree_order_id", orderId)]
+            [Query.equal("status", "SUCCESS")]
         );
 
         if (list.total === 0) {
-            return { success: false, error: "Transaction not found" };
+            return { success: false, error: "Transaction unsuccessful" };
         }
         const transaction = list.rows[0];
-
-        // 2. Call Verification Function (For ALL types: TICKET, MERCH, WORKSHOP, ACCOM)
-        try {
-            const { getFunctions } = await createSessionClient();
-            const functions = getFunctions();
-            const FUNCTION_ID = '697d932a000da2291474';
-
-            console.log(`[verifyCashfreePayment] Calling verification function for ${transaction.item_type}`);
-
-            const execution = await functions.createExecution({
-                functionId: FUNCTION_ID,
-                body: JSON.stringify({ transactionId: transaction.$id }),
-                async: false,
-                xpath: '/',
-                method: ExecutionMethod.POST,
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            if (execution.status === 'completed') {
-                const responseBody = JSON.parse(execution.responseBody);
-
-                if (responseBody.success) {
-                    console.log("[verifyCashfreePayment] Verification successful via function");
-
-                    // 3. Post-Payment Actions (Fulfilment & Credits)
-                    await handlePostPaymentActions(db, transaction);
-
-                    return {
-                        success: true,
-                        paymentId: "VERIFIED_BY_FUNCTION",
-                        transactionId: responseBody.transactionId
-                    };
-                } else {
-                    console.error("[verifyCashfreePayment] Verification function returned failure:", responseBody);
-                    return { success: false, error: responseBody.message || responseBody.error || "Payment verification failed" };
-                }
-            } else {
-                console.error("[verifyCashfreePayment] Verification function execution failed:", execution);
-                return { success: false, error: "System busy. Verification status unknown." };
-            }
-
-        } catch (funcErr: any) {
-            console.error("[verifyCashfreePayment] Function execution error:", funcErr);
-            return { success: false, error: "Verification service unavailable: " + funcErr.message };
-        }
+        return { success: true, transactionId: transaction.$id };
 
     } catch (error: any) {
         console.error("Error verifying Cashfree payment:", error);
