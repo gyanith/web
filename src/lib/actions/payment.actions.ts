@@ -71,6 +71,7 @@ export async function initiatePayment(
         } else if (type === 'TICKET') {
             payload.tier = data.tier;
             payload.item_id = `ticket_${userId}`;
+            payload.description = `Gyanith Ticket - Tier ${data.tier}`;
         }
 
         console.log(`[initiatePayment] Calling Appwrite Function for ${type}`, payload);
