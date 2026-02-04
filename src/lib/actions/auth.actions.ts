@@ -160,11 +160,14 @@ export async function createUserProfile(data: any) {
     return { success: true };
   } catch (error: any) {
     if (error.code === 409) {
-      // Profile already exists, update it instead
-      console.log("⚠️ Profile exists, updating instead:", data.userId);
+      // Profile already exists OR conflict on unique attribute (email)
+      console.log("⚠️ Profile conflict (409), attempting resolution for:", data.userId);
+
       try {
         const { getTablesDB } = await createAdminClient();
         const tablesDB = getTablesDB();
+
+        // 1. Try Update (Assumes ID conflict)
         await tablesDB.updateRow({
           databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
           tableId: process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
@@ -177,9 +180,54 @@ export async function createUserProfile(data: any) {
             college_name: data.collegeName,
           },
         });
-        console.log("✅ Profile updated successfully");
+        console.log("✅ Profile updated successfully (ID match)");
         return { success: true };
+
       } catch (updateError: any) {
+        // 2. If Update fails (404), it means ID didn't match. 
+        // Must be a Unique Attribute conflict (Ghost Record with same email).
+        if (updateError.code === 404) {
+          console.log("⚠️ Update failed (404). Checking for Ghost Record (Email collision)...");
+          const { getTablesDB } = await createAdminClient();
+          const tablesDB = getTablesDB();
+
+          // Find ghost row by email
+          const list = await tablesDB.listRows(
+            process.env.NEXT_PUBLIC_DATABASE_ID!,
+            process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
+            [Query.equal("email", data.email)]
+          );
+
+          if (list.total > 0) {
+            const ghostRow = list.rows[0];
+            console.log("👻 Ghost Record found:", ghostRow.$id, "Deleting...");
+
+            // Delete Ghost
+            await tablesDB.deleteRow(
+              process.env.NEXT_PUBLIC_DATABASE_ID!,
+              process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
+              ghostRow.$id
+            );
+
+            // Retry Create
+            console.log("🔄 Retrying Create...");
+            await tablesDB.createRow({
+              databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+              tableId: process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
+              rowId: data.userId,
+              data: {
+                email: data.email,
+                phone: parseInt(data.phone),
+                gender: data.gender,
+                is_nitpy: data.isNITPY,
+                college_name: data.collegeName,
+              },
+            });
+            console.log("✅ Profile created after ghost cleanup");
+            return { success: true };
+          }
+        }
+
         console.error("Update Profile Error:", updateError);
         return { success: false, error: updateError.message || "Failed to update profile" };
       }
@@ -316,8 +364,20 @@ export async function completeSignupWithOtp(
 
     console.log("✅ Complete Signup Action: Success for", userId);
     return { success: true };
+    return { success: true };
   } catch (error: any) {
     console.error("Complete Signup Error:", error);
+
+    // 🚨 ROLLBACK: Delete Auth User if profile creation failed
+    // This prevents "User exists but no profile" zombie state.
+    try {
+      const { getUsers } = await createAdminClient();
+      await getUsers().delete(userId);
+      console.log("♻️ Rolled back (deleted) Auth user due to profile failure");
+    } catch (cleanupErr) {
+      console.error("Rollback failed:", cleanupErr);
+    }
+
     return {
       success: false,
       error: error.message || "Signup failed during completion.",
