@@ -26,7 +26,6 @@ export async function initiatePayment(
     type: PaymentType,
     data: any,
     userId: string,
-    amount: number
 ) {
     try {
         const { getFunctions } = await createSessionClient();

@@ -71,7 +71,7 @@ const CheckoutPage = ({ user }: { user: any }) => {
   // Derived state for calculations
   const subtotal = 350.0 * qty;
   const taxes = subtotal * 0.1;
-  const total = subtotal + taxes;
+  const total = subtotal; // Taxes excluded from total
 
   const handlePayment = async () => {
     try {
@@ -254,7 +254,9 @@ const CheckoutPage = ({ user }: { user: any }) => {
                   </div>
                   <div className="flex justify-between">
                     <span>Taxes (0.10) </span>
-                    <span>&#8377;{taxes.toFixed(2)}</span>
+                    <span className="line-through text-zinc-600">
+                      &#8377;{taxes.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Delivery</span>
@@ -339,7 +341,9 @@ const CheckoutPage = ({ user }: { user: any }) => {
               </div>
               <div className="flex justify-between text-sm">
                 <span>Tax</span>
-                <span className="font-medium">₹{taxes.toFixed(2)}</span>
+                <span className="font-medium line-through text-white/50">
+                  ₹{taxes.toFixed(2)}
+                </span>
               </div>
               <div className="border-t border-zinc-200/20 pt-2 mt-2">
                 <div className="flex justify-between">

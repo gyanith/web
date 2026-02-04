@@ -112,7 +112,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
   const pricePerUnit = Math.max(0, numericPrice - upgradeDiscount);
   const subtotal = pricePerUnit * qty;
   const taxes = subtotal * 0.18;
-  const total = subtotal + taxes;
+  const total = subtotal; // Tax excluded from total
 
   // Main payment handler with Cashfree integration
   const handlePayment = async () => {
@@ -130,7 +130,6 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
           redirectUrl: window.location.href,
         },
         user.$id,
-        total, // This is the calculated total
       );
 
       if (!initResult.success) {
@@ -280,7 +279,9 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
                   </div>
                   <div className="flex justify-between">
                     <span>Taxes (18%)</span>
-                    <span>&#8377;{taxes.toFixed(2)}</span>
+                    <span className="line-through text-zinc-600">
+                      &#8377;{taxes.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Delivery</span>
@@ -360,7 +361,9 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span>Tax</span>
-                <span className="font-medium">₹{taxes.toFixed(2)}</span>
+                <span className="font-medium line-through text-white/50">
+                  ₹{taxes.toFixed(2)}
+                </span>
               </div>
               <div className="border-t border-zinc-200/20 pt-2 mt-2">
                 <div className="flex justify-between">

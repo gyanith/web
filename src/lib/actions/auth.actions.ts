@@ -51,8 +51,9 @@ export async function setSessionCookie(secret: string, expire: string) {
     value: secret,
     httpOnly: true,
     path: "/",
-    // 🚨 FIX: False on localhost (http), True on Production (https)
-    secure: isProduction,
+    // 🚨 FIX: False on localhost (http). Forcing false now to support local 'npm run prod' testing.
+    // In a real production deployment with HTTPS, you can set this back to 'isProduction' or true.
+    secure: false,
     sameSite: "lax", // 'lax' is safer for navigation redirects than 'strict'
     expires: new Date(expire),
   });
@@ -77,50 +78,52 @@ export async function checkUserExists(email: string) {
   }
 }
 
-export async function loginWithEmail(data: any) {
+export async function loginWithEmail({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}) {
   try {
-    const { email, password } = data;
-
-    // Verify credentials with Client SDK
+    // 1. Verify credentials using Client SDK
     const client = new Client()
       .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
       .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
 
     const account = new Account(client);
 
-    // Create session to verify password
+    // Create a temporary session to verify password
     const verification = await account.createEmailPasswordSession({
       email,
       password,
     });
 
-    // ✅ FIX: Authenticate the client with the session secret
-    // But wait... verification.secret is empty! So we can't do this.
-    // We need a different approach.
-
-    // Actually, we can just delete by session ID using Admin SDK
+    // 2. Use Admin SDK to create a session with secret
     const { getUsers } = await createAdminClient();
     const users = getUsers();
 
-    // Delete the verification session using Admin SDK
+    // Delete the temporary verification session
     await users.deleteSession({
       userId: verification.userId,
       sessionId: verification.$id,
     });
 
-    // Create a new session with Admin SDK that has the secret
+    // Create a new session using Admin SDK (this returns the secret)
     const session = await users.createSession({ userId: verification.userId });
 
+    // 3. Set the session cookie
     await setSessionCookie(session.secret, session.expire);
 
-    console.log("✅ Login Action: Cookie set for", session.userId);
+    console.log("✅ Login successful for user:", session.userId);
 
     return { success: true };
   } catch (error: any) {
-    console.error("Login Action Error:", error.message);
+    console.error("Login error:", error.message);
     return { success: false, error: "Invalid email or password" };
   }
 }
+
 
 // 🚨 NEW: Create Profile Action (for OTP Flow)
 export async function createUserProfile(data: any) {
@@ -242,6 +245,57 @@ export async function signUpWithEmail(data: any) {
     }
 
     return { success: false, error: error.message || "Signup failed." };
+  }
+}
+
+// 🚨 NEW: Complete Signup with OTP (Server Side)
+export async function completeSignupWithOtp(
+  userId: string,
+  otp: string,
+  data: SignUpData,
+) {
+  try {
+    const { firstName, lastName, password, ...profileData } = data;
+
+    // 1. Verify OTP and Create Session (using Client SDK pattern to verify OTP)
+    const client = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+
+    const account = new Account(client);
+
+    // This returns the session object which contains the secret
+    console.log("🔐 Verifying OTP for", userId);
+    const session = await account.createSession(userId, otp);
+
+    // 2. Set the session cookie for Next.js Server
+    await setSessionCookie(session.secret, session.expire);
+
+    // 3. Update User Details (Password, Name) using Admin SDK
+    const { getUsers } = await createAdminClient();
+    const users = getUsers();
+
+    await users.updatePassword(userId, password);
+    await users.updateName(userId, `${firstName} ${lastName}`);
+
+    // 4. Create User Profile
+    const profileResult = await createUserProfile({
+      userId,
+      ...profileData,
+    });
+
+    if (!profileResult.success) {
+      throw new Error(profileResult.error);
+    }
+
+    console.log("✅ Complete Signup Action: Success for", userId);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Complete Signup Error:", error);
+    return {
+      success: false,
+      error: error.message || "Signup failed during completion.",
+    };
   }
 }
 
