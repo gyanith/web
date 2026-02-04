@@ -40,11 +40,11 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
   const menuItems = [
     { label: "EVENTS", link: "/events" },
     { label: "TICKET", link: "/ticket" },
+    { label: "PROSHOWS", link: "/proshows" },
     { label: "RESIDENCE", link: "/residence" },
     { label: "MERCH", link: "/merch" },
     { label: "PARTNERS", link: "/partners" },
     { label: "CORE", link: "/core" },
-    { label: "CART", link: "/user/cart" },
     { label: "ACCOUNT", link: "/user/account" },
   ];
 

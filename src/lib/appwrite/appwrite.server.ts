@@ -38,6 +38,8 @@ export async function createSessionClient() {
     // Set session if it exists
     if (session?.value) {
         client.setSession(session.value);
+    } else {
+        console.log("⚠️ createSessionClient: No session cookie found for", `a_session_${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID?.toLowerCase()}`);
     }
 
     return {
