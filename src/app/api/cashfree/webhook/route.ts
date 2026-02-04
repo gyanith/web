@@ -135,17 +135,15 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
             if (tierMatch) {
                 const tier = parseInt(tierMatch[1]);
                 // Ticket ID usually contains user ID, e.g., 'ticket_userId'
-                // Assuming logic matches payment.actions.ts
-                const targetUserId = itemId.replace("ticket_", "");
-
+                // But we have userId directly from the transaction
                 await db.updateRow(
                     appwriteConfig.databaseId,
                     appwriteConfig.usersCollectionId,
-                    targetUserId,
+                    userId,
                     { tier: tier }
                 );
-                logs.push(`Updated Tier to ${tier} for user ${targetUserId}`);
-                console.log(`[Webhook] Updated Tier to ${tier} for user ${targetUserId}`);
+                logs.push(`Updated Tier to ${tier} for user ${userId}`);
+                console.log(`[Webhook] Updated Tier to ${tier} for user ${userId}`);
                 return { status: "success", message: "Ticket fulfilled" };
             }
             logs.push("Ticket tier verification failed (regex mismatch)");
@@ -177,7 +175,7 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
         }
 
         // --- ACCOM ---
-        else if (itemType === 'ACCOMM' || itemType === 'ACCOM') {
+        else if (itemType === 'ACCOMM') {
             logs.push(`Checking Accom Order ${itemId}`);
             const accomOrder = await db.getRow(
                 appwriteConfig.databaseId,
@@ -194,6 +192,28 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
                 );
                 logs.push(`Accommodation order ${itemId} marked SUCCESS`);
                 console.log(`[Webhook] Accommodation order ${itemId} marked SUCCESS`);
+
+                // ⬇️ Decrement Slots
+                const hostel = accomOrder.hostel; // Assuming 'hostel' field exists
+                const slotList = await db.listRows(
+                    appwriteConfig.databaseId,
+                    appwriteConfig.accommDetailsCollectionId,
+                    [Query.equal("hostel", hostel)]
+                );
+
+                if (slotList.total > 0) {
+                    const hostelDoc = slotList.rows[0];
+                    const newSlots = Math.max(0, hostelDoc.slots - 1);
+                    await db.updateRow(
+                        appwriteConfig.databaseId,
+                        appwriteConfig.accommDetailsCollectionId,
+                        hostelDoc.$id,
+                        { slots: newSlots }
+                    );
+                    logs.push(`Decremented slot for ${hostel}. New slots: ${newSlots}`);
+                    console.log(`[Webhook] Decremented slot for ${hostel}. New slots: ${newSlots}`);
+                }
+
                 return { status: "success", message: "Accommodation fulfilled" };
             }
             logs.push("Accommodation order already success or not found");

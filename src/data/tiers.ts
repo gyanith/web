@@ -2,7 +2,7 @@ export const TIERS = [
     {
         tier: 1,
         title: "OBELISK", // Tier 1
-        price: "₹100",
+        price: "₹1",
         description: "Ideal for the focused enthusiast.",
         features: [
             "Access to 2 Tech Events",

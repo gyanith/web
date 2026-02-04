@@ -32,6 +32,26 @@ export async function initiatePayment(
         const functions = getFunctions();
         const FUNCTION_ID = '697d1058001561c91266';
 
+        // 🚨 PRE-CHECK: Slots for Accommodation
+        if (type === 'ACCOM') {
+            const { getTablesDB } = await createAdminClient();
+            const db = getTablesDB();
+            const list = await db.listRows(
+                appwriteConfig.databaseId,
+                appwriteConfig.accommDetailsCollectionId,
+                [Query.equal("hostel", data.hostel)]
+            );
+
+            if (list.total > 0) {
+                const hostelData = list.rows[0];
+                if (hostelData.slots <= 0) {
+                    return { success: false, error: `No slots available for ${data.hostel}` };
+                }
+            } else {
+                return { success: false, error: "Invalid hostel selected" };
+            }
+        }
+
         // Prepare Payload
         let payload: any = { type: type };
 
@@ -50,7 +70,6 @@ export async function initiatePayment(
             payload.size = data.size;
         } else if (type === 'TICKET') {
             payload.tier = data.tier;
-            payload.quantity = data.quantity || 1;
             payload.item_id = `ticket_${userId}`;
         }
 

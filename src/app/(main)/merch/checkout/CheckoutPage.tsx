@@ -85,7 +85,6 @@ const CheckoutPage = ({ user }: { user: any }) => {
           redirectUrl: window.location.href,
         },
         user.$id,
-        total,
       );
 
       if (!initResult.success) {

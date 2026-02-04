@@ -11,6 +11,7 @@ export const appwriteConfig = {
     registrationsCollectionId: process.env.NEXT_PUBLIC_REGISTRATIONS_COLLECTION_ID!,
     merchCollectionId: "696d1ccd0017fda86a54",
     accommodationCollectionId: "696d1b3300011fb25bc3",
+    accommDetailsCollectionId: "69831300002a0719a30b",
     eventTeamsCollectionId: "697dcbd20035270f3d7a",
     teamMembersCollectionId: "697dce7e00040c4b84c1",
 };

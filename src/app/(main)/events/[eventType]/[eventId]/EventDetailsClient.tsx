@@ -147,7 +147,6 @@ export default function EventDetailsClient({
           redirectUrl: window.location.href,
         },
         user.$id,
-        amount,
       );
 
       if (!initResult.success) {
