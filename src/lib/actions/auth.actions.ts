@@ -159,6 +159,32 @@ export async function createUserProfile(data: any) {
     console.log("✅ Profile created successfully");
     return { success: true };
   } catch (error: any) {
+    if (error.code === 409) {
+      // Profile already exists, update it instead
+      console.log("⚠️ Profile exists, updating instead:", data.userId);
+      try {
+        const { getTablesDB } = await createAdminClient();
+        const tablesDB = getTablesDB();
+        await tablesDB.updateRow({
+          databaseId: process.env.NEXT_PUBLIC_DATABASE_ID!,
+          tableId: process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
+          rowId: data.userId,
+          data: {
+            email: data.email,
+            phone: parseInt(data.phone),
+            gender: data.gender,
+            is_nitpy: data.isNITPY,
+            college_name: data.collegeName,
+          },
+        });
+        console.log("✅ Profile updated successfully");
+        return { success: true };
+      } catch (updateError: any) {
+        console.error("Update Profile Error:", updateError);
+        return { success: false, error: updateError.message || "Failed to update profile" };
+      }
+    }
+
     console.error("Create Profile Error:", error);
     return { success: false, error: error.message || "Failed to create profile" };
   }
