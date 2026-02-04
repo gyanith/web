@@ -187,20 +187,36 @@ export async function createUserProfile(data: any) {
         // 2. If Update fails (404), it means ID didn't match. 
         // Must be a Unique Attribute conflict (Ghost Record with same email).
         if (updateError.code === 404) {
-          console.log("⚠️ Update failed (404). Checking for Ghost Record (Email collision)...");
+          console.log("⚠️ Update failed (404). Checking for Ghost Record (Email/Phone collision)...");
           const { getTablesDB } = await createAdminClient();
           const tablesDB = getTablesDB();
 
-          // Find ghost row by email
-          const list = await tablesDB.listRows(
+          // 1. Find ghost by Email
+          let ghostRow = null;
+          const emailList = await tablesDB.listRows(
             process.env.NEXT_PUBLIC_DATABASE_ID!,
             process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
             [Query.equal("email", data.email)]
           );
 
-          if (list.total > 0) {
-            const ghostRow = list.rows[0];
-            console.log("👻 Ghost Record found:", ghostRow.$id, "Deleting...");
+          if (emailList.total > 0) {
+            ghostRow = emailList.rows[0];
+            console.log("👻 Ghost Record found by EMAIL:", ghostRow.$id);
+          } else {
+            // 2. Find ghost by Phone
+            const phoneList = await tablesDB.listRows(
+              process.env.NEXT_PUBLIC_DATABASE_ID!,
+              process.env.NEXT_PUBLIC_USER_COLLECTION_ID!,
+              [Query.equal("phone", parseInt(data.phone))]
+            );
+            if (phoneList.total > 0) {
+              ghostRow = phoneList.rows[0];
+              console.log("👻 Ghost Record found by PHONE:", ghostRow.$id);
+            }
+          }
+
+          if (ghostRow) {
+            console.log("🗑️ Deleting Ghost Record:", ghostRow.$id);
 
             // Delete Ghost
             await tablesDB.deleteRow(

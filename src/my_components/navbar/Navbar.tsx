@@ -229,6 +229,7 @@ const Navbar: React.FC = () => {
         <div className="flex lg:hidden gap-2">
           <div
             onClick={() => {
+              if (navigator.vibrate) navigator.vibrate(10);
               router.push("/");
               setSelected("HOME");
             }}
@@ -252,7 +253,12 @@ const Navbar: React.FC = () => {
               />
             </GlassSurface>
           </div>
-          <div onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <div
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate(10);
+              setMobileMenuOpen(!mobileMenuOpen);
+            }}
+          >
             <GlassSurface
               width={120}
               height={60}
