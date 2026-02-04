@@ -70,7 +70,9 @@ export async function initiatePayment(
             payload.size = data.size;
         } else if (type === 'TICKET') {
             payload.tier = data.tier;
-            payload.item_id = `ticket_${userId}`;
+            payload.quantity = data.quantity || 1;
+            // Encode tier in item_id: ticket_USERID_TIER
+            payload.item_id = `ticket_${userId}_${data.tier}`;
             payload.description = `Gyanith Ticket - Tier ${data.tier}`;
         }
 

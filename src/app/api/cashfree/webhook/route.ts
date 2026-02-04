@@ -131,23 +131,51 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
     try {
         // --- TICKET ---
         if (itemType === 'TICKET') {
-            const tierMatch = transaction.description.match(/Tier (\d+)/);
-            if (tierMatch) {
-                const tier = parseInt(tierMatch[1]);
-                // Ticket ID usually contains user ID, e.g., 'ticket_userId'
-                // But we have userId directly from the transaction
+            let tier = 0;
+
+            // 1. Try parsing from item_id: ticket_USERID_TIER
+            const lastUnderscoreIndex = itemId.lastIndexOf('_');
+            if (lastUnderscoreIndex !== -1) {
+                const suffix = itemId.substring(lastUnderscoreIndex + 1);
+                if (!isNaN(parseInt(suffix))) {
+                    tier = parseInt(suffix);
+                }
+            }
+
+            // 2. Fallback: Parse from description
+            if (tier === 0 && transaction.description) {
+                const tierMatch = transaction.description.match(/Tier (\d+)/);
+                if (tierMatch) {
+                    tier = parseInt(tierMatch[1]);
+                }
+            }
+
+            if (tier > 0) {
+                // Credit Mapping (from tiers.ts)
+                const creditsMap: Record<number, { tech: number, fun: number }> = {
+                    1: { tech: 2, fun: 0 },
+                    2: { tech: 5, fun: 2 },
+                    3: { tech: 7, fun: 4 }
+                };
+                const credits = creditsMap[tier] || { tech: 0, fun: 0 };
+
                 await db.updateRow(
                     appwriteConfig.databaseId,
                     appwriteConfig.usersCollectionId,
                     userId,
-                    { tier: tier }
+                    {
+                        tier: tier,
+                        tech_credits: credits.tech,
+                        fun_credits: credits.fun
+                    }
                 );
-                logs.push(`Updated Tier to ${tier} for user ${userId}`);
-                console.log(`[Webhook] Updated Tier to ${tier} for user ${userId}`);
+                logs.push(`Updated Tier to ${tier}, TechCredits: ${credits.tech}, FunCredits: ${credits.fun} for user ${userId}`);
+                console.log(`[Webhook] Fulfilled Ticket Tier ${tier} for ${userId}`);
                 return { status: "success", message: "Ticket fulfilled" };
             }
-            logs.push("Ticket tier verification failed (regex mismatch)");
-            return { status: "warning", message: "Ticket regex mismatch" };
+
+            logs.push("Ticket tier verification failed (could not parse tier)");
+            return { status: "warning", message: "Ticket parse failed" };
         }
 
         // --- MERCH ---
