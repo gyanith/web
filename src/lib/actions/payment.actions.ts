@@ -14,7 +14,7 @@ const cashfree = new Cashfree(
     process.env.CASHFREE_API_VERSION // Optional
 );
 
-export type PaymentType = 'EVENT' | 'WORKSHOP' | 'MERCH' | 'ACCOM' | 'TICKET';
+export type PaymentType = 'EVENT' | 'WORKSHOP' | 'MERCH' | 'ACCOMM' | 'TICKET';
 
 /**
  * Initiates a payment process.
@@ -33,7 +33,7 @@ export async function initiatePayment(
         const FUNCTION_ID = '697d1058001561c91266';
 
         // 🚨 PRE-CHECK: Slots for Accommodation
-        if (type === 'ACCOM') {
+        if (type === 'ACCOMM') {
             const { getTablesDB } = await createAdminClient();
             const db = getTablesDB();
             const list = await db.listRows(
@@ -50,6 +50,17 @@ export async function initiatePayment(
             } else {
                 return { success: false, error: "Invalid hostel selected" };
             }
+
+            // Check if user has already booked accommodation
+            const userBookings = await db.listRows(
+                appwriteConfig.databaseId,
+                appwriteConfig.accommodationCollectionId,
+                [Query.equal("user_id", userId), Query.equal("status", "SUCCESS")]
+            );
+
+            if (userBookings.total > 0) {
+                return { success: false, error: "User has already booked accommodation" };
+            }
         }
 
         // Prepare Payload
@@ -58,14 +69,9 @@ export async function initiatePayment(
             return_url: data.redirectUrl // Pass redirectUrl as return_url
         };
 
-        // Map EVENT to WORKSHOP for the function spec
-        if (type === 'EVENT') {
-            payload.type = 'WORKSHOP';
-        }
-
         if (payload.type === 'WORKSHOP') {
             payload.event_id = data.eventId;
-        } else if (payload.type === 'ACCOM') {
+        } else if (payload.type === 'ACCOMM') {
             payload.hostel = data.hostel;
             payload.day = data.day;
         } else if (payload.type === 'MERCH') {
@@ -159,7 +165,7 @@ async function handlePostPaymentActions(db: any, transaction: any) {
         return;
     }
 
-    // Handle MERCH, ACCOM, WORKSHOP via Fulfilment Function
+    // Handle MERCH, ACCOMM, WORKSHOP via Fulfilment Function
     try {
         const { getFunctions } = await createSessionClient();
         const functions = getFunctions();
@@ -299,7 +305,7 @@ async function rollbackItem(db: any, type: PaymentType, itemId: string) {
         case 'WORKSHOP':
             collectionId = appwriteConfig.registrationsCollectionId;
             break;
-        case 'ACCOM':
+        case 'ACCOMM':
             collectionId = appwriteConfig.accommodationCollectionId;
             break;
         case 'MERCH':
@@ -314,5 +320,27 @@ async function rollbackItem(db: any, type: PaymentType, itemId: string) {
         } catch (delError) {
             console.error(`[rollbackItem] FAILED to delete item ${itemId}:`, delError);
         }
+    }
+}
+
+
+export async function getUserAccommodation(userId: string) {
+    try {
+        const { getTablesDB } = await createSessionClient();
+        const db = getTablesDB();
+
+        const list = await db.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.accommodationCollectionId,
+            [Query.equal("user_id", userId), Query.equal("status", "SUCCESS")]
+        );
+
+        if (list.total > 0) {
+            return list.rows[0];
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching user accommodation:", error);
+        return null;
     }
 }

@@ -1,7 +1,20 @@
 
 
 export const coreTeam = [
-
+    {
+        name: "Lokesh",
+        team: "Core",
+        role: "General Secretary",
+        imageId: "",
+        phone: ""
+    },
+    {
+        name: "Asmath Aseela M",
+        team: "Core",
+        role: "General Secretary",
+        imageId: "6984e3400032acbf7535",
+        phone: ""
+    },
     {
         name: "A M Barath",
         team: "Core",
@@ -13,19 +26,28 @@ export const coreTeam = [
         name: "G Gokul",
         team: "Core",
         role: "Treasurer",
-        imageId: "696d1f78000409f957df",
+        imageId: "6984e49e001dfa59a7ef",
         phone: ""
-    }
+    },
+    {
+        name: "Srihari Selvam",
+        team: "Event Coordination",
+        role: "Technical Head",
+        imageId: "6984e3c7002274ec09d6",
+        phone: ""
+    },
+    {
+        name: "Nidhish",
+        team: "Event Coordination",
+        role: "Technical Head",
+        imageId: "696d1fd3000f8de8a6e4",
+        phone: ""
+    },
 ]
 
 export const allTeam = [
-    {
-        name: "Sailaja G",
-        team: "Event Coordination",
-        role: "Lead",
-        imageId: "696d200e002b55edc37f",
-        phone: ""
-    },
+
+
     {
         name: "K Lokesh",
         team: "Event Coordination",
@@ -34,32 +56,10 @@ export const allTeam = [
         phone: ""
     },
     {
-        name: "Srihari Selvam",
-        team: "Event Coordination",
-        role: "Lead",
-        imageId: "",
-        phone: ""
-    },
-    {
-        name: "Nidhish",
-        team: "Event Coordination",
-        role: "Lead",
-        imageId: "696d1fd3000f8de8a6e4",
-        phone: ""
-    },
-    {
         name: "T Devendra Naidu",
         team: "Event Coordination",
         role: "Lead",
         imageId: "696d1f6700301b31cda9",
-        phone: ""
-    },
-
-    {
-        name: "Dharshini VK",
-        team: "Event Coordination",
-        role: "Lead",
-        imageId: "696d1f5f001c64c83e81",
         phone: ""
     },
 
@@ -99,7 +99,7 @@ export const allTeam = [
         name: "Vigneshwaran S",
         team: "Accommodation",
         role: "Team Lead",
-        imageId: "",
+        imageId: "6984e326000b1123e5c4",
         phone: ""
     },
 
@@ -123,7 +123,7 @@ export const allTeam = [
         name: "A Avinash",
         team: "Refreshment",
         role: "Team Lead",
-        imageId: "",
+        imageId: "6984e655001ab3a93afa",
         phone: ""
     },
 
@@ -198,7 +198,7 @@ export const allTeam = [
 
     {
         name: "Maneesh Rao",
-        team: "Photography & Social Media Coverage",
+        team: "Photography & Coverage",
         role: "Team Lead",
         imageId: "",
         phone: ""
@@ -215,7 +215,7 @@ export const allTeam = [
         name: "Swathy G",
         team: "Decorations",
         role: "Team Lead",
-        imageId: "",
+        imageId: "6984e3370032325e162d",
         phone: ""
     },
 
@@ -223,7 +223,7 @@ export const allTeam = [
         name: "Gayathri V",
         team: "Alumni Outreach",
         role: "Team Lead",
-        imageId: "",
+        imageId: "6984e58200248397bf4b",
         phone: ""
     },
     {
@@ -268,64 +268,52 @@ export const allTeam = [
         name: "Akhilesh K.R",
         team: "Anchoring & Event Management",
         role: "Co-Lead",
-        imageId: "696d1e7900227e174b8a",
+        imageId: "6984e7a5001887e90211",
         phone: ""
     }
 ]
 
 export const contactDetails: Record<string, { name: string; contact: string }[]> = {
-    "Web Team": [
+    "Tech Support": [
         {
             name: "Athul Kesav",
-            contact: "+91 98765 43210"
+            contact: "+91 91597 75325"
         },
         {
             name: "Rameez",
-            contact: "+91 98765 43219"
+            contact: "+91 85909 66892"
         }
     ],
-    "Core Team": [
+    "Accommodation Team": [
         {
-            name: "A M Barath",
-            contact: "+91 98765 43211"
+            name: "Vigneshwaran S",
+            contact: "+91 63794 29595"
         },
         {
-            name: "A M Barath",
-            contact: "+91 98765 43211"
+            name: "Sitalakshmi",
+            contact: "+91 94864 24888"
         },
-        {
-            name: "A M Barath",
-            contact: "+91 98765 43211"
-        },
-        {
-            name: "A M Barath",
-            contact: "+91 98765 43211"
-        },
-        {
-            name: "A M Barath",
-            contact: "+91 98765 43211"
-        }
     ],
     "Events": [
         {
-            name: "Sailaja G",
-            contact: "+91 98765 43212"
+            name: "Nidhish",
+            contact: "+91 75986 32952"
         },
         {
-            name: "K Lokesh",
-            contact: "+91 98765 43220"
+            name: "Srihari",
+            contact: "+91 63698 41945"
         }
     ],
     "Marketing": [
         {
-            name: "Aneruthan S",
-            contact: "+91 98765 43213"
+            name: "Naufil",
+            contact: "+91 82206 24493"
         }
     ],
     "Hospitality": [
         {
             name: "Jeeviga K",
-            contact: "+91 98765 43214"
+            contact: "+91 83007 93136"
         }
     ]
 }
