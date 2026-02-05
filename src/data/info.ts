@@ -115,7 +115,7 @@ export const allTeam = [
         name: "Arunkumar M",
         team: "Printing",
         role: "Team Lead",
-        imageId: "",
+        imageId: "6984ea05003b9d3d7ce7",
         phone: ""
     },
 
@@ -139,7 +139,7 @@ export const allTeam = [
         name: "R Lokesh",
         team: "Publicity",
         role: "Team Lead",
-        imageId: "",
+        imageId: "6984e9bf002c7de75fc6",
         phone: ""
     },
 
