@@ -40,7 +40,7 @@ export const coreTeam = [
         name: "Nidhish",
         team: "Event Coordination",
         role: "Technical Head",
-        imageId: "696d1fd3000f8de8a6e4",
+        imageId: "6984e349001be3d14f84",
         phone: ""
     },
 ]
