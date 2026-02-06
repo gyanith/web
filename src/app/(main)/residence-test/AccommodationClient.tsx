@@ -18,11 +18,13 @@ const accommodationSchema = z.object({
 interface AccommodationClientProps {
   userId: string;
   initialAccommodation?: any;
+  gender: string;
 }
 
 export default function AccommodationClient({
   userId,
   initialAccommodation,
+  gender,
 }: AccommodationClientProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export default function AccommodationClient({
   const { success, error: toastError } = useToast();
 
   const [formData, setFormData] = useState({
-    hostel: "",
+    hostel: gender.toLowerCase() === "female" ? "BHAVANI" : "BHARANI",
     day: [] as number[],
   });
 
@@ -302,18 +304,18 @@ export default function AccommodationClient({
                 <label
                   className={`block text-[#d4a574]/70 text-[10px] uppercase tracking-wider ${unispace.className}`}
                 >
-                  Select Hostel
+                  Assigned Hostel
                 </label>
-                <RetroSelect
-                  value={formData.hostel}
-                  onChange={(val) => handleInputChange("hostel", val)}
-                  options={[
-                    { value: "BHAVANI", label: "Bhavani" },
-                    { value: "BHARANI", label: "Bharani" },
-                    { value: "GANGA", label: "Ganga" },
-                  ]}
-                  placeholder="Select Quarters..."
-                />
+                <div className="w-full p-3 bg-black/50 border border-zinc-700 text-white font-mono text-sm">
+                  {formData.hostel}
+                  <span className="ml-2 text-xs text-zinc-500">
+                    (
+                    {gender.toLowerCase() === "female"
+                      ? "Bhavani"
+                      : "Bharani/Ganga"}
+                    )
+                  </span>
+                </div>
               </div>
 
               <div>

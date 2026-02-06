@@ -705,7 +705,7 @@ export function EventFormDialog({
                   >
                     <Command>
                       <CommandInput placeholder="Search coordinator..." />
-                      <CommandList>
+                      <CommandList className="max-h-[300px] overflow-y-auto">
                         <CommandEmpty>No coordinator found.</CommandEmpty>
                         <CommandGroup>
                           {coordinatorsList.map((coordinator) => (

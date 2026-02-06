@@ -437,9 +437,11 @@ export async function getCoordinators(): Promise<{ id: string; name: string }[]>
             return [];
         }
 
-        const result = await teams.listMemberships({
-            teamId: appwriteConfig.coordinatorsTeamId
-        });
+        const result = await teams.listMemberships(
+            appwriteConfig.coordinatorsTeamId,
+            [Query.limit(100)]
+        );
+
 
         console.log("Coordinators result:", result);
 

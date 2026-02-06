@@ -336,30 +336,32 @@ export default function EventDetailsClient({
               </div>
 
               {/* Rulebook Button */}
-              <a
-                href={eventData.rulebook_link ? eventData.rulebook_link : "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative flex items-center justify-center gap-3 border border-[#d4a574]/50 bg-[#0a0a0a] hover:bg-[#d4a574]/10 transition-all px-6 py-4 overflow-hidden group/btn cursor-pointer"
-              >
-                <motion.div className="flex items-center gap-3 relative z-10">
-                  <FileText className="w-5 h-5 text-[#d4a574]" />
-                  <span
-                    className={`text-base md:text-lg ${unispace.className} text-[#d4a574]`}
-                  >
-                    Rulebook
-                  </span>
-                  <ArrowRight className="w-5 h-5 text-[#d4a574] group-hover/btn:translate-x-1 transition-transform" />
-                </motion.div>
+              {!isWorkshop && (
+                <a
+                  href={eventData.rulebook_link ? eventData.rulebook_link : "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative flex items-center justify-center gap-3 border border-[#d4a574]/50 bg-[#0a0a0a] hover:bg-[#d4a574]/10 transition-all px-6 py-4 overflow-hidden group/btn cursor-pointer"
+                >
+                  <motion.div className="flex items-center gap-3 relative z-10">
+                    <FileText className="w-5 h-5 text-[#d4a574]" />
+                    <span
+                      className={`text-base md:text-lg ${unispace.className} text-[#d4a574]`}
+                    >
+                      Rulebook
+                    </span>
+                    <ArrowRight className="w-5 h-5 text-[#d4a574] group-hover/btn:translate-x-1 transition-transform" />
+                  </motion.div>
 
-                {/* Button shine effect */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
-                  initial={{ x: "-100%" }}
-                  whileHover={{ x: "200%" }}
-                  transition={{ duration: 0.3 }}
-                />
-              </a>
+                  {/* Button shine effect */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
+                    initial={{ x: "-100%" }}
+                    whileHover={{ x: "200%" }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </a>
+              )}
             </div>
 
             {/* Row 2: Join/Create Team Button (Full Width, Team Events Only) */}

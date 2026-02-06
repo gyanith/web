@@ -16,6 +16,13 @@ export const coreTeam = [
         phone: ""
     },
     {
+        name: "Murali",
+        team: "Core",
+        role: "Internal Coordinator",
+        imageId: "6985d042002e1d0d140b",
+        phone: ""
+    },
+    {
         name: "A M Barath",
         team: "Core",
         role: "Treasurer",

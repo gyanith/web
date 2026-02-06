@@ -11,10 +11,18 @@ export default async function ResidencePage() {
 
   let user = null;
   let accommodation = null;
+  let userProfile = null;
 
   try {
     user = await account.get();
     accommodation = await getUserAccommodation(user.$id);
+
+    // Fetch user profile for gender
+    const { checkUserProfile } = await import("@/lib/actions/auth.actions");
+    const profileResult = await checkUserProfile(user.$id);
+    if (profileResult.exists) {
+      userProfile = profileResult.profile;
+    }
   } catch (error) {
     console.error("User not authenticated", error);
     redirect("/auth/login");
@@ -24,6 +32,7 @@ export default async function ResidencePage() {
     <AccommodationClient
       userId={user.$id}
       initialAccommodation={accommodation}
+      gender={userProfile?.gender || "male"} // Default to male if not found, or handle error
     />
   );
 }

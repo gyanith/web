@@ -1,14 +1,12 @@
-async function fetchRegistrations() {
-  // TODO: fetch all registrations
-}
+import RegistrationForm from "./RegistrationForm";
 
-export default async function RegistrationsPage() {
-  await fetchRegistrations();
-
+export default function RegistrationsPage() {
   return (
-    <div>
-      <h1 className="text-xl font-bold mb-4">Registrations</h1>
-      {/* Table here */}
+    <div className="container mx-auto py-6">
+      <h1 className="text-2xl font-bold mb-6">
+        Helpdesk Registration & Payment
+      </h1>
+      <RegistrationForm />
     </div>
   );
 }
