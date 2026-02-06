@@ -199,11 +199,11 @@ export default function AccommodationClient({
       if (response.success && response.paymentSessionId) {
         // Load Cashfree
         const cashfree = await import("@cashfreepayments/cashfree-js");
-        const cf = await cashfree.load({ mode: "sandbox" }); // or production based on env
+        const cf = await cashfree.load({ mode: "production" }); // or production based on env
 
         cf.checkout({
           paymentSessionId: response.paymentSessionId,
-          redirectTarget: "_self", // or _blank
+          redirectTarget: "_modal", // or _blank
           returnUrl:
             window.location.origin +
             "/residence?status={status}&order_id={order_id}",
