@@ -189,10 +189,12 @@ export default function AccommodationClient({
         {
           hostel: formData.hostel,
           day: formData.day,
-          redirectUrl: window.location.origin + "/residence-test", // Or success page
+          redirectUrl: window.location.origin + "/residence", // Updated to correct path
         },
         userId,
       );
+
+      console.log("Payment Initiation Response:", response); // Debug log
 
       if (response.success && response.paymentSessionId) {
         // Load Cashfree
@@ -204,7 +206,7 @@ export default function AccommodationClient({
           redirectTarget: "_self", // or _blank
           returnUrl:
             window.location.origin +
-            "/residence-test?status={status}&order_id={order_id}",
+            "/residence?status={status}&order_id={order_id}",
         });
       } else {
         setError(response.error || "Failed to initiate payment");
