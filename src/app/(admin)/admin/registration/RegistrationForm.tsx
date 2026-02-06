@@ -11,6 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/my_components/Toast";
 import { processAdminRegistration, getEvents, getUserByEmail } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +42,7 @@ export default function RegistrationForm() {
     size: "M",
     event_id: "",
     hostel: "",
-    day: "1",
+    day: [] as number[],
     tier: "1",
     item_id: "TICKET_" + new Date().getTime(),
   });
@@ -66,7 +72,7 @@ export default function RegistrationForm() {
         calculatedPrice = 350 * quantity;
         break;
       case "ACCOMM":
-        calculatedPrice = 350; // Fixed: 200 + 150 caution
+        calculatedPrice = formData.day.length * 200 + 150; // 200/day + 150 caution
         break;
       case "TICKET":
         if (tier === "1") calculatedPrice = 100;
@@ -433,30 +439,64 @@ export default function RegistrationForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Hostel</Label>
-                  <Input
-                    placeholder="Hostel Name"
-                    value={formData.hostel}
-                    onChange={(e) => handleChange("hostel", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Day</Label>
                   <Select
-                    value={formData.day}
-                    onValueChange={(val) => handleChange("day", val)}
+                    value={formData.hostel}
+                    onValueChange={(val) => handleChange("hostel", val)}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select Hostel" />
                     </SelectTrigger>
                     <SelectContent className={darkDropdownClass}>
-                      <SelectItem value="1">Day 1</SelectItem>
-                      <SelectItem value="2">Day 2</SelectItem>
-                      <SelectItem value="3">Day 3</SelectItem>
+                      <SelectItem value="BHARANI">BHARANI</SelectItem>
+                      <SelectItem value="BHAVANI">BHAVANI</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Days</Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                      >
+                        {formData.day.length > 0
+                          ? `Days: ${formData.day.join(", ")}`
+                          : "Select Days"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className={darkDropdownClass}>
+                      {[1, 2, 3].map((day) => (
+                        <DropdownMenuCheckboxItem
+                          key={day}
+                          checked={formData.day.includes(day)}
+                          onCheckedChange={(checked) => {
+                            setFormData((prev) => {
+                              const currentDays = prev.day;
+                              if (checked) {
+                                return {
+                                  ...prev,
+                                  day: [...currentDays, day].sort(),
+                                };
+                              } else {
+                                return {
+                                  ...prev,
+                                  day: currentDays.filter((d) => d !== day),
+                                };
+                              }
+                            });
+                          }}
+                        >
+                          Day {day}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 <div className="col-span-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
-                  Includes Caution Deposit (₹150) + Fee. Total approx ₹350.
+                  Base: ₹{formData.day.length * 200} ({formData.day.length}{" "}
+                  days) + Caution: ₹150. Total: ₹
+                  {formData.day.length * 200 + 150}
                 </div>
               </div>
             )}

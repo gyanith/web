@@ -358,8 +358,13 @@ export default function AccommodationClient({
 
               <div className="p-4 bg-[#d4a574]/5 border border-[#d4a574]/20 rounded-sm">
                 <div className="flex justify-between items-center text-xs mb-2">
-                  <span className="text-zinc-400 font-mono">BASE PRICE</span>
-                  <span className="text-[#d4a574] font-mono">₹200</span>
+                  <span className="text-zinc-400 font-mono">
+                    BASE PRICE (₹200 x{" "}
+                    {formData.day.length > 0 ? formData.day.length : 0})
+                  </span>
+                  <span className="text-[#d4a574] font-mono">
+                    ₹{formData.day.length * 200}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-xs mb-2">
                   <span className="text-zinc-400 font-mono">
@@ -370,7 +375,9 @@ export default function AccommodationClient({
                 <div className="h-[1px] w-full bg-[#d4a574]/20 my-2" />
                 <div className="flex justify-between items-center text-sm font-bold">
                   <span className="text-white font-mono">TOTAL</span>
-                  <span className="text-[#d4a574] font-mono">₹350</span>
+                  <span className="text-[#d4a574] font-mono">
+                    ₹{formData.day.length * 200 + 150}
+                  </span>
                 </div>
               </div>
 

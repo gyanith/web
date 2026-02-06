@@ -326,7 +326,7 @@ async function rollbackItem(db: any, type: PaymentType, itemId: string) {
 
 export async function getUserAccommodation(userId: string) {
     try {
-        const { getTablesDB } = await createSessionClient();
+        const { getTablesDB } = await createAdminClient();
         const db = getTablesDB();
 
         const list = await db.listRows(

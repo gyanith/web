@@ -17,9 +17,9 @@ interface AdminRegistrationData {
     event_id?: string;
     // Accomm
     hostel?: string;
-    day?: string;
+    day?: number[];
     // Ticket
-    tier?: "1" | "2" | "3";
+    tier?: 1 | 2 | 3;
     item_id?: string;
     // New Profile Fields
     gender?: string;
@@ -52,7 +52,7 @@ export async function processAdminRegistration(data: AdminRegistrationData) {
             } else {
                 // Create new user
                 // Generate a random password if not provided (admin creation)
-                const password = ID.unique() + "Pass123";
+                const password = "Pass123";
                 userId = ID.unique();
                 const name = data.name || data.email.split("@")[0];
 

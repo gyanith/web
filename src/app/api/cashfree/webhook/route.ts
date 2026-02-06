@@ -286,7 +286,7 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
             );
 
             if (userDoc) {
-                const newCredits = (userDoc.credits || 0) + 1;
+                const newCredits = (userDoc.tech_credits || 0) + 1;
                 await db.updateRow(
                     appwriteConfig.databaseId,
                     appwriteConfig.usersCollectionId,
