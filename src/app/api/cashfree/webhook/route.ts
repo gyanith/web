@@ -4,6 +4,7 @@ import { Cashfree, CFEnvironment } from "cashfree-pg";
 import { createAdminClient } from "@/lib/appwrite/appwrite.server";
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
 import { ID, Query } from "node-appwrite";
+import { logAction } from "@/lib/logger";
 
 // Set Config for Verification
 // @ts-ignore
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
             if (generatedSignature !== signature) {
                 // Debugging help: Log what we generated vs received
                 console.error(`Signature Mismatch. \nReceived: ${signature}\nGenerated: ${generatedSignature}\nTimestamp: ${timestamp}`);
+                await logAction("Webhook Failed", "Signature Mismatch", undefined, 'FAILED');
                 throw new Error("Signature Mismatch");
             }
         } catch (err: any) {
@@ -171,6 +173,7 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
                 );
                 logs.push(`Updated Tier to ${tier}, TechCredits: ${credits.tech}, FunCredits: ${credits.fun} for user ${userId}`);
                 console.log(`[Webhook] Fulfilled Ticket Tier ${tier} for ${userId}`);
+                await logAction("Payment Fulfilled", `Ticket Tier ${tier} fulfilled for ${userId}`, userId, 'SUCCESS');
                 return { status: "success", message: "Ticket fulfilled" };
             }
 
@@ -196,6 +199,7 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
                 );
                 logs.push(`Merch order ${itemId} marked SUCCESS`);
                 console.log(`[Webhook] Merch order ${itemId} marked SUCCESS`);
+                await logAction("Payment Fulfilled", `Merch Order ${itemId} fulfilled`, userId, 'SUCCESS');
                 return { status: "success", message: "Merch fulfilled" };
             }
             logs.push("Merch order already success or not found");
@@ -242,6 +246,8 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
                     console.log(`[Webhook] Decremented slot for ${hostel}. New slots: ${newSlots}`);
                 }
 
+                // Log only after success
+                await logAction("Payment Fulfilled", `Accommodation Order ${itemId} fulfilled`, userId, 'SUCCESS');
                 return { status: "success", message: "Accommodation fulfilled" };
             }
             logs.push("Accommodation order already success or not found");
@@ -298,6 +304,8 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
                 logs.push(`Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
                 console.log(`[Webhook] Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
             }
+
+            await logAction("Payment Fulfilled", `Workshop ${itemId} fulfilled for ${userId}`, userId, 'SUCCESS');
             return { status: "success", message: "Workshop fulfilled" };
         }
 

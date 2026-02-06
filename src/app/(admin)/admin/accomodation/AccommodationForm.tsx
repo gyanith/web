@@ -18,11 +18,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/my_components/Toast";
-import { processAdminRegistration, getEvents, getUserByEmail } from "./actions";
+import {
+  processAdminRegistration,
+  getUserByEmail,
+} from "../registration/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
-export default function RegistrationForm() {
+export default function AccommodationForm() {
   const { toast, success, error: errorToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [verifyingUser, setVerifyingUser] = useState(false);
@@ -37,10 +40,12 @@ export default function RegistrationForm() {
     is_nitpy: false,
     college_name: "",
 
-    type: "TICKET",
+    type: "ACCOMM", // Fixed
     quantity: 1,
-    size: "M",
+    size: "M", // defaults to fill required type payload
     event_id: "",
+    hostel: "",
+    day: [] as number[],
     tier: "1",
     item_id: "TICKET_" + new Date().getTime(),
   });
@@ -51,45 +56,16 @@ export default function RegistrationForm() {
     found: boolean;
     name?: string;
   } | null>(null);
-  const [events, setEvents] = useState<
-    { id: string; name: string; type: string; fee?: number }[]
-  >([]);
-
-  useEffect(() => {
-    // Fetch events for Workshop dropdown
-    getEvents().then(setEvents);
-  }, []);
 
   // Calculate Price Effect
   useEffect(() => {
     let calculatedPrice = 0;
-    const { type, quantity, tier, event_id } = formData;
-
-    switch (type) {
-      case "MERCH":
-        calculatedPrice = 350 * quantity;
-        break;
-      case "TICKET":
-        if (tier === "1") calculatedPrice = 100;
-        else if (tier === "2") calculatedPrice = 150;
-        else if (tier === "3") calculatedPrice = 200;
-        break;
-      case "WORKSHOP":
-        const event = events.find((e) => e.id === event_id);
-        if (event && event.fee) {
-          calculatedPrice = event.fee;
-        }
-        break;
+    // 200/day + 150 caution
+    if (formData.day.length > 0) {
+      calculatedPrice = formData.day.length * 200 + 150;
     }
     setPrice(calculatedPrice);
-  }, [
-    formData.type,
-    formData.quantity,
-    formData.tier,
-    formData.tier,
-    formData.event_id,
-    events,
-  ]);
+  }, [formData.day]);
 
   const handleUserCheck = async () => {
     if (!formData.email) return;
@@ -123,12 +99,15 @@ export default function RegistrationForm() {
         is_nitpy: formData.is_nitpy,
         college_name: formData.college_name,
 
-        type: formData.type as any,
-        quantity: formData.quantity,
-        size: formData.size,
-        event_id: formData.event_id,
-        tier: formData.tier as any,
+        type: "ACCOMM",
+        quantity: 1,
+        hostel: formData.hostel,
+        day: formData.day,
         item_id: formData.item_id,
+        // Ignored fields for ACCOMM
+        size: undefined,
+        event_id: undefined,
+        tier: undefined,
       });
 
       if (res.success) {
@@ -145,6 +124,8 @@ export default function RegistrationForm() {
           gender: "male",
           is_nitpy: false,
           college_name: "",
+          hostel: "",
+          day: [],
           item_id: "TICKET_" + new Date().getTime(),
         }));
         setUserStatus(null);
@@ -169,7 +150,7 @@ export default function RegistrationForm() {
     <Card className="max-w-2xl mx-auto mt-8">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>Helpdesk Registration</span>
+          <span>Accommodation Registration</span>
           <div className="text-xl font-bold bg-green-900/20 text-green-400 px-4 py-1 rounded border border-green-500/30">
             ₹{price}
           </div>
@@ -305,129 +286,71 @@ export default function RegistrationForm() {
             </div>
           </div>
 
-          {/* Registration Type Section */}
+          {/* Accommodation Fields */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Registration Type</h3>
-
-            <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(val) => handleChange("type", val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Type" />
-                </SelectTrigger>
-                <SelectContent className={darkDropdownClass}>
-                  <SelectItem value="TICKET">Ticket</SelectItem>
-                  <SelectItem value="MERCH">Merch</SelectItem>
-                  <SelectItem value="WORKSHOP">Workshop</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* CONDITIONAL FIELDS */}
-
-            {/* TICKET */}
-            {formData.type === "TICKET" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tier</Label>
-                  <Select
-                    value={formData.tier}
-                    onValueChange={(val) => handleChange("tier", val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className={darkDropdownClass}>
-                      <SelectItem value="1">Tier 1 (Starts @ 100)</SelectItem>
-                      <SelectItem value="2">Tier 2 (Starts @ 150)</SelectItem>
-                      <SelectItem value="3">Tier 3 (Starts @ 200)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Item ID (Ref)</Label>
-                  <Input
-                    value="Auto-generated (ticket_userId)"
-                    disabled
-                    className="bg-muted"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    ID will be generated as ticket_userId upon registration.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* MERCH */}
-            {formData.type === "MERCH" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Size</Label>
-                  <Select
-                    value={formData.size}
-                    onValueChange={(val) => handleChange("size", val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className={darkDropdownClass}>
-                      <SelectItem value="S">S</SelectItem>
-                      <SelectItem value="M">M</SelectItem>
-                      <SelectItem value="L">L</SelectItem>
-                      <SelectItem value="XL">XL</SelectItem>
-                      <SelectItem value="XXL">XXL</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Quantity</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={formData.quantity}
-                    onChange={(e) =>
-                      handleChange("quantity", parseInt(e.target.value))
-                    }
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* WORKSHOP */}
-            {formData.type === "WORKSHOP" && (
+            <h3 className="font-semibold text-lg">Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Event/Workshop</Label>
+                <Label>Hostel</Label>
                 <Select
-                  value={formData.event_id}
-                  onValueChange={(val) => handleChange("event_id", val)}
+                  value={formData.hostel}
+                  onValueChange={(val) => handleChange("hostel", val)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Workshop" />
+                    <SelectValue placeholder="Select Hostel" />
                   </SelectTrigger>
                   <SelectContent className={darkDropdownClass}>
-                    {events
-                      .filter(
-                        (e) => e.type === "WORKSHOP" || e.type === "HACKATHON",
-                      )
-                      .map((event) => (
-                        <SelectItem key={event.id} value={event.id}>
-                          {event.name} {event.fee ? `(₹${event.fee})` : ""}
-                        </SelectItem>
-                      ))}
-                    {events.length === 0 && (
-                      <SelectItem value="custom" disabled>
-                        No events found
-                      </SelectItem>
-                    )}
+                    <SelectItem value="BHARANI">BHARANI</SelectItem>
+                    <SelectItem value="BHAVANI">BHAVANI</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            )}
-
-            {/* ACCOMM REMOVED */}
+              <div className="space-y-2">
+                <Label>Days</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      {formData.day.length > 0
+                        ? `Days: ${formData.day.join(", ")}`
+                        : "Select Days"}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className={darkDropdownClass}>
+                    {[1, 2, 3].map((day) => (
+                      <DropdownMenuCheckboxItem
+                        key={day}
+                        checked={formData.day.includes(day)}
+                        onCheckedChange={(checked) => {
+                          setFormData((prev) => {
+                            const currentDays = prev.day;
+                            if (checked) {
+                              return {
+                                ...prev,
+                                day: [...currentDays, day].sort(),
+                              };
+                            } else {
+                              return {
+                                ...prev,
+                                day: currentDays.filter((d) => d !== day),
+                              };
+                            }
+                          });
+                        }}
+                      >
+                        Day {day}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="col-span-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
+                Base: ₹{formData.day.length * 200} ({formData.day.length} days)
+                + Caution: ₹150. Total: ₹{formData.day.length * 200 + 150}
+              </div>
+            </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

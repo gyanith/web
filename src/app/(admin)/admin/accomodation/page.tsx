@@ -1,11 +1,9 @@
-async function verifyAccommodationPayment() {
-  // TODO
-}
+import AccommodationForm from "./AccommodationForm";
 
 export default function AccommodationPage() {
   return (
-    <div>
-      <h1 className="text-xl font-bold">Accommodation Payments</h1>
+    <div className="container mx-auto py-8">
+      <AccommodationForm />
     </div>
   );
 }

@@ -15,6 +15,7 @@ export async function getTotalRevenue() {
         // Pagination loop to ensure we fetch ALL transactions
         while (hasNextPage) {
             const queries = [
+                Query.equal("status", "SUCCESS"), // Updated to filter by SUCCESS
                 Query.limit(100) // Max limit per request
             ];
 
@@ -55,5 +56,112 @@ export async function getTotalRevenue() {
     } catch (error) {
         console.error("Error calculating total revenue:", error);
         return 0; // Return 0 on error so UI doesn't break
+    }
+}
+
+export async function getTotalRegistrations() {
+    try {
+        const { getTablesDB } = await createAdminClient();
+        const tablesDB = getTablesDB();
+
+        const response = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.registrationsCollectionId,
+            queries: [Query.limit(1)] // We only need the total count
+        });
+
+        return response.total;
+    } catch (error) {
+        console.error("Error fetching total registrations:", error);
+        return 0;
+    }
+}
+
+export async function getRegistrationGraphData() {
+    try {
+        const { getTablesDB } = await createAdminClient();
+        const tablesDB = getTablesDB();
+
+        let allRegistrations: { $createdAt: string }[] = [];
+        let hasNextPage = true;
+        let lastId = null;
+
+        // Fetch all registrations to get dates
+        // Note: Ideally we'd optimize this if thousands, but for now this is the only way without backend aggregations
+        while (hasNextPage) {
+            const queries = [
+                Query.limit(100),
+                // Query.select(["$createdAt"]) // Select only createdAt field if supported
+            ];
+
+            if (lastId) {
+                queries.push(Query.cursorAfter(lastId));
+            }
+
+            const response = await tablesDB.listRows({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.registrationsCollectionId,
+                queries
+            });
+
+            if (response.rows.length === 0) break;
+
+            allRegistrations = [...allRegistrations, ...response.rows];
+            lastId = response.rows[response.rows.length - 1].$id;
+
+            if (response.rows.length < 100) hasNextPage = false;
+        }
+
+        if (allRegistrations.length === 0) return [];
+
+        // Sort by date (oldest first)
+        allRegistrations.sort((a, b) => new Date(a.$createdAt).getTime() - new Date(b.$createdAt).getTime());
+
+        const oldestDate = new Date(allRegistrations[0].$createdAt);
+        const today = new Date();
+
+        // Create map of DateString -> Count
+        const dateCountMap = new Map<string, number>();
+
+        // Initialize all days from oldest to today with 0
+        const currentDate = new Date(oldestDate);
+        currentDate.setHours(0, 0, 0, 0); // Reset time part
+
+        while (currentDate <= today) {
+            const dateStr = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD
+            dateCountMap.set(dateStr, 0);
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // Fill buckets
+        allRegistrations.forEach(reg => {
+            const dateStr = new Date(reg.$createdAt).toISOString().split('T')[0];
+            if (dateCountMap.has(dateStr)) {
+                dateCountMap.set(dateStr, dateCountMap.get(dateStr)! + 1);
+            }
+        });
+
+        // Convert map to array { date: "MMM DD", count: number }
+        const graphData: { date: string, count: number }[] = [];
+
+        // Helper for formatting date "MMM DD"
+        const formatDate = (dateStr: string) => {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+        };
+
+        dateCountMap.forEach((count, dateStr) => {
+            graphData.push({
+                date: formatDate(dateStr),
+                count: count
+            });
+        });
+
+        // If graph data is too large, we might want to group by week etc? For now return daily.
+        return graphData;
+
+    } catch (error) {
+        console.error("Error fetching graph data:", error);
+        return [];
     }
 }

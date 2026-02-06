@@ -54,12 +54,14 @@ interface DashboardViewProps {
   };
   events: EventSummary[];
   initialCoordinators: Coordinator[];
+  graphData: { date: string; count: number }[];
 }
 
 export function DashboardView({
   stats,
   events,
   initialCoordinators,
+  graphData,
 }: DashboardViewProps) {
   const [coordinatorsList, setCoordinatorsList] =
     useState<Coordinator[]>(initialCoordinators);
@@ -141,7 +143,7 @@ export function DashboardView({
 
       {/* Registration Trend Chart */}
       <div className="grid gap-4">
-        <RegistrationChart />
+        <RegistrationChart data={graphData} />
       </div>
 
       {/* Quick Actions & Recent Events */}

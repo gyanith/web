@@ -17,30 +17,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const registrationData = [
-  { date: "Jan 01", count: 12 },
-  { date: "Jan 05", count: 45 },
-  { date: "Jan 10", count: 89 },
-  { date: "Jan 15", count: 156 },
-  { date: "Jan 20", count: 240 },
-  { date: "Jan 25", count: 350 },
-  { date: "Feb 01", count: 620 },
-];
+interface RegistrationChartProps {
+  data: { date: string; count: number }[];
+}
 
-export function RegistrationChart() {
+export function RegistrationChart({ data }: RegistrationChartProps) {
   return (
     <Card className="col-span-1">
       <CardHeader>
         <CardTitle>Registration Trends</CardTitle>
-        <CardDescription>
-          Daily registration count over the last 30 days
-        </CardDescription>
+        <CardDescription>Daily registration count over time</CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
         <div className="h-[300px] w-full min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={registrationData}
+              data={data}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

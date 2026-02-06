@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/appwrite/appwrite.server";
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
 import { ID, Query } from "node-appwrite";
+import { logAction } from "@/lib/logger";
 
 interface AdminRegistrationData {
     userId?: string;
@@ -28,13 +29,12 @@ interface AdminRegistrationData {
 }
 
 export async function processAdminRegistration(data: AdminRegistrationData) {
+    let userId = data.userId;
     try {
         const { getUsers, getFunctions, getTablesDB } = await createAdminClient();
         const users = getUsers();
         const functions = getFunctions();
         const tablesDB = getTablesDB();
-
-        let userId = data.userId;
 
         // 1. Check or Create User
         if (!userId) {
@@ -51,8 +51,7 @@ export async function processAdminRegistration(data: AdminRegistrationData) {
                 userId = existingUsers.users[0].$id;
             } else {
                 // Create new user
-                // Generate a random password if not provided (admin creation)
-                const password = "Pass123";
+                const password = "Pass123" + Math.random().toString(36).slice(-4);
                 userId = ID.unique();
                 const name = data.name || data.email.split("@")[0];
 
@@ -61,7 +60,7 @@ export async function processAdminRegistration(data: AdminRegistrationData) {
                         userId,
                         data.email,
                         data.phone ? `+91${data.phone}` : undefined,
-                        password, // Dummy password
+                        password,
                         name
                     );
 
@@ -79,8 +78,11 @@ export async function processAdminRegistration(data: AdminRegistrationData) {
                         },
                     });
 
+                    await logAction("User Created", `Created user ${data.email} via admin console`, userId, 'SUCCESS');
+
                 } catch (createUserError: any) {
                     console.error("Failed to create user/profile:", createUserError);
+                    await logAction("User Creation Failed", `Failed to create user ${data.email}: ${createUserError.message}`, undefined, 'FAILED');
                     return { success: false, error: "Failed to create new user" };
                 }
             }
@@ -115,23 +117,35 @@ export async function processAdminRegistration(data: AdminRegistrationData) {
                 // Parse the output if it's JSON
                 const responseBody = JSON.parse(execution.responseBody);
                 if (responseBody.success) {
+                    await logAction(
+                        "Admin Registration",
+                        `Processed ${data.type} registration for user ${userId}. TxID: ${responseBody.transactionId}`,
+                        userId,
+                        'SUCCESS'
+                    );
                     return { success: true, data: responseBody };
                 } else {
+                    await logAction(
+                        "Admin Registration Failed",
+                        `Failed ${data.type} registration for user ${userId}: ${responseBody.message}`,
+                        userId,
+                        'FAILED'
+                    );
                     return { success: false, error: responseBody.message || "Function returned failure" };
                 }
             } catch (e) {
-                // If not JSON, just return success if status is completed?
-                // But the function code returns JSON.
                 console.log("Raw execution body:", execution.responseBody);
-                // If parsing fails, maybe it wasn't a JSON response?
+                await logAction("Admin Registration Error", "Failed to parse function response", userId, 'FAILED');
                 return { success: true, data: { message: "Execution completed but response check failed" } };
             }
         } else {
+            await logAction("Admin Registration Failed", `Function execution status: ${execution.status}`, userId, 'FAILED');
             return { success: false, error: `Function execution status: ${execution.status}` };
         }
 
     } catch (error: any) {
         console.error("Process Admin Registration Error:", error);
+        await logAction("Admin Registration Exception", error.message, userId, 'FAILED');
         return { success: false, error: error.message };
     }
 }

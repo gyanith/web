@@ -5,6 +5,7 @@ import { appwriteConfig } from "../appwrite/appwrite.config";
 import { ID, Query, ExecutionMethod } from "node-appwrite";
 import { Cashfree, CFEnvironment } from "cashfree-pg"; // Import Cashfree
 import { revalidatePath } from "next/cache";
+import { logAction } from "@/lib/logger";
 
 // Initialize Cashfree
 const cashfree = new Cashfree(
@@ -100,6 +101,12 @@ export async function initiatePayment(
             const responseBody = JSON.parse(execution.responseBody);
 
             if (responseBody.success) {
+                await logAction(
+                    "Payment Initiated",
+                    `Initiated ${type} payment for user ${userId}. OrderID: ${responseBody.orderId}`,
+                    userId,
+                    'INFO'
+                );
                 return {
                     success: true,
                     provider: "CASHFREE",
@@ -111,6 +118,12 @@ export async function initiatePayment(
                 };
             } else {
                 console.error("Function execution returned error:", responseBody);
+                await logAction(
+                    "Payment Init Failed",
+                    `Failed to initiate ${type} payment for user ${userId}: ${responseBody.error}`,
+                    userId,
+                    'FAILED'
+                );
                 return { success: false, error: responseBody.error || "Payment initialization failed." };
             }
         } else {
@@ -137,9 +150,15 @@ export async function verifyCashfreePayment(orderId: string) {
         );
 
         if (list.total === 0) {
+            await logAction("Payment Verification Failed", `Transaction not found for OrderID: ${orderId}`, undefined, 'FAILED');
             return { success: false, error: "Transaction unsuccessful" };
         }
         const transaction = list.rows[0];
+
+        // Log success only if previously not logged? Or just log every verification?
+        // Let's log verification checks.
+        // await logAction("Payment Verified", `Verified payment for transaction ${transaction.$id}`, transaction.user, 'SUCCESS');
+
         return { success: true, transactionId: transaction.$id };
 
     } catch (error: any) {
@@ -261,6 +280,8 @@ export async function cancelPayment(orderId: string) {
         if (transaction.item_id) {
             await rollbackItem(db, transaction.item_type as PaymentType, transaction.item_id);
         }
+
+        await logAction("Payment Cancelled", `Cancelled payment order ${orderId}`, transaction.user_id, 'INFO');
 
         return { success: true };
 

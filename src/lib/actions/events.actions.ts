@@ -5,6 +5,17 @@ import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
 import { ID, Query, ExecutionMethod } from "node-appwrite";
 import { revalidatePath } from "next/cache";
 import { Event, EventSummary } from "@/types/db";
+import { logAction } from "@/lib/logger";
+
+async function getAdminId() {
+    try {
+        const { getAccount } = await createSessionClient();
+        const user = await getAccount().get();
+        return user.$id;
+    } catch {
+        return undefined;
+    }
+}
 
 /**
  * Uploads a file to the configured events bucket.
@@ -199,9 +210,13 @@ export async function createEvent(formData: FormData) {
         revalidatePath("/admin/events");
         revalidatePath("/admin");
 
+        const adminId = await getAdminId();
+        await logAction("Create Event", `Created event "${data.name}" (ID: ${functionId})`, adminId, 'SUCCESS');
+
         return { success: true };
     } catch (error: any) {
         console.error("Failed to create event:", error);
+        await logAction("Create Event Failed", `Failed to create event: ${error.message}`, undefined, 'FAILED');
         return { success: false, error: error.message || "Failed to create event" };
     }
 }
@@ -413,9 +428,13 @@ export async function updateEvent(eventId: string, formData: FormData) {
         revalidatePath("/admin/events");
         revalidatePath("/admin");
 
+        const adminId = await getAdminId();
+        await logAction("Update Event", `Updated event ${eventId} (${data.name})`, adminId, 'SUCCESS');
+
         return { success: true };
     } catch (error: any) {
         console.error("Failed to update event:", error);
+        await logAction("Update Event Failed", `Failed to update event ${eventId}: ${error.message}`, undefined, 'FAILED');
         return { success: false, error: error.message || "Failed to update event" };
     }
 }
@@ -560,6 +579,9 @@ export async function togglePublishStatus(eventId: string, currentStatus: boolea
         revalidatePath("/admin/events");
         revalidatePath("/admin");
 
+        const adminId = await getAdminId();
+        await logAction("Toggle Event Status", `Toggled event ${eventId} to ${newStatus ? 'Published' : 'Draft'}`, adminId, 'SUCCESS');
+
         return { success: true, newStatus: newStatus };
     } catch (error: any) {
         console.error("Failed to toggle publish status:", error);
@@ -648,6 +670,9 @@ export async function deleteEvent(eventId: string) {
         // Revalidate cache
         revalidatePath("/admin/events");
         revalidatePath("/admin");
+
+        const adminId = await getAdminId();
+        await logAction("Delete Event", `Deleted event ${eventId}`, adminId, 'SUCCESS');
 
         return { success: true };
     } catch (error: any) {

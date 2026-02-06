@@ -11,6 +11,7 @@ import { cookies } from "next/headers";
 import { Account, Client } from "appwrite";
 
 // --- Types ---
+import { logAction } from "@/lib/logger";
 
 interface LoginData {
   email: string;
@@ -116,10 +117,12 @@ export async function loginWithEmail({
     await setSessionCookie(session.secret, session.expire);
 
     console.log("✅ Login successful for user:", session.userId);
+    await logAction("User Login", `User ${session.userId} logged in via Email`, session.userId, 'SUCCESS');
 
     return { success: true };
   } catch (error: any) {
     console.error("Login error:", error.message);
+    await logAction("Login Failed", `Login failed for ${email}: ${error.message}`, undefined, 'FAILED');
     return { success: false, error: "Invalid email or password" };
   }
 }
@@ -323,6 +326,7 @@ export async function signUpWithEmail(data: any) {
     return { success: true };
   } catch (error: any) {
     console.error("Signup Action Error:", error);
+    if (userId) await logAction("Signup Error", `Signup failed for ${userId}: ${error.message}`, userId, 'FAILED');
 
     // Cleanup ghost user
     if (userId && error.code !== 409) {
@@ -379,7 +383,7 @@ export async function completeSignupWithOtp(
     }
 
     console.log("✅ Complete Signup Action: Success for", userId);
-    return { success: true };
+    await logAction("Signup Completed", `User ${userId} completed signup with OTP`, userId, 'SUCCESS');
     return { success: true };
   } catch (error: any) {
     console.error("Complete Signup Error:", error);
@@ -436,6 +440,7 @@ export async function signOut() {
       });
     }
 
+    await logAction("User Logout", "User logged out", undefined, 'INFO');
     return { success: true };
   } catch (error: any) {
     console.error("Logout Error:", error);

@@ -154,6 +154,11 @@ export default function AccommodationClient({
               <div className="p-3 bg-green-900/20 border border-green-500/30 text-green-400 text-xs font-mono w-full">
                 Please show this confirmation at the registration desk.
               </div>
+              <div className="text-[10px] text-zinc-500 max-w-xs leading-tight">
+                For any updates or changes to your accommodation (e.g.,
+                extending days), please visit the registration desk at the
+                college. Online updates are not supported.
+              </div>
             </div>
           </div>
         </motion.div>
@@ -208,6 +213,7 @@ export default function AccommodationClient({
             window.location.origin +
             "/residence?status={status}&order_id={order_id}",
         });
+        setIsLoading(false);
       } else {
         setError(response.error || "Failed to initiate payment");
         setIsLoading(false);
@@ -381,7 +387,6 @@ export default function AccommodationClient({
                 </div>
               </div>
 
-              {/* Action Button */}
               <button
                 type="button"
                 onClick={handleSubmit}
@@ -402,6 +407,12 @@ export default function AccommodationClient({
                 )}
                 <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
               </button>
+
+              <div className="p-3 bg-yellow-900/10 border border-yellow-500/20 text-yellow-500/80 text-[10px] font-mono text-center leading-relaxed">
+                NOTE: Updates to accommodation details (e.g. adding days) can
+                only be made in-person at the college registration desk upon
+                arrival. Please book carefully.
+              </div>
             </div>
           </div>
         </div>
