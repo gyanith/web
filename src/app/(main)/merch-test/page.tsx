@@ -10,7 +10,7 @@ import merchPic1 from "@/assets/merchPic1.jpg";
 import merchPic2 from "@/assets/merchPic2.jpg";
 import merchPic3 from "@/assets/merchPic3.jpg";
 import merchPic4 from "@/assets/merchPic4.jpg";
-import Footer from "@/my_components/Footer";
+
 import SparklesCore from "@/my_components/SparklesCore";
 
 import { unispace, ledLight, creatoDisplay } from "@/fonts/fonts";
@@ -184,8 +184,6 @@ const page = () => {
           </div>
         </div>
       </div>
-
-      <Footer />
     </motion.div>
   );
 };

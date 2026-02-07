@@ -1,8 +1,6 @@
 import { headers } from "next/headers";
 import { EventProvider, EventSearchBar, EventGrid } from "./EventSearch";
 
-import Footer from "@/my_components/Footer";
-
 import Plasma from "@/my_components/Plasma";
 import FloatingLines from "@/my_components/FloatingLines";
 import DarkVeil from "@/components/DarkVeil";
@@ -82,8 +80,6 @@ async function page({ params }: { params: Promise<{ eventType: string }> }) {
         </div>
 
         {/* Footer */}
-
-        <Footer />
       </div>
     </EventProvider>
   );

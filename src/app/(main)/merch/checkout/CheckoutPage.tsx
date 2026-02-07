@@ -16,7 +16,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { unispace, pressStart2P } from "@/fonts/fonts";
-import Footer from "@/my_components/Footer";
+
 import Image from "next/image";
 import testPic from "@/assets/merchPic1.jpg";
 import bgImage from "@/assets/GlassBag.svg";
@@ -368,8 +368,6 @@ const CheckoutPage = ({ user }: { user: any }) => {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 };

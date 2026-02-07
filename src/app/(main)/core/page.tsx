@@ -10,7 +10,7 @@ import coreBg2 from "@/assets/coreBg2.png";
 
 import AnimatedStripes from "@/my_components/AnimatedStripes";
 import SpotlightCard from "@/components/SpotlightCard";
-import Footer from "@/my_components/Footer";
+
 import SparklesCore from "@/my_components/SparklesCore";
 import { allTeam, coreTeam } from "@/data/info";
 import { getImageUrl } from "@/lib/helpers/imageStorage.helper";
@@ -248,8 +248,6 @@ export default function CorePage() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </motion.div>
   );
 }

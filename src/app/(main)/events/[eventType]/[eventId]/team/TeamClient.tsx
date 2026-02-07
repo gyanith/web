@@ -23,7 +23,6 @@ import {
   leaveTeam,
   deleteTeam,
 } from "@/lib/actions/team.actions";
-import Footer from "@/my_components/Footer";
 
 interface TeamMember {
   $id: string;
@@ -365,8 +364,6 @@ export default function TeamClient({
             </motion.div>
           )}
         </AnimatePresence>
-
-        <Footer />
       </div>
     );
   }
@@ -533,7 +530,6 @@ export default function TeamClient({
           </motion.div>
         )}
       </AnimatePresence>
-      <Footer />
     </div>
   );
 }

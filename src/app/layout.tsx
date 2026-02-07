@@ -7,6 +7,7 @@ import { montserrat } from "@/fonts/fonts";
 
 import { LoaderProvider } from "@/my_components/LoaderContext";
 import { ToastProvider } from "@/my_components/Toast";
+import Footer from "@/my_components/Footer";
 
 export const metadata: Metadata = {
   title: "Gyanith 2026",
@@ -27,6 +28,7 @@ export default function RootLayout({
           <ToastProvider>
             {/* Noise removed from RootLayout to prevent it showing in Admin */}
             {children}
+            <Footer />
           </ToastProvider>
         </LoaderProvider>
       </body>

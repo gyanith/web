@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import EventDetailsClient from "./EventDetailsClient";
 import BackButton from "./BackButton";
-import Footer from "@/my_components/Footer";
+
 import { getEvent } from "@/lib/actions/events.actions";
 import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
 import { getLoggedInUser } from "@/lib/actions/auth.actions";
@@ -87,7 +87,6 @@ export default async function Page({ params }: PageProps) {
         initialIsRegistered={isRegistered}
         initialUserTeam={userTeam}
       />
-      <Footer />
     </div>
   );
 }

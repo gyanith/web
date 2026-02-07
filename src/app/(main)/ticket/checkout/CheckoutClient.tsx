@@ -21,7 +21,7 @@ import {
 import { load } from "@cashfreepayments/cashfree-js";
 
 import { unispace, pressStart2P } from "@/fonts/fonts";
-import Footer from "@/my_components/Footer";
+
 import { TIERS } from "@/data/tiers";
 
 import tier1Pic from "@/assets/tier1.gif";
@@ -391,7 +391,6 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

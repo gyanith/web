@@ -4,7 +4,7 @@ import { useSpring, motion } from "framer-motion";
 import Image from "next/image";
 
 import handshakeImage from "@/assets/handshake-partner.svg";
-import Footer from "@/my_components/Footer";
+
 import DecayCard from "@/my_components/DecayCard";
 import "@/my_components/crt/TestCRT.css";
 
@@ -584,7 +584,6 @@ const page = () => {
         </div>
       </div>
       <div className="h-screen w-screen"></div>
-      <Footer />
     </motion.div>
   );
 };
