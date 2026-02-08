@@ -53,16 +53,16 @@ export async function initiateOrionPayment(
             appwriteConfig.transactionsCollectionId,
             ID.unique(),
             {
-                user_id: userId,
+                user: userId,
                 amount: data.amount,
-                type: "ORION",
+                // type: "ORION", // Removed as per screenshot
                 status: "PENDING",
                 mode: "CF",
                 cashfree_order_id: orderId,
-                payment_session_id: orderData.payment_session_id,
-                item_id: data.teamId, // Linking to Team ID directly
+                // payment_session_id: orderData.payment_session_id, // Removed as per screenshot
+                item_id: data.teamId,
                 item_type: "ORION",
-                description: `Orion Registration - Team ${data.teamId}`
+                description: `Orion Reg - Team ${data.teamId}`
             }
         );
 
