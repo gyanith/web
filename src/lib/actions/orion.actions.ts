@@ -57,6 +57,7 @@ export async function initiateOrionPayment(
                 amount: data.amount,
                 type: "ORION",
                 status: "PENDING",
+                mode: "CF",
                 cashfree_order_id: orderId,
                 payment_session_id: orderData.payment_session_id,
                 item_id: data.teamId, // Linking to Team ID directly
