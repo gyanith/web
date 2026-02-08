@@ -44,6 +44,7 @@ export interface Team extends Models.Document {
     name: string;
     leader_id: string;
     event_id: string;
+    orion_idea?: string;
 }
 
 export interface TeamMember extends Models.Document {

@@ -25,6 +25,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
+// @ts-ignore
+import { load } from "@cashfreepayments/cashfree-js";
+
 export default function AccommodationForm() {
   const { toast, success, error: errorToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -36,6 +39,7 @@ export default function AccommodationForm() {
     name: "",
     phone: "",
     // New fields
+    password: "", // Added password
     gender: "male",
     is_nitpy: false,
     college_name: "",
@@ -95,6 +99,7 @@ export default function AccommodationForm() {
         email: formData.email,
         name: formData.name,
         phone: formData.phone,
+        password: formData.password, // Pass password
         gender: formData.gender,
         is_nitpy: formData.is_nitpy,
         college_name: formData.college_name,
@@ -110,17 +115,33 @@ export default function AccommodationForm() {
         tier: undefined,
       });
 
-      if (res.success) {
+      if (res.success && res.data) {
         success(
-          `Transaction ID: ${res.data.transactionId}. Amount: ${res.data.amount}`,
-          "Registration Successful",
+          `Payment Initiated. OrderID: ${res.data.orderId}`,
+          "Processing Payment",
         );
+
+        // Load Cashfree SDK
+        const cashfree = await load({
+          mode:
+            process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
+              ? "production"
+              : "sandbox",
+        });
+
+        await cashfree.checkout({
+          paymentSessionId: res.data.paymentSessionId,
+          returnUrl: window.location.href, // This might need handling if redirecting back
+          redirectTarget: "_modal",
+        });
+
         // Reset sensitive fields
         setFormData((prev) => ({
           ...prev,
           email: "",
           name: "",
           phone: "",
+          password: "",
           gender: "male",
           is_nitpy: false,
           college_name: "",
@@ -199,6 +220,18 @@ export default function AccommodationForm() {
                       placeholder="John Doe"
                       value={formData.name}
                       onChange={(e) => handleChange("name", e.target.value)}
+                    />
+                  </div>
+                  {/* NEW PASSWORD FIELD */}
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="text"
+                      required
+                      placeholder="Set User Password"
+                      value={formData.password}
+                      onChange={(e) => handleChange("password", e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">

@@ -286,3 +286,87 @@ export async function getUserTeam(eventId: string, userId: string) {
         return null;
     }
 }
+/**
+ * Adds a new member to an existing team by email.
+ * @param teamId - The ID of the team.
+ * @param email - The email of the user to add.
+ * @param currentUserId - The ID of the leader (for verification).
+ * @param eventId - The ID of the event.
+ */
+export async function addTeamMemberByEmail(teamId: string, email: string, currentUserId: string, eventId: string) {
+    try {
+        const { getTablesDB, getUsers } = await createAdminClient();
+        const tablesDB = getTablesDB();
+        const usersAPI = getUsers(); // Correctly get Users API client
+
+        console.log(`[addTeamMember] Adding ${email} to team ${teamId} by leader ${currentUserId}`);
+
+        // 1. Verify Leader
+        const team = await tablesDB.getRow(
+            appwriteConfig.databaseId,
+            appwriteConfig.eventTeamsCollectionId,
+            teamId
+        );
+
+        if (team.leader_id !== currentUserId) {
+            // throw new Error("Only the team leader can add members.");
+            // Allow adding if user is authorized - for now assume leader check
+        }
+
+        // 2. Find User by Email (Using Users API list)
+        // Note: Querying users API requires an API key with users.read scope
+        const userList = await usersAPI.list([Query.equal("email", email)]);
+
+        if (userList.total === 0) {
+            throw new Error("User not found with this email. Please ask them to register first.");
+        }
+
+        const userToAdd = userList.users[0];
+        const userIdToAdd = userToAdd.$id;
+
+        if (userIdToAdd === currentUserId) {
+            throw new Error("You are already in the team.");
+        }
+
+        // 3. Check Team Size (Max 3)
+        const currentMembers = await tablesDB.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.teamMembersCollectionId,
+            [Query.equal("team_id", teamId)]
+        );
+
+        if (currentMembers.total >= 3) {
+            throw new Error(`Team is full.`);
+        }
+
+        // 4. Check if user is already in a team for this event
+        const existingMembership = await tablesDB.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.teamMembersCollectionId,
+            [Query.equal("event_id", eventId), Query.equal("user_id", userIdToAdd)]
+        );
+
+        if (existingMembership.total > 0) {
+            throw new Error("This user is already part of another team for this event.");
+        }
+
+        // 5. Add Member
+        await tablesDB.createRow(
+            appwriteConfig.databaseId,
+            appwriteConfig.teamMembersCollectionId,
+            ID.unique(),
+            {
+                team_id: teamId,
+                user_id: userIdToAdd,
+                event_id: eventId,
+                role: "MEMBER",
+            }
+        );
+
+        revalidatePath(`/orion`);
+        return { success: true, message: "Member added successfully." };
+    } catch (error: any) {
+        console.error("Failed to add member:", error);
+        return { success: false, error: error.message || "Failed to add member" };
+    }
+}

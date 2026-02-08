@@ -28,12 +28,14 @@ interface AdminRegistrationData {
     college_name?: string;
 }
 
-export async function processAdminRegistration(data: AdminRegistrationData) {
+// @ts-ignore
+import { initiatePayment } from "@/lib/actions/payment.actions";
+
+export async function processAdminRegistration(data: AdminRegistrationData & { password?: string }) {
     let userId = data.userId;
     try {
-        const { getUsers, getFunctions, getTablesDB } = await createAdminClient();
+        const { getUsers, getTablesDB } = await createAdminClient();
         const users = getUsers();
-        const functions = getFunctions();
         const tablesDB = getTablesDB();
 
         // 1. Check or Create User
@@ -51,7 +53,7 @@ export async function processAdminRegistration(data: AdminRegistrationData) {
                 userId = existingUsers.users[0].$id;
             } else {
                 // Create new user
-                const password = "Pass123" + Math.random().toString(36).slice(-4);
+                const password = data.password || ("Pass123" + Math.random().toString(36).slice(-4));
                 userId = ID.unique();
                 const name = data.name || data.email.split("@")[0];
 
@@ -92,55 +94,32 @@ export async function processAdminRegistration(data: AdminRegistrationData) {
             return { success: false, error: "Failed to resolve User ID" };
         }
 
-        // 2. Call Appwrite Function for Payment/Registration
-        // Function expects: { userId, type, ...props }
-        const payload = {
-            userId,
-            type: data.type,
-            quantity: data.quantity,
-            size: data.size,
-            event_id: data.event_id,
-            hostel: data.hostel,
-            day: data.day,
-            tier: data.tier,
-            item_id: data.type === "TICKET" ? `ticket_${userId}` : data.item_id,
+        // 2. Use initiatePayment from payment.actions.ts
+        const paymentData = {
+            ...data,
+            redirectUrl: "", // No redirect needed for admin modal flow, handled by JS SDK
+            eventId: data.event_id, // Map for workshop
+            merchId: "admin_merch", // Fallback
         };
 
-        const functionId = "69849bf60039fa30b3c0"; // ID from user prompt
-        const execution = await functions.createExecution(
-            functionId,
-            JSON.stringify(payload)
-        );
+        const paymentResult = await initiatePayment(data.type, paymentData, userId);
 
-        if (execution.status === "completed") {
-            try {
-                // Parse the output if it's JSON
-                const responseBody = JSON.parse(execution.responseBody);
-                if (responseBody.success) {
-                    await logAction(
-                        "Admin Registration",
-                        `Processed ${data.type} registration for user ${userId}. TxID: ${responseBody.transactionId}`,
-                        userId,
-                        'SUCCESS'
-                    );
-                    return { success: true, data: responseBody };
-                } else {
-                    await logAction(
-                        "Admin Registration Failed",
-                        `Failed ${data.type} registration for user ${userId}: ${responseBody.message}`,
-                        userId,
-                        'FAILED'
-                    );
-                    return { success: false, error: responseBody.message || "Function returned failure" };
-                }
-            } catch (e) {
-                console.log("Raw execution body:", execution.responseBody);
-                await logAction("Admin Registration Error", "Failed to parse function response", userId, 'FAILED');
-                return { success: true, data: { message: "Execution completed but response check failed" } };
-            }
+        if (paymentResult.success) {
+            await logAction(
+                "Admin Registration Initiated",
+                `Initiated ${data.type} payment for user ${userId}. OrderID: ${paymentResult.orderId}`,
+                userId,
+                'SUCCESS'
+            );
+            return { success: true, data: paymentResult };
         } else {
-            await logAction("Admin Registration Failed", `Function execution status: ${execution.status}`, userId, 'FAILED');
-            return { success: false, error: `Function execution status: ${execution.status}` };
+            await logAction(
+                "Admin Registration Failed",
+                `Failed to initiate payment: ${paymentResult.error}`,
+                userId,
+                'FAILED'
+            );
+            return { success: false, error: paymentResult.error };
         }
 
     } catch (error: any) {

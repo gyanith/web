@@ -22,6 +22,9 @@ import { processAdminRegistration, getEvents, getUserByEmail } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
+// @ts-ignore
+import { load } from "@cashfreepayments/cashfree-js";
+
 export default function RegistrationForm() {
   const { toast, success, error: errorToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -33,6 +36,7 @@ export default function RegistrationForm() {
     name: "",
     phone: "",
     // New fields
+    password: "", // Add password field
     gender: "male",
     is_nitpy: false,
     college_name: "",
@@ -86,7 +90,6 @@ export default function RegistrationForm() {
     formData.type,
     formData.quantity,
     formData.tier,
-    formData.tier,
     formData.event_id,
     events,
   ]);
@@ -119,6 +122,7 @@ export default function RegistrationForm() {
         email: formData.email,
         name: formData.name,
         phone: formData.phone,
+        password: formData.password, // Pass password
         gender: formData.gender,
         is_nitpy: formData.is_nitpy,
         college_name: formData.college_name,
@@ -131,17 +135,36 @@ export default function RegistrationForm() {
         item_id: formData.item_id,
       });
 
-      if (res.success) {
+      if (res.success && res.data) {
         success(
-          `Transaction ID: ${res.data.transactionId}. Amount: ${res.data.amount}`,
-          "Registration Successful",
+          `Payment Initiated. OrderID: ${res.data.orderId}`,
+          "Processing Payment",
         );
+
+        // Load Cashfree SDK
+        const cashfree = await load({
+          mode:
+            process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
+              ? "production"
+              : "sandbox",
+        });
+
+        await cashfree.checkout({
+          paymentSessionId: res.data.paymentSessionId,
+          returnUrl: window.location.href, // This might need handling if redirecting back
+          redirectTarget: "_modal",
+        });
+
+        // We can't easily know when modal closes or success in admin view without polling or webhook override
+        // But for now, assume admin will see success/failure in modal or dashboard
+
         // Reset sensitive fields
         setFormData((prev) => ({
           ...prev,
           email: "",
           name: "",
           phone: "",
+          password: "",
           gender: "male",
           is_nitpy: false,
           college_name: "",
@@ -218,6 +241,18 @@ export default function RegistrationForm() {
                       placeholder="John Doe"
                       value={formData.name}
                       onChange={(e) => handleChange("name", e.target.value)}
+                    />
+                  </div>
+                  {/* NEW PASSWORD FIELD */}
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="text"
+                      required
+                      placeholder="Set User Password"
+                      value={formData.password}
+                      onChange={(e) => handleChange("password", e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">

@@ -31,7 +31,20 @@ export default function Home() {
       }}
     >
       <div className="w-screen h-screen flex items-center overflow-hidden justify-center ">
-        <div className="w-fit z-10 h-16  absolute flex top-24 lg:bottom-52 lg:top-auto">
+        <div className="w-fit z-10 h-auto absolute flex flex-col gap-4 top-24 lg:bottom-52 lg:top-auto items-center">
+          <Link href="/orion">
+            <GlassSurface
+              borderRadius={10}
+              backgroundOpacity={0.75}
+              className="cursor-pointer border border-amber-700/30 transition-all duration-300 px-3 py-2"
+            >
+              <span className="text-white flex flex-col items-center justify-center lg:text-base tracking-wide">
+                <span className="font-medium text-base leading-tight text-center lg:text-lg">
+                  Orion AI <br /> Hackathon
+                </span>
+              </span>
+            </GlassSurface>
+          </Link>
           <Link
             href="https://gyanith-conference.vercel.app/"
             target="_blank"

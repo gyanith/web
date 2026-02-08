@@ -56,7 +56,7 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
 
   if (!selectedTier) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-8">
+      <div className="min-h-screen w-screen bg-black text-white flex flex-col items-center justify-center p-8">
         <div className={`${unispace.className} text-xl text-red-500`}>
           Invalid tier selected
         </div>
@@ -169,16 +169,10 @@ export default function CheckoutClient({ user }: CheckoutClientProps) {
       description: "Visa, Mastercard, Rupay",
       icon: <CreditCard className="w-6 h-6" />,
     },
-    {
-      id: "wallet",
-      name: "Wallet",
-      description: "Paytm, PhonePe, Amazon Pay",
-      icon: <Wallet className="w-6 h-6" />,
-    },
   ];
 
   return (
-    <div className="min-h-screen w-full flex flex-col relative overflow-x-hidden bg-black">
+    <div className="min-h-screen w-screen flex flex-col relative overflow-x-hidden bg-black">
       <div className="flex flex-col md:flex-row w-full grow min-h-screen">
         {/* LEFT SIDE: Product & Summary */}
         <div className="w-full md:w-1/2 flex flex-col p-6 md:p-12 lg:p-20 lg:pt-36 relative border-r border-white/10">

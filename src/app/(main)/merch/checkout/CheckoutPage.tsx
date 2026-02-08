@@ -127,16 +127,10 @@ const CheckoutPage = ({ user }: { user: any }) => {
       description: "Visa, Mastercard, Rupay",
       icon: <CreditCard className="w-6 h-6" />,
     },
-    {
-      id: "wallet",
-      name: "Wallet",
-      description: "Paytm, PhonePe, Amazon Pay",
-      icon: <Wallet className="w-6 h-6" />,
-    },
   ];
 
   return (
-    <div className="min-h-screen w-full flex flex-col relative overflow-x-hidden">
+    <div className="min-h-screen w-screen flex flex-col relative overflow-x-hidden">
       <div className="flex flex-col md:flex-row w-full grow min-h-screen">
         {/* =======================
             LEFT SIDE: Product & Summary 
