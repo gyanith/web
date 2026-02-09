@@ -326,7 +326,7 @@ export default function OrionPage() {
               ORION
             </h1>
             <p
-              className={`${unispace.className} text-xl md:text-2xl text-[#d4a574]/60 tracking-[0.5em] mt-2`}
+              className={`${unispace.className} text-xl text-[#d4a574]/35 tracking-tighter mt-2`}
             >
               IDEATHON_2026
             </p>
@@ -336,9 +336,9 @@ export default function OrionPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="flex items-center gap-4 bg-[#d4a574]/10 border border-[#d4a574] px-8 py-4 rounded-none mt-4 backdrop-blur-md"
+            className="flex items-center  gap-4 bg-[#d4a574]/10 border border-[#d4a574] px-8 py-4 rounded-none mt-4 backdrop-blur-md"
           >
-            <Trophy className="w-8 h-8 text-[#d4a574] animate-pulse" />
+            <Trophy className="w-12 h-12 text-[#d4a574] animate-pulse" />
             <div className="text-left">
               <p className="text-xs text-[#d4a574]/60 uppercase tracking-wider mb-2">
                 Total Prize Pool
@@ -355,7 +355,7 @@ export default function OrionPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className={`${garetBook.className} max-w-2xl text-lg text-[#d4a574]/80 leading-relaxed mt-6 text-justify`}
+            className={`${garetBook.className} max-w-2xl text-lg text-[#d4a574]/80 mt-6 text-justify`}
           >
             &gt; INITIATING PROTOCOL: ORION. <br />
             Ignite your innovation. Gather your team, brainstorm groundbreaking
