@@ -9,12 +9,11 @@ import {
   Users,
   CreditCard,
   Shield,
-  CheckCircle2,
   AlertCircle,
   Trophy,
   Zap,
 } from "lucide-react";
-import { unispace, garetBook, creatoDisplay } from "@/fonts/fonts";
+import { unispace, garetBook, superRetro } from "@/fonts/fonts";
 import { useToast } from "@/my_components/Toast";
 
 // Actions
@@ -322,7 +321,7 @@ export default function OrionPage() {
             className="relative"
           >
             <h1
-              className={`${creatoDisplay.className} text-7xl md:text-9xl font-bold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-[#d4a574] to-[#8a6a4b] drop-shadow-[0_0_10px_rgba(212,165,116,0.5)]`}
+              className={`${superRetro.className} text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-bold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-[#d4a574] to-[#8a6a4b] drop-shadow-[0_0_10px_rgba(212,165,116,0.5)]`}
             >
               ORION
             </h1>
