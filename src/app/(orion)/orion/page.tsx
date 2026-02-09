@@ -155,9 +155,20 @@ export default function OrionPage() {
 
   const handlePayment = async () => {
     if (!user || !team) return;
+
+    if (!idea || idea.trim().length < 50) {
+      toast.error(
+        "Project Idea must be at least 50 characters long to proceed with registration.",
+      );
+      return;
+    }
+
     setLoading(true);
     setLoadingText("PROCESSING PAYMENT...");
     try {
+      // Auto-save idea before payment to ensure it's captured
+      await saveOrionIdea(team.$id, idea, "");
+
       const res = await initiateOrionPayment(
         {
           teamId: team.$id,
