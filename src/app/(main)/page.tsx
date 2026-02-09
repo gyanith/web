@@ -40,7 +40,7 @@ export default function Home() {
             >
               <span className="text-white flex flex-col items-center justify-center lg:text-base tracking-wide">
                 <span className="font-medium text-base leading-tight text-center lg:text-lg">
-                  Orion AI <br /> Hackathon
+                  Orion AI <br /> Ideathon
                 </span>
               </span>
             </GlassSurface>

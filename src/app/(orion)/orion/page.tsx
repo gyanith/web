@@ -46,6 +46,9 @@ export default function OrionPage() {
   const [user, setUser] = useState<any>(null);
   const [team, setTeam] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingText, setLoadingText] = useState(
+    "SEARCHING FOR REGISTERED TEAM...",
+  );
 
   // Modals
   const [showCreateTeam, setShowCreateTeam] = useState(false);
@@ -86,6 +89,7 @@ export default function OrionPage() {
     }
 
     setLoading(true);
+    setLoadingText("CREATING TEAM...");
     try {
       const res = await createTeam(ORION_EVENT_ID, user.$id, newTeamName);
       if (res.success) {
@@ -107,6 +111,7 @@ export default function OrionPage() {
   const handleAddMember = async () => {
     if (!team || !newMemberEmail) return;
     setLoading(true);
+    setLoadingText("ADDING MEMBER...");
     try {
       const res = await addTeamMemberByEmail(
         team.$id,
@@ -133,6 +138,7 @@ export default function OrionPage() {
   const handleSaveIdea = async () => {
     if (!team) return;
     setLoading(true);
+    setLoadingText("SAVING IDEA...");
     try {
       const res = await saveOrionIdea(team.$id, idea, "");
       if (res.success) {
@@ -150,6 +156,7 @@ export default function OrionPage() {
   const handlePayment = async () => {
     if (!user || !team) return;
     setLoading(true);
+    setLoadingText("PROCESSING PAYMENT...");
     try {
       const res = await initiateOrionPayment(
         {
@@ -203,6 +210,7 @@ export default function OrionPage() {
       // Verify payment
       const verify = async () => {
         setLoading(true);
+        setLoadingText("PROCESSING PAYMENT...");
         // Import verify action dynamically to avoid server/client issues if any
         const { verifyOrionPayment } =
           await import("@/lib/actions/orion.actions");
@@ -228,7 +236,7 @@ export default function OrionPage() {
         <p
           className={`${unispace.className} text-sm tracking-wider animate-pulse`}
         >
-          SEARCHING FOR REGISTERED TEAM...
+          {loadingText}
         </p>
       </div>
     );
@@ -316,11 +324,10 @@ export default function OrionPage() {
                     <h4
                       className={`${unispace.className} text-base md:text-lg text-white mb-2`}
                     >
-                      Round 1 - On Campus
+                      Round 1 - Hybrid
                     </h4>
                     <p className="text-white/60 text-sm md:text-base leading-relaxed">
-                      Teams work on projects based on their pre-defined ideas at
-                      our college campus.
+                      Teams can either attend it in Gyanith or online.
                     </p>
                   </div>
                 </div>
