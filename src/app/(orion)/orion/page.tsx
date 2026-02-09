@@ -11,10 +11,11 @@ import {
   Shield,
   CheckCircle2,
   AlertCircle,
+  Trophy,
+  Zap,
 } from "lucide-react";
 import { unispace, garetBook, creatoDisplay } from "@/fonts/fonts";
 import { useToast } from "@/my_components/Toast";
-import Footer from "@/my_components/Footer";
 
 // Actions
 import { getLoggedInUser } from "@/lib/actions/auth.actions";
@@ -38,6 +39,48 @@ import { Textarea } from "@/components/ui/textarea";
 const ORION_EVENT_ID = "69879895001e8584a54b";
 const ORION_FEE = 500; // Registration Fee
 
+// --- RETRO UI COMPONENTS ---
+const RetroCard = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={`relative bg-black/80 border border-[#d4a574]/30 p-1 ${className}`}
+  >
+    {/* Corner Accents */}
+    <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#d4a574]" />
+    <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[#d4a574]" />
+    <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-[#d4a574]" />
+    <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#d4a574]" />
+
+    {/* Inner Content */}
+    <div className="bg-[#111]/90 backdrop-blur-sm p-6 h-full relative z-10">
+      {children}
+    </div>
+  </div>
+);
+
+const GlitchText = ({
+  text,
+  className = "",
+}: {
+  text: string;
+  className?: string;
+}) => (
+  <div className={`relative inline-block group ${className}`}>
+    <span className="relative z-10">{text}</span>
+    <span className="absolute top-0 left-0 -z-10 w-full h-full text-[#d4a574] opacity-0 group-hover:opacity-50 animate-pulse translate-x-[2px]">
+      {text}
+    </span>
+    <span className="absolute top-0 left-0 -z-10 w-full h-full text-red-500 opacity-0 group-hover:opacity-50 animate-pulse -translate-x-[2px]">
+      {text}
+    </span>
+  </div>
+);
+
 export default function OrionPage() {
   const router = useRouter();
   const toast = useToast();
@@ -52,7 +95,6 @@ export default function OrionPage() {
 
   // Modals
   const [showCreateTeam, setShowCreateTeam] = useState(false);
-  const [showPayModal, setShowPayModal] = useState(false);
 
   // Inputs
   const [newTeamName, setNewTeamName] = useState("");
@@ -74,7 +116,6 @@ export default function OrionPage() {
       } catch (error) {
         console.error("Failed to load Orion data", error);
       } finally {
-        // Only set loading to false after everything is loaded
         setLoading(false);
       }
     };
@@ -95,7 +136,6 @@ export default function OrionPage() {
       if (res.success) {
         toast.success("Team created!");
         setShowCreateTeam(false);
-        // Reload team
         const userTeam = await getUserTeam(ORION_EVENT_ID, user.$id);
         setTeam(userTeam);
       } else {
@@ -122,7 +162,6 @@ export default function OrionPage() {
       if (res.success) {
         toast.success("Member added successfully!");
         setNewMemberEmail("");
-        // Reload team
         const userTeam = await getUserTeam(ORION_EVENT_ID, user.$id);
         setTeam(userTeam);
       } else {
@@ -166,7 +205,7 @@ export default function OrionPage() {
     setLoading(true);
     setLoadingText("PROCESSING PAYMENT...");
     try {
-      // Auto-save idea before payment to ensure it's captured
+      // Auto-save idea before payment
       await saveOrionIdea(team.$id, idea, "");
 
       const res = await initiateOrionPayment(
@@ -175,22 +214,13 @@ export default function OrionPage() {
           amount: ORION_FEE,
           name: user.name,
           email: user.email,
-          mobile: user.phone || "9999999999", // Fallback if phone not available
+          mobile: user.phone || "9999999999",
           redirectUrl: `${window.location.origin}/orion`,
         },
         user.$id,
       );
 
       if (res.success && res.paymentSessionId) {
-        // Initialize Cashfree Payment - Assuming standard checkout flow or redirect
-        // Ideally use Cashfree JS SDK here same as main flow, but for now redirecting or verifying
-        // Usually we use load() from cashfree-js and do checkout
-        // For simplicity here, if we had a payment link we'd redirect.
-        // Since we have session ID, we need the SDK.
-        // Let's use the same logic as CheckoutClient if possible or a simple redirect if the actions supported it.
-        // Re-using the logic from CheckoutClient.tsx is best.
-
-        // Dynamic Import Cashfree JS
         const { load } = await import("@cashfreepayments/cashfree-js");
         const cashfree = await load({
           mode:
@@ -218,11 +248,9 @@ export default function OrionPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get("order_id");
     if (orderId && user) {
-      // Verify payment
       const verify = async () => {
         setLoading(true);
         setLoadingText("PROCESSING PAYMENT...");
-        // Import verify action dynamically to avoid server/client issues if any
         const { verifyOrionPayment } =
           await import("@/lib/actions/orion.actions");
         const res = await verifyOrionPayment(orderId);
@@ -243,9 +271,9 @@ export default function OrionPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 text-[#d4a574]">
-        <Loader2 className="animate-spin w-10 h-10" />
+        <Loader2 className="animate-spin w-12 h-12" />
         <p
-          className={`${unispace.className} text-sm tracking-wider animate-pulse`}
+          className={`${unispace.className} text-lg tracking-widest animate-pulse text-center`}
         >
           {loadingText}
         </p>
@@ -257,163 +285,165 @@ export default function OrionPage() {
   const isTeamFull = team?.members.length >= 3;
 
   return (
-    <div className="min-h-screen w-full bg-black text-white relative overflow-x-hidden selection:bg-[#d4a574] selection:text-black">
-      {/* Background Ambience similar to Residence Page */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-purple-900/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-900/10 rounded-full blur-[120px]" />
+    <div className="min-h-screen w-full bg-black text-[#d4a574] relative overflow-x-hidden selection:bg-[#d4a574] selection:text-black font-mono">
+      {/* --- RETRO BACKGROUND --- */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Grid */}
+        <div
+          className="absolute inset-0 opacity-[0.1]"
+          style={{
+            backgroundImage: `linear-gradient(#d4a574 1px, transparent 1px), linear-gradient(90deg, #d4a574 1px, transparent 1px)`,
+            backgroundSize: "40px 40px",
+          }}
+        />
+        {/* Scanlines */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[1] bg-[length:100%_4px,3px_100%] pointer-events-none" />
+        {/* Vignette */}
+        <div className="absolute inset-0 bg-radial-gradient(circle, transparent 60%, black 100%) opacity-80" />
       </div>
 
       {/* Navbar Placeholder / Back Button */}
       <div className="absolute top-6 left-6 z-50">
         <Button
-          variant="ghost"
-          className="text-white/60 hover:text-white hover:bg-white/10 transition-all duration-300"
+          variant="outline"
+          className="border-[#d4a574]/30 text-[#d4a574] bg-black hover:bg-[#d4a574] hover:text-black transition-all duration-300 rounded-none uppercase tracking-widest font-bold"
           onClick={() => router.push("/")}
         >
-          &larr; HOME
+          &lt; SYSTEM_EXIT
         </Button>
       </div>
 
       <main className="relative z-10 container mx-auto px-4 py-20 flex flex-col gap-12">
         {/* Hero Section */}
-        <section className="text-center flex flex-col items-center gap-6">
-          <motion.h1
+        <section className="text-center flex flex-col items-center gap-6 mt-10">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative"
+          >
+            <h1
+              className={`${creatoDisplay.className} text-7xl md:text-9xl font-bold uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-[#d4a574] to-[#8a6a4b] drop-shadow-[0_0_10px_rgba(212,165,116,0.5)]`}
+            >
+              ORION
+            </h1>
+            <p
+              className={`${unispace.className} text-xl md:text-2xl text-[#d4a574]/60 tracking-[0.5em] mt-2`}
+            >
+              IDEATHON_2026
+            </p>
+          </motion.div>
+
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`${creatoDisplay.className} text-6xl md:text-8xl font-bold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-[#d4a574] to-[#8a6a4b]`}
-          >
-            ORION
-          </motion.h1>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="h-1 w-24 bg-[#d4a574] rounded-full"
-          />
+            className="flex items-center gap-4 bg-[#d4a574]/10 border border-[#d4a574] px-8 py-4 rounded-none mt-4 backdrop-blur-md"
+          >
+            <Trophy className="w-8 h-8 text-[#d4a574] animate-pulse" />
+            <div className="text-left">
+              <p className="text-xs text-[#d4a574]/60 uppercase tracking-wider mb-2">
+                Total Prize Pool
+              </p>
+              <p
+                className={`${unispace.className} text-3xl font-bold text-[#d4a574]`}
+              >
+                ₹ 1.75 LAKHS
+              </p>
+            </div>
+          </motion.div>
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className={`${garetBook.className} max-w-2xl text-lg text-white/70 leading-relaxed`}
+            className={`${garetBook.className} max-w-2xl text-lg text-[#d4a574]/80 leading-relaxed mt-6 text-justify`}
           >
-            Ignite your innovation at the Orion Ideathon. Gather your team,
-            brainstorm groundbreaking solutions, and compete for glory. A test
-            of creativity, strategy, and technical prowess.
+            &gt; INITIATING PROTOCOL: ORION. <br />
+            Ignite your innovation. Gather your team, brainstorm groundbreaking
+            solutions, and compete for glory. A test of creativity, strategy,
+            and technical prowess waiting for you.
           </motion.p>
         </section>
 
         {/* Event Details Section */}
-        <section className="max-w-5xl mx-auto w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-[#111]/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 mb-8"
-          >
-            <h2
-              className={`${unispace.className} text-2xl md:text-3xl text-[#d4a574] mb-6 text-center`}
-            >
-              THE GREAT IDEA-THON
-            </h2>
-
-            {/* Rounds Section */}
-            <div className="space-y-6 mb-8">
-              <h3
-                className={`${unispace.className} text-lg text-white/80 mb-4`}
-              >
-                Event Structure
+        <section className="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Round 1 */}
+          <RetroCard className="h-full hover:bg-[#d4a574]/5 transition-colors duration-300">
+            <div className="flex flex-col h-full gap-4">
+              <div className="flex justify-between items-start">
+                <span
+                  className={`${unispace.className} text-4xl text-[#d4a574]/20 font-bold`}
+                >
+                  01
+                </span>
+                <Zap className="w-6 h-6 text-[#d4a574]" />
+              </div>
+              <h3 className={`${unispace.className} text-xl text-[#d4a574]`}>
+                HYBRID ROUND
               </h3>
-
-              {/* Round 1 */}
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 md:p-6 hover:border-[#d4a574]/30 transition-all duration-300">
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0 w-12 h-12 bg-[#d4a574] rounded-full flex items-center justify-center text-black font-bold text-lg">
-                    1
-                  </div>
-                  <div className="flex-1">
-                    <h4
-                      className={`${unispace.className} text-base md:text-lg text-white mb-2`}
-                    >
-                      Round 1 - Hybrid
-                    </h4>
-                    <p className="text-white/60 text-sm md:text-base leading-relaxed">
-                      Teams can either attend it in Gyanith or online.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Round 2 */}
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 md:p-6 hover:border-[#d4a574]/30 transition-all duration-300">
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0 w-12 h-12 bg-[#d4a574] rounded-full flex items-center justify-center text-black font-bold text-lg">
-                    2
-                  </div>
-                  <div className="flex-1">
-                    <h4
-                      className={`${unispace.className} text-base md:text-lg text-white mb-2`}
-                    >
-                      Round 2 - Online Challenge
-                    </h4>
-                    <p className="text-white/60 text-sm md:text-base leading-relaxed">
-                      Qualifying teams receive a specific scenario/problem from
-                      Orient.ai to solve remotely.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Round 3 */}
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 md:p-6 hover:border-[#d4a574]/30 transition-all duration-300">
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0 w-12 h-12 bg-[#d4a574] rounded-full flex items-center justify-center text-black font-bold text-lg">
-                    3
-                  </div>
-                  <div className="flex-1">
-                    <h4
-                      className={`${unispace.className} text-base md:text-lg text-white mb-2`}
-                    >
-                      Grand Finale - On Campus
-                    </h4>
-                    <p className="text-white/60 text-sm md:text-base leading-relaxed">
-                      Finalists return to campus for an on-the-spot problem
-                      statement challenge and create innovative solutions.
-                    </p>
-                  </div>
-                </div>
+              <p className="text-[#d4a574]/70 text-sm leading-relaxed">
+                Teams execute projects based on pre-defined ideas. Attend
+                physically at Gyanith Campus or participate Online.
+              </p>
+              <div className="mt-auto pt-4 border-t border-[#d4a574]/20 w-full">
+                <span className="text-xs text-[#d4a574]/40 uppercase tracking-wider">
+                  STATUS: ACTIVE
+                </span>
               </div>
             </div>
+          </RetroCard>
 
-            {/* Team & Registration Info */}
-            <div className="grid md:grid-cols-2 gap-4 pt-6 border-t border-white/10">
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <Users className="w-5 h-5 text-blue-400" />
-                  <h4 className={`${unispace.className} text-sm text-blue-400`}>
-                    TEAM SIZE
-                  </h4>
-                </div>
-                <p className="text-white text-lg md:text-xl font-bold">
-                  2 - 3 Members
-                </p>
-                <p className="text-white/50 text-xs mt-1">per team</p>
+          {/* Round 2 */}
+          <RetroCard className="h-full hover:bg-[#d4a574]/5 transition-colors duration-300">
+            <div className="flex flex-col h-full gap-4">
+              <div className="flex justify-between items-start">
+                <span
+                  className={`${unispace.className} text-4xl text-[#d4a574]/20 font-bold`}
+                >
+                  02
+                </span>
+                <Shield className="w-6 h-6 text-[#d4a574]" />
               </div>
-
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <CreditCard className="w-5 h-5 text-green-400" />
-                  <h4
-                    className={`${unispace.className} text-sm text-green-400`}
-                  >
-                    REGISTRATION FEE
-                  </h4>
-                </div>
-                <p className="text-white text-lg md:text-xl font-bold">₹500</p>
-                <p className="text-white/50 text-xs mt-1">per team</p>
+              <h3 className={`${unispace.className} text-xl text-[#d4a574]`}>
+                ONLINE CHALLENGE
+              </h3>
+              <p className="text-[#d4a574]/70 text-sm leading-relaxed">
+                Qualifying teams receive a classified scenario from Orient.ai to
+                solve remotely.
+              </p>
+              <div className="mt-auto pt-4 border-t border-[#d4a574]/20 w-full">
+                <span className="text-xs text-[#d4a574]/40 uppercase tracking-wider">
+                  ACCESS: RESTRICTED
+                </span>
               </div>
             </div>
-          </motion.div>
+          </RetroCard>
+
+          {/* Round 3 */}
+          <RetroCard className="h-full hover:bg-[#d4a574]/5 transition-colors duration-300">
+            <div className="flex flex-col h-full gap-4">
+              <div className="flex justify-between items-start">
+                <span
+                  className={`${unispace.className} text-4xl text-[#d4a574]/20 font-bold`}
+                >
+                  03
+                </span>
+                <Trophy className="w-6 h-6 text-[#d4a574]" />
+              </div>
+              <h3 className={`${unispace.className} text-xl text-[#d4a574]`}>
+                GRAND FINALE
+              </h3>
+              <p className="text-[#d4a574]/70 text-sm leading-relaxed">
+                On-Campus showdown. On-the-spot problem statement challenge to
+                create innovative solutions.
+              </p>
+              <div className="mt-auto pt-4 border-t border-[#d4a574]/20 w-full">
+                <span className="text-xs text-[#d4a574]/40 uppercase tracking-wider">
+                  LOCATION: TARGET_ZONE
+                </span>
+              </div>
+            </div>
+          </RetroCard>
         </section>
 
         {/* Main Content Area */}
@@ -422,77 +452,79 @@ export default function OrionPage() {
             /* No Team - Show Create/Join Options */
             <div className="grid lg:grid-cols-2 gap-8">
               {/* LEFT: Create Team Card */}
-              <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl relative overflow-hidden group hover:border-[#d4a574]/30 transition-all duration-500">
-                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Users className="w-24 h-24 text-[#d4a574]" />
+              <RetroCard>
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center gap-4 border-b border-[#d4a574]/20 pb-4">
+                    <Users className="w-8 h-8 text-[#d4a574]" />
+                    <h3
+                      className={`${unispace.className} text-2xl text-[#d4a574]`}
+                    >
+                      INITIALIZE TEAM
+                    </h3>
+                  </div>
+                  <p className="text-[#d4a574]/80 text-sm leading-relaxed">
+                    Form your squad for Orion Ideathon. Max capacity: 3 units.
+                  </p>
+                  <Button
+                    onClick={() =>
+                      user
+                        ? setShowCreateTeam(true)
+                        : router.push("/auth/login")
+                    }
+                    className="w-full bg-[#d4a574] text-black hover:bg-[#c49a6b] rounded-none font-bold tracking-widest h-12 mt-4"
+                  >
+                    {user ? "[ CREATE_TEAM ]" : "[ LOGIN_TO_ACCESS ]"}
+                  </Button>
                 </div>
-                <h3
-                  className={`${unispace.className} text-2xl mb-4 text-[#d4a574]`}
-                >
-                  CREATE TEAM
-                </h3>
-                <p className="text-white/60 text-sm mb-6 leading-relaxed">
-                  Form your squad for Orion Ideathon. You can add up to 2 other
-                  members to make a team of 3.
-                </p>
-                <Button
-                  onClick={() =>
-                    user ? setShowCreateTeam(true) : router.push("/auth/login")
-                  }
-                  className="w-full bg-[#d4a574] text-black hover:bg-[#c49a6b] font-bold tracking-wide transition-all duration-300 hover:scale-105"
-                >
-                  {user ? "CREATE TEAM" : "LOGIN TO PARTICIPATE"}
-                </Button>
-              </div>
+              </RetroCard>
 
               {/* RIGHT: Registration Fee Card */}
-              <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl relative group hover:border-green-500/30 transition-all duration-500">
-                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <CreditCard className="w-24 h-24 text-green-500" />
-                </div>
-                <h3
-                  className={`${unispace.className} text-2xl mb-4 text-green-400`}
-                >
-                  REGISTRATION FEE
-                </h3>
-                <div className="flex flex-col gap-4">
-                  <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
-                    <span className="text-white/60">Per Team</span>
+              <RetroCard>
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center gap-4 border-b border-[#d4a574]/20 pb-4">
+                    <CreditCard className="w-8 h-8 text-[#d4a574]" />
+                    <h3
+                      className={`${unispace.className} text-2xl text-[#d4a574]`}
+                    >
+                      ENTRY FEE
+                    </h3>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-[#d4a574]/10 border border-[#d4a574]/30">
+                    <span className="text-[#d4a574]/80 uppercase tracking-wider text-sm">
+                      Amount Required
+                    </span>
                     <span
                       className={`${unispace.className} text-3xl text-[#d4a574]`}
                     >
                       ₹{ORION_FEE}
                     </span>
                   </div>
-                  <p className="text-white/50 text-xs">
-                    * Team leader will handle the payment after team creation
+                  <p className="text-[#d4a574]/40 text-xs font-mono">
+                    * Transaction authorized by Team Leader only.
                   </p>
                 </div>
-              </div>
+              </RetroCard>
             </div>
           ) : (
             /* Has Team - Show Team Details & Payment */
             <div className="grid lg:grid-cols-2 gap-8">
               {/* LEFT: Team Details Card */}
-              <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl relative overflow-hidden group hover:border-[#d4a574]/30 transition-all duration-500">
-                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Shield className="w-24 h-24 text-[#d4a574]" />
-                </div>
-
+              <RetroCard>
                 <div className="flex flex-col gap-6">
-                  <div className="flex justify-between items-start">
-                    <div>
+                  <div className="flex justify-between items-start border-b border-[#d4a574]/20 pb-4">
+                    <div className="overflow-hidden pr-4">
                       <h2
-                        className={`${unispace.className} text-3xl text-[#d4a574] mb-1`}
+                        className={`${unispace.className} text-3xl text-[#d4a574] mb-1 truncate`}
+                        title={team.name}
                       >
                         {team.name}
                       </h2>
-                      <p className="text-xs text-white/40 font-mono">
+                      <p className="text-[10px] text-[#d4a574]/40 font-mono tracking-widest">
                         ID: {team.$id}
                       </p>
                     </div>
-                    <div className="px-3 py-1 bg-[#d4a574]/10 border border-[#d4a574]/20 rounded text-[#d4a574] text-xs font-bold uppercase tracking-wider">
-                      {team.members.length} / 3 MEMBERS
+                    <div className="shrink-0 px-3 py-1 bg-[#d4a574] text-black text-xs font-bold uppercase tracking-wider">
+                      {team.members.length} / 3 UNITS
                     </div>
                   </div>
 
@@ -501,23 +533,25 @@ export default function OrionPage() {
                     {team.members.map((m: any) => (
                       <div
                         key={m.$id}
-                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5"
+                        className="flex items-center justify-between p-3 bg-[#d4a574]/5 border border-[#d4a574]/20"
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${m.role === "LEADER" ? "bg-[#d4a574] text-black" : "bg-white/10 text-white"}`}
+                            className={`w-8 h-8 flex items-center justify-center text-xs font-bold border border-[#d4a574] ${m.role === "LEADER" ? "bg-[#d4a574] text-black" : "text-[#d4a574]"}`}
                           >
                             {m.name.charAt(0)}
                           </div>
                           <div>
-                            <p className="text-sm font-medium">{m.name}</p>
-                            <p className="text-xs text-white/40">{m.email}</p>
+                            <p className="text-sm font-medium text-[#d4a574]">
+                              {m.name}
+                            </p>
+                            <p className="text-xs text-[#d4a574]/50">
+                              {m.email}
+                            </p>
                           </div>
                         </div>
                         {m.role === "LEADER" && (
-                          <span className="text-[10px] bg-[#d4a574]/20 text-[#d4a574] px-2 py-0.5 rounded">
-                            LEADER
-                          </span>
+                          <Shield className="w-4 h-4 text-[#d4a574]" />
                         )}
                       </div>
                     ))}
@@ -525,115 +559,116 @@ export default function OrionPage() {
 
                   {/* Add Member Action (Leader Only) */}
                   {isLeader && !isTeamFull && (
-                    <div className="mt-2 pt-4 border-t border-white/10 flex flex-col gap-3">
-                      <Label className="text-xs text-white/60 uppercase tracking-widest">
-                        Add Member
+                    <div className="mt-2 pt-4 border-t border-[#d4a574]/20 flex flex-col gap-3">
+                      <Label className="text-xs text-[#d4a574]/60 uppercase tracking-widest">
+                        Add Operative
                       </Label>
                       <div className="flex gap-2">
                         <Input
-                          placeholder="Enter member's email"
+                          placeholder="Enter email..."
                           value={newMemberEmail}
                           onChange={(e) => setNewMemberEmail(e.target.value)}
-                          className="bg-black/50 border-white/20 text-white h-10 text-sm focus:border-[#d4a574]"
+                          className="bg-black/50 border-[#d4a574]/30 text-[#d4a574] h-10 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-[#d4a574] rounded-none placeholder:text-[#d4a574]/20"
                         />
                         <Button
                           onClick={handleAddMember}
                           disabled={loading || !newMemberEmail}
                           size="sm"
-                          className="bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all duration-300"
+                          className="bg-[#d4a574]/10 hover:bg-[#d4a574] text-[#d4a574] hover:text-black border border-[#d4a574] rounded-none transition-all duration-300"
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
                       </div>
-                      <p className="text-[10px] text-white/30">
-                        * Member must be registered on Gyanith platform first.
-                      </p>
                     </div>
                   )}
                 </div>
-              </div>
+              </RetroCard>
 
               {/* RIGHT: Registration & Payment Card */}
-              <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl relative group hover:border-green-500/30 transition-all duration-500">
-                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <CreditCard className="w-24 h-24 text-green-500" />
-                </div>
-
-                <h3
-                  className={`${unispace.className} text-2xl mb-6 text-green-400`}
-                >
-                  REGISTRATION
-                </h3>
-
-                <div className="flex flex-col gap-4">
-                  <div className="flex justify-between items-center p-4 bg-white/5 rounded-lg">
-                    <span className="text-white/60">Team Registration Fee</span>
-                    <span
+              <RetroCard>
+                <div className="flex flex-col gap-6 h-full">
+                  <div className="flex items-center gap-4 border-b border-[#d4a574]/20 pb-4">
+                    <CreditCard className="w-8 h-8 text-[#d4a574]" />
+                    <h3
                       className={`${unispace.className} text-2xl text-[#d4a574]`}
                     >
-                      ₹{ORION_FEE}
-                    </span>
+                      REGISTRATION
+                    </h3>
                   </div>
 
-                  {isLeader ? (
-                    <Button
-                      onClick={handlePayment}
-                      disabled={loading}
-                      className="w-full bg-[#d4a574] text-black hover:bg-[#c49a6b] font-bold h-12 text-lg tracking-wide transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-[#d4a574]/20"
-                    >
-                      {loading ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        "PAY & REGISTER TEAM"
-                      )}
-                    </Button>
-                  ) : (
-                    <div className="p-4 bg-yellow-900/10 border border-yellow-500/20 rounded text-yellow-500 text-sm flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" />
-                      Wait for your Team Leader to complete registration.
+                  <div className="flex flex-col gap-4 flex-1 justify-center">
+                    <div className="flex justify-between items-center p-4 bg-[#d4a574]/10 border border-[#d4a574]/30">
+                      <span className="text-[#d4a574]/80 text-sm uppercase tracking-wider">
+                        Fee Required
+                      </span>
+                      <span
+                        className={`${unispace.className} text-2xl text-[#d4a574]`}
+                      >
+                        ₹{ORION_FEE}
+                      </span>
                     </div>
-                  )}
+
+                    {isLeader ? (
+                      <Button
+                        onClick={handlePayment}
+                        disabled={loading}
+                        className="w-full bg-[#d4a574] text-black hover:bg-[#c49a6b] font-bold h-14 text-lg tracking-widest rounded-none mt-4 transition-all duration-300 hover:shadow-[0_0_15px_rgba(212,165,116,0.4)]"
+                      >
+                        {loading ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          "[ PAY_&_REGISTER ]"
+                        )}
+                      </Button>
+                    ) : (
+                      <div className="p-4 bg-yellow-900/20 border border-yellow-500/40 text-yellow-500 text-sm flex items-center gap-2 mt-4 font-mono">
+                        <AlertCircle className="w-4 h-4" />
+                        Awaiting Leader Authorization.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </RetroCard>
             </div>
           )}
 
           {/* BOTTOM WIDE: Project Idea Section (Only if team exists) */}
           {team && (
-            <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl relative group hover:border-[#d4a574]/30 transition-all duration-500">
+            <RetroCard>
               <h3
-                className={`${unispace.className} text-2xl mb-6 flex items-center gap-2`}
+                className={`${unispace.className} text-2xl mb-6 flex items-center gap-2 text-[#d4a574]`}
               >
-                PROJECT IDEA <span className="text-[#d4a574]">*</span>
+                PROJECT_MANIFESTO{" "}
+                <span className="text-red-500 animate-pulse">*</span>
               </h3>
 
               <div className="flex flex-col gap-4">
                 <Textarea
-                  placeholder="Describe your project idea briefly... What problem does it solve? What makes it unique?"
+                  placeholder="> Describe your innovation protocol... (Min 50 chars)"
                   value={idea}
                   onChange={(e) => setIdea(e.target.value)}
                   disabled={!isLeader}
-                  className="bg-black/50 border-white/20 min-h-[200px] text-white/90 focus:border-[#d4a574] resize-none"
+                  className="bg-black/80 border-[#d4a574]/30 min-h-[200px] text-[#d4a574] focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-[#d4a574] resize-none font-mono rounded-none placeholder:text-[#d4a574]/20 p-4 leading-relaxed"
                 />
                 <div className="flex justify-between items-center">
-                  <p className="text-xs text-white/40">
+                  <p className="text-xs text-[#d4a574]/40 font-mono">
                     {isLeader
-                      ? "Only team leader can edit the project idea"
-                      : "Only your team leader can edit this"}
+                      ? "> EDIT_ACCESS: GRANTED"
+                      : "> EDIT_ACCESS: DENIED (LEADER_ONLY)"}
                   </p>
                   {isLeader && (
                     <Button
                       onClick={handleSaveIdea}
                       disabled={loading}
                       variant="outline"
-                      className="border-[#d4a574]/50 text-black hover:bg-[#d4a574] hover:border-[#d4a574] transition-all duration-300"
+                      className="border-[#d4a574] text-[#d4a574] hover:bg-[#d4a574] hover:text-black rounded-none tracking-widest"
                     >
-                      SAVE IDEA
+                      [ SAVE_DATA ]
                     </Button>
                   )}
                 </div>
               </div>
-            </div>
+            </RetroCard>
           )}
         </div>
       </main>
@@ -641,43 +676,47 @@ export default function OrionPage() {
       {/* CREATE TEAM MODAL */}
       <AnimatePresence>
         {showCreateTeam && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#111] border border-white/20 p-8 rounded-2xl w-full max-w-md shadow-2xl"
+              className="bg-black border border-[#d4a574] p-1 w-full max-w-md shadow-[0_0_30px_rgba(212,165,116,0.2)]"
             >
-              <h2 className={`${unispace.className} text-2xl mb-2`}>
-                Create Team
-              </h2>
-              <p className="text-white/50 text-sm mb-6">
-                Enter a unique name for your team.
-              </p>
-
-              <Input
-                placeholder="Team Name"
-                value={newTeamName}
-                onChange={(e) => setNewTeamName(e.target.value)}
-                className="bg-black border-white/20 text-white mb-6 h-12"
-                autoFocus
-              />
-
-              <div className="flex gap-3 justify-end">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowCreateTeam(false)}
-                  className="hover:bg-white/10 transition-all duration-300"
+              <div className="bg-[#111] p-8 border border-[#d4a574]/20">
+                <h2
+                  className={`${unispace.className} text-2xl mb-2 text-[#d4a574]`}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateTeam}
-                  disabled={loading}
-                  className="bg-[#d4a574] text-black hover:bg-[#c49a6b] transition-all duration-300 hover:scale-105"
-                >
-                  {loading ? "Creating..." : "Create Team"}
-                </Button>
+                  NEW_TEAM_PROTOCOL
+                </h2>
+                <p className="text-[#d4a574]/50 text-sm mb-6 font-mono">
+                  Enter designation for new unit.
+                </p>
+
+                <Input
+                  placeholder="UNIT_NAME"
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  className="bg-black border-[#d4a574]/50 text-[#d4a574] mb-6 h-12 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-[#d4a574] font-mono tracking-wider"
+                  autoFocus
+                />
+
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowCreateTeam(false)}
+                    className="hover:bg-[#d4a574]/10 text-[#d4a574] transition-all duration-300 rounded-none"
+                  >
+                    ABORT
+                  </Button>
+                  <Button
+                    onClick={handleCreateTeam}
+                    disabled={loading}
+                    className="bg-[#d4a574] text-black hover:bg-[#c49a6b] transition-all duration-300 rounded-none font-bold tracking-wider"
+                  >
+                    {loading ? "PROCESSING..." : "INITIALIZE"}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </div>
