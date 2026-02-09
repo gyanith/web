@@ -661,7 +661,7 @@ export default function OrionPage() {
                       onClick={handleSaveIdea}
                       disabled={loading}
                       variant="outline"
-                      className="border-[#d4a574] text-[#d4a574] hover:bg-[#d4a574] hover:text-black rounded-none tracking-widest"
+                      className="border-[#d4a574] text-[#d4a574] bg-black hover:bg-[#d4a574] hover:text-black rounded-none tracking-widest"
                     >
                       [ SAVE_DATA ]
                     </Button>
