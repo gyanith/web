@@ -374,7 +374,7 @@ export default function AccommodationClient({
                 </div>
                 <div className="flex justify-between items-center text-xs mb-2">
                   <span className="text-zinc-400 font-mono">
-                    CAUTION DEPOSIT
+                    CAUTION DEPOSIT [Refundable]
                   </span>
                   <span className="text-[#d4a574] font-mono">₹150</span>
                 </div>

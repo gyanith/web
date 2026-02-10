@@ -112,9 +112,17 @@ export const allTeam = [
 
     {
         name: "Sitalakshmi M",
+        team: "Accommodation",
+        role: "Co-Lead",
+        imageId: "696d202a000ccef0f4f2",
+        phone: ""
+    },
+
+    {
+        name: "Saran",
         team: "Registration",
         role: "Team Lead",
-        imageId: "696d202a000ccef0f4f2",
+        imageId: "698ae37f0000e4afad6e",
         phone: ""
     },
 
@@ -253,6 +261,13 @@ export const allTeam = [
         team: "Web & App",
         role: "Team Lead",
         imageId: "696d2004003d20654798",
+        phone: ""
+    },
+    {
+        name: "Anurodh Pandey",
+        team: "Web & App",
+        role: "Co-Lead",
+        imageId: "698ae373001d491a2e6b",
         phone: ""
     },
 

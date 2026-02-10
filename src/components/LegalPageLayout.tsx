@@ -75,8 +75,6 @@ export default function LegalPageLayout({
           </div>
         </motion.div>
       </div>
-
-      <Footer />
     </div>
   );
 }
