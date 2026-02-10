@@ -15,7 +15,31 @@ async function getEvents(eventType: string) {
   const res = await fetch(`${baseUrl}/api/events/${eventType}`, {
     cache: "no-store", // Prevent caching issues that might cause reloads
   });
-  const data = await res.json();
+  let data = await res.json();
+
+  if (
+    (eventType === "workshop" || eventType === "workshops") &&
+    Array.isArray(data)
+  ) {
+    data.sort((a, b) => {
+      // If both have key
+      if (a.key != null && b.key != null) {
+        // Check if numeric
+        if (typeof a.key === "number" && typeof b.key === "number") {
+          return a.key - b.key;
+        }
+        // Fallback to string comparison
+        return String(a.key).localeCompare(String(b.key));
+      }
+      // If only a has key, it comes first
+      if (a.key != null) return -1;
+      // If only b has key, it comes first
+      if (b.key != null) return 1;
+      // Neither has key
+      return 0;
+    });
+  }
+
   return data;
 }
 

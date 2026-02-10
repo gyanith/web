@@ -35,6 +35,7 @@ export async function GET(
             location: row.location,
             prizePool: row.prize_pool,
             imageUrl: getImageUrl(process.env.NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID!, row.image_id),
+            key: row.key,
         }));
 
         return NextResponse.json(events);
