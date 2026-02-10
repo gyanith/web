@@ -81,6 +81,14 @@ export default function TermsAndConditions() {
           <a href="mailto:gyanith@nitpy.ac.in">gyanith@nitpy.ac.in</a>.
         </p>
       </section>
+
+      <section id="legal-name">
+        <h2 className={unispace.className}>Legal Entity</h2>
+        <p>
+          The transactions on this website are processed by Lokesh, an
+          individual operating under the name Gyanith.
+        </p>
+      </section>
     </LegalPageLayout>
   );
 }
