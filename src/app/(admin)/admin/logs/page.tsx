@@ -7,34 +7,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
-import { createAdminClient } from "@/lib/appwrite/appwrite.server";
-import { Query } from "node-appwrite";
+import { getLogs } from "@/lib/actions/logs.actions";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-async function getLogs() {
-  try {
-    const { getTablesDB } = await createAdminClient();
-    const tablesDB = getTablesDB();
+export default async function LogsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
+  const LIMIT = 20;
 
-    const response = await tablesDB.listRows(
-      appwriteConfig.databaseId,
-      appwriteConfig.logsCollectionId,
-      [
-        Query.orderDesc("$createdAt"), // Latest first
-        Query.limit(100),
-      ],
-    );
-    return response.rows;
-  } catch (error) {
-    console.error("Failed to fetch logs:", error);
-    return [];
-  }
-}
-
-export default async function LogsPage() {
-  const logs = await getLogs();
+  const { logs, total } = await getLogs({ page, limit: LIMIT });
+  const totalPages = Math.ceil(total / LIMIT);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -53,8 +43,11 @@ export default async function LogsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl">System Logs</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold md:text-2xl text-white">
+          System Logs
+        </h1>
+        <div className="text-sm text-muted-foreground">Total Logs: {total}</div>
       </div>
 
       <div className="rounded-md border bg-card text-card-foreground shadow-sm">
@@ -80,7 +73,7 @@ export default async function LogsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                logs.map((log) => (
+                logs.map((log: any) => (
                   <TableRow key={log.$id}>
                     <TableCell className="font-medium">{log.action}</TableCell>
                     <TableCell
@@ -90,7 +83,7 @@ export default async function LogsPage() {
                       {log.description}
                     </TableCell>
                     <TableCell className="text-xs font-mono text-muted-foreground">
-                      {log.userId || "-"}
+                      {log.user_id || "-"}
                     </TableCell>
                     <TableCell className="text-sm">
                       {new Date(log.$createdAt).toLocaleString()}
@@ -105,6 +98,49 @@ export default async function LogsPage() {
               )}
             </TableBody>
           </Table>
+        </div>
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Page {page} of {totalPages || 1}
+        </div>
+        <div className="flex items-center gap-2 text-white">
+          <Button variant="outline" size="sm" asChild disabled={page <= 1}>
+            {page <= 1 ? (
+              <span className="flex text-white items-center gap-2 pointer-events-none opacity-50">
+                <ChevronLeft className="h-4 w-4" /> Previous
+              </span>
+            ) : (
+              <Link
+                href={`/admin/logs?page=${page - 1}`}
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="h-4 w-4 text-white" /> Previous
+              </Link>
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            disabled={page >= totalPages}
+          >
+            {page >= totalPages ? (
+              <span className="flex text-white items-center gap-2 pointer-events-none opacity-50">
+                Next <ChevronRight className="h-4 w-4" />
+              </span>
+            ) : (
+              <Link
+                href={`/admin/logs?page=${page + 1}`}
+                className="flex items-center gap-2"
+              >
+                Next <ChevronRight className="h-4 w-4 text-white" />
+              </Link>
+            )}
+          </Button>
         </div>
       </div>
     </div>

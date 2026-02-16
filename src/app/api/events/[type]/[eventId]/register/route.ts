@@ -33,6 +33,11 @@ export async function POST(
             return NextResponse.json({ error: "Event not found" }, { status: 404 });
         }
 
+        // Check if Sold Out
+        if (event.num_seats <= 0) {
+            return NextResponse.json({ error: "Event Sold Out" }, { status: 400 });
+        }
+
         // 3. Determine Cost and Credit Type
         const eventTypeRaw = (event.type || type || "").toLowerCase();
         const cost = 1;
@@ -109,6 +114,18 @@ export async function POST(
                 user_id: user.$id,
             }
         );
+
+        // 8. Decrement num_seats
+        if (event.num_seats > 0) {
+            await tablesDB.updateRow(
+                appwriteConfig.databaseId,
+                appwriteConfig.eventsCollectionId,
+                eventId,
+                {
+                    num_seats: event.num_seats - 1
+                }
+            );
+        }
 
         return NextResponse.json({
             success: true,
@@ -200,6 +217,16 @@ export async function DELETE(
             appwriteConfig.databaseId,
             REGISTRATIONS_COLLECTION_ID,
             registrationId
+        );
+
+        // 6. Increment num_seats
+        await tablesDB.updateRow(
+            appwriteConfig.databaseId,
+            appwriteConfig.eventsCollectionId,
+            eventId,
+            {
+                num_seats: (event.num_seats || 0) + 1
+            }
         );
 
         return NextResponse.json({

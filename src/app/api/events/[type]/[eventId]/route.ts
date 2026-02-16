@@ -30,6 +30,7 @@ export async function GET(
             eventType: row.type,
             description: row.description,
             day: row.day,
+            numSeats: row.num_seats,
             location: row.location,
             prizePool: row.prize_pool,
             imageUrl: getImageUrl(process.env.NEXT_PUBLIC_APPWRITE_EVENTS_BUCKET_ID!, row.image_id),

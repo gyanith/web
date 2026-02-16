@@ -225,6 +225,7 @@ export default function EventDetailsClient({
   const isWorkshop = eventType.toLowerCase().includes("workshop");
   const isTech = eventType.toLowerCase().includes("tech");
   const isFree = !eventData.fee || Number(eventData.fee) === 0;
+  const isSoldOut = !isRegistered && eventData.num_seats === 0;
 
   return (
     <div className="relative min-h-screen w-full text-[#d4a574]">
@@ -281,20 +282,30 @@ export default function EventDetailsClient({
             transition={{ delay: 0.5, duration: 0.5 }}
           >
             {/* Row 1: Register + Rulebook Side by Side */}
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div
+              className={`w-full grid gap-3 ${
+                isWorkshop
+                  ? "grid-cols-1 max-w-sm mx-auto"
+                  : "grid-cols-1 md:grid-cols-2"
+              }`}
+            >
               {/* Register Button */}
               <div className="group relative">
                 <button
-                  disabled={loading}
+                  disabled={loading || isSoldOut}
                   className={`relative flex items-center justify-center gap-3 border transition-all  py-4 overflow-hidden group/btn cursor-pointer w-full ${
-                    isRegistered
-                      ? "bg-red-900/10 border-red-500/50 hover:bg-red-900/30"
-                      : "bg-[#0a0a0a] border-[#d4a574]/50 hover:bg-[#d4a574]/10"
+                    isSoldOut
+                      ? "bg-neutral-900/50 border-neutral-500/30 cursor-not-allowed text-neutral-500"
+                      : isRegistered
+                        ? "bg-red-900/10 border-red-500/50 hover:bg-red-900/30"
+                        : "bg-[#0a0a0a] border-[#d4a574]/50 hover:bg-[#d4a574]/10"
                   }`}
-                  onClick={handleRegisterClick}
+                  onClick={isSoldOut ? undefined : handleRegisterClick}
                 >
                   <motion.div className="flex items-center gap-3 relative z-10">
-                    {isRegistered ? (
+                    {isSoldOut ? (
+                      <AlertTriangle className="w-5 h-5 text-neutral-500" />
+                    ) : isRegistered ? (
                       <X className="w-5 h-5 text-red-500" />
                     ) : isWorkshop && !isRegistered ? (
                       <CreditCard className="w-5 h-5 text-[#d4a574]" />
@@ -305,11 +316,13 @@ export default function EventDetailsClient({
                       text={
                         loading
                           ? "Processing..."
-                          : isRegistered
-                            ? "Unregister"
-                            : isWorkshop && !isFree
-                              ? "Pay & Register"
-                              : "Register"
+                          : isSoldOut
+                            ? "Seats Filled"
+                            : isRegistered
+                              ? "Unregister"
+                              : isWorkshop && !isFree
+                                ? "Pay & Register"
+                                : "Register"
                       }
                       className={`text-base md:text-lg ${unispace.className}`}
                       color={isRegistered ? "#ef4444" : "#d4a574"}
@@ -517,7 +530,7 @@ export default function EventDetailsClient({
           {/* 3. Prize Card (Vertical) */}
           <motion.div
             variants={itemVariants}
-            className="md:col-span-3 lg:col-span-4 lg:row-span-2 bg-[#d4a574] p-8 flex flex-col justify-between relative overflow-hidden group"
+            className="md:col-span-3 lg:col-span-4 lg:row-span-2 bg-[#d4a574] p-8 flex flex-col relative overflow-hidden group"
           >
             <div
               className="absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none"
@@ -525,8 +538,8 @@ export default function EventDetailsClient({
                 backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E")`,
               }}
             />
-            <div className="relative z-10 text-black">
-              <div className="flex justify-between items-start mb-10">
+            <div className="relative z-10 text-black h-1/2 flex flex-col justify-between border-b border-black/10 pb-6">
+              <div className="flex justify-between items-start mb-4">
                 <div className="p-3 w-fit bg-black/10">
                   <Trophy className="w-10 h-10" />
                 </div>
@@ -546,19 +559,30 @@ export default function EventDetailsClient({
                   </p>
                 ) : (
                   <p
-                    className={`text-6xl font-black tracking-tighter ${unispace.className}`}
+                    className={`text-5xl font-black tracking-tighter ${unispace.className}`}
                   >
                     ₹{eventData.prize_pool}
                   </p>
                 )}
-                <p className="mt-4 text-black/70 font-medium">
-                  {!eventData.prize_pool || Number(eventData.prize_pool) === 0
-                    ? `Participate in this ${eventData.type} event and earn a certificate of achievement.`
-                    : `Win big in this ${eventData.type} showdown. Top 3 teams take home prizes.`}
+              </div>
+            </div>
+
+            {/* Remaining Seats Section */}
+            <div className="relative z-10 text-black h-1/2 flex flex-col justify-end pt-6">
+              <div>
+                <h3 className="text-black/60 text-sm uppercase tracking-wider font-bold mb-2">
+                  Availability
+                </h3>
+                <p
+                  className={`text-6xl font-black tracking-tighter ${unispace.className}`}
+                >
+                  {eventData.num_seats}
+                </p>
+                <p className="mt-2 text-black/70 font-medium">
+                  Remaining Seats
                 </p>
               </div>
             </div>
-            {/* Decorative Circle removed */}
           </motion.div>
 
           {/* 4. Location Card (Small) */}

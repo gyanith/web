@@ -171,7 +171,7 @@ export default function TeamClient({
     const isLeader = team.leader_id === userId;
 
     return (
-      <div className="min-h-screen w-full flex flex-col text-white relative">
+      <div className="min-h-screen w-screen flex flex-col text-white relative">
         {/* Back Button - Fixed or Absolute depending on scroll preference. Absolute inside relative container scrolls with content. */}
         <button
           onClick={() => router.push(`/events/${eventType}/${eventId}`)}
@@ -181,7 +181,7 @@ export default function TeamClient({
           <span className={`${unispace.className} text-sm`}>BACK TO EVENT</span>
         </button>
 
-        <div className="flex-1 flex flex-col items-center justify-center p-6 pt-32 w-full max-w-7xl mx-auto z-10">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 pt-32 w-screen mx-auto z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -372,7 +372,7 @@ export default function TeamClient({
   // VIEW: NO TEAM (JOIN / CREATE)
   // ----------------------------------------------------------------------
   return (
-    <div className="min-h-screen w-full flex flex-col bg-black text-white relative">
+    <div className="min-h-screen w-screen flex flex-col bg-black text-white relative">
       {/* Back Button */}
       <button
         onClick={() => router.push(`/events/${eventType}/${eventId}`)}
