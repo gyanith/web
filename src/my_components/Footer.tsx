@@ -23,9 +23,23 @@ const Footer = () => {
               className={`text-[5px] sm:text-[10px]  text-left text-[#D4A574] ${pressStart2P.className}`}
             >
               Made with{" "}
-              <span className="text-red-500 text-[10px] sm:text-[15px] shadow-[0_0_50px_#ff0000]">
-                &#10084;
-              </span>{" "}
+              <span className="group relative inline-flex justify-center items-center cursor-help mx-1 align-bottom">
+                <span className="text-red-500 text-[10px] sm:text-[15px] shadow-[0_0_50px_#ff0000] inline-block transition-transform duration-300 group-hover:scale-150">
+                  &#10084;
+                </span>
+                {/* Custom Tooltip */}
+                <span className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-black/90 text-[#d4a574] px-2 py-1 rounded border border-[#d4a574]/30 opacity-0 flex invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 pointer-events-none whitespace-nowrap z-50 items-baseline gap-0.5 backdrop-blur-sm translate-y-2 group-hover:translate-y-0">
+                  <span className="text-xs text-white font-thin opacity-20 select-none">
+                    vai
+                  </span>
+                  <span
+                    className={`text-sm font-bold italic tracking-wide ${montserrat.className}`}
+                  >
+                    Shhhh
+                  </span>
+                  <span className="text-sm ml-1 animate-pulse">🤫</span>
+                </span>
+              </span>
               and minimal chaos by
               <span className={`font-bold ${pressStart2P.className}`}>
                 {" "}

@@ -263,8 +263,9 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
             return { status: "ignored", message: "Accommodation already success" };
         }
 
-        // --- WORKSHOP ---
-        else if (itemType === 'WORKSHOP') {
+
+        // --- WORKSHOP & EVENT ---
+        else if (itemType === 'WORKSHOP' || itemType === 'EVENT') {
             // Check if registration exists
             const existingReg = await db.listRows(
                 appwriteConfig.databaseId,
@@ -286,36 +287,38 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
                         user_id: userId
                     }
                 );
-                logs.push(`Created registration for Workshop ${itemId}`);
-                console.log(`[Webhook] Created registration for Workshop ${itemId}`);
+                logs.push(`Created registration for ${itemType} ${itemId}`);
+                console.log(`[Webhook] Created registration for ${itemType} ${itemId}`);
             } else {
-                logs.push(`Registration already exists for Workshop ${itemId}`);
-                console.log(`[Webhook] Registration already exists for Workshop ${itemId}`);
+                logs.push(`Registration already exists for ${itemType} ${itemId}`);
+                console.log(`[Webhook] Registration already exists for ${itemType} ${itemId}`);
             }
 
-            // Award Tech Credit
-            const userDoc = await db.getRow(
-                appwriteConfig.databaseId,
-                appwriteConfig.usersCollectionId,
-                userId
-            );
-
-            if (userDoc) {
-                const newCredits = (userDoc.tech_credits || 0) + 1;
-                await db.updateRow(
+            // Award Tech Credit ONLY for WORKSHOP
+            if (itemType === 'WORKSHOP') {
+                const userDoc = await db.getRow(
                     appwriteConfig.databaseId,
                     appwriteConfig.usersCollectionId,
-                    userId,
-                    {
-                        tech_credits: newCredits
-                    }
+                    userId
                 );
-                logs.push(`Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
-                console.log(`[Webhook] Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
+
+                if (userDoc) {
+                    const newCredits = (userDoc.tech_credits || 0) + 1;
+                    await db.updateRow(
+                        appwriteConfig.databaseId,
+                        appwriteConfig.usersCollectionId,
+                        userId,
+                        {
+                            tech_credits: newCredits
+                        }
+                    );
+                    logs.push(`Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
+                    console.log(`[Webhook] Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
+                }
             }
 
-            await logAction("Payment Fulfilled", `Workshop ${itemId} fulfilled for ${userId}`, userId, 'SUCCESS');
-            return { status: "success", message: "Workshop fulfilled" };
+            await logAction("Payment Fulfilled", `${itemType} ${itemId} fulfilled for ${userId}`, userId, 'SUCCESS');
+            return { status: "success", message: `${itemType} fulfilled` };
         }
 
         // --- ORION ---

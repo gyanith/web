@@ -72,6 +72,8 @@ export async function initiatePayment(
 
         if (payload.type === 'WORKSHOP') {
             payload.event_id = data.eventId;
+        } else if (payload.type === 'EVENT') {
+            payload.event_id = data.eventId; // Handling for Fun Events
         } else if (payload.type === 'ACCOMM') {
             payload.hostel = data.hostel;
             payload.day = data.day;

@@ -89,6 +89,15 @@ export default function EventDetailsClient({
       // If already registered, confirm unregister
       setShowConfirmModal(true);
     } else {
+      // Check for Fun Event Flow
+      // If Fun Event & No Credits -> Trigger Payment
+      if (!isTech && !isWorkshop && !isFree) {
+        const funCredits = user.fun_credits || 0;
+        if (funCredits === 0) {
+          handlePayment();
+          return;
+        }
+      }
       // Confirm register
       setShowConfirmModal(true);
     }
@@ -687,6 +696,11 @@ export default function EventDetailsClient({
                         </>
                       );
                     }
+                    // Fun Event Logic
+                    if (!isTech && !isWorkshop && !isFree) {
+                      return "Are you sure you want to register? 1 Fun Credit will be deducted from your account.";
+                    }
+
                     return "Are you sure you want to register? 1 Credit will be deducted from your account.";
                   }
                 })()}
@@ -701,7 +715,15 @@ export default function EventDetailsClient({
                 </button>
                 <button
                   onClick={() => {
-                    if (!isRegistered && isWorkshop && !isFree) {
+                    const isFunPaid =
+                      !isTech &&
+                      !isWorkshop &&
+                      !isFree &&
+                      (user?.fun_credits || 0) === 0;
+                    if (
+                      !isRegistered &&
+                      ((isWorkshop && !isFree) || isFunPaid)
+                    ) {
                       handlePayment();
                     } else {
                       confirmAction();
