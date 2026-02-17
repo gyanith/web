@@ -30,17 +30,26 @@ export async function POST(req: NextRequest) {
         try {
             const crypto = require('crypto');
             // Cashfree usually signs 'timestamp + rawBody' according to recent docs.
-            // Ensure we use the exact same secret key as configured.
-            const secret = process.env.CASHFREE_SECRET_KEY!;
-            const payload = timestamp + rawBody;
-            const generatedSignature = crypto.createHmac('sha256', secret)
-                .update(payload)
-                .digest('base64');
+            // Check both Main and Orion keys for signature match
+            const mainSecret = process.env.CASHFREE_SECRET_KEY;
+            const orionSecret = process.env.ORION_CASHFREE_SECRET_KEY;
 
-            if (generatedSignature !== signature) {
+            const payload = timestamp + rawBody;
+
+            const verify = (secret: string) => {
+                if (!secret) return false;
+                return crypto.createHmac('sha256', secret)
+                    .update(payload)
+                    .digest('base64') === signature;
+            };
+
+            const isMainValid = mainSecret ? verify(mainSecret) : false;
+            const isOrionValid = orionSecret ? verify(orionSecret) : false;
+
+            if (!isMainValid && !isOrionValid) {
                 // Debugging help: Log what we generated vs received
-                console.error(`Signature Mismatch. \nReceived: ${signature}\nGenerated: ${generatedSignature}\nTimestamp: ${timestamp}`);
-                await logAction("Webhook Failed", "Signature Mismatch", undefined, 'FAILED');
+                console.error(`Signature Mismatch for both keys.\nReceived: ${signature}\nTimestamp: ${timestamp}`);
+                await logAction("Webhook Failed", "Signature Mismatch (Main & Orion)", undefined, 'FAILED');
                 throw new Error("Signature Mismatch");
             }
         } catch (err: any) {
@@ -307,6 +316,20 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
 
             await logAction("Payment Fulfilled", `Workshop ${itemId} fulfilled for ${userId}`, userId, 'SUCCESS');
             return { status: "success", message: "Workshop fulfilled" };
+        }
+
+        // --- ORION ---
+        else if (itemType === 'ORION') {
+            // Transaction is already marked SUCCESS above. 
+            // We just need to log it and ensure the team/user implementation is correct.
+            // Currently Orion doesn't need external DB updates other than Transaction status?
+            // The team creation and idea saving happen BEFORE payment. 
+            // So we just confirm payment.
+
+            logs.push(`Orion Payment Verified for Team ${itemId}`);
+            console.log(`[Webhook] Orion Payment Verified for Team ${itemId}`);
+            await logAction("Payment Fulfilled", `Orion Registration fulfilled for Team ${itemId}`, userId, 'SUCCESS');
+            return { status: "success", message: "Orion fulfilled" };
         }
 
         logs.push(`Unknown Item Type: ${itemType}`);

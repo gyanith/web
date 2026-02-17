@@ -34,7 +34,7 @@ export async function initiateOrionPayment(
             },
             order_meta: {
                 return_url: data.redirectUrl,
-                notify_url: "https://gyanith.org/api/webhook/orion" // Placeholder, maybe redundant if we verify manually
+                notify_url: "https://gyanith.org/api/cashfree/webhook" // Placeholder, maybe redundant if we verify manually
             },
             order_note: `Orion Registration for Team ${data.teamId}`
         };
