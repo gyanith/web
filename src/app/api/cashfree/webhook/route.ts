@@ -294,26 +294,45 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
                 console.log(`[Webhook] Registration already exists for ${itemType} ${itemId}`);
             }
 
-            // Award Tech Credit ONLY for WORKSHOP
+            // Award Tech Credit ONLY for WORKSHOP (and ensure it's actually a tech/workshop event)
             if (itemType === 'WORKSHOP') {
-                const userDoc = await db.getRow(
-                    appwriteConfig.databaseId,
-                    appwriteConfig.usersCollectionId,
-                    userId
-                );
-
-                if (userDoc) {
-                    const newCredits = (userDoc.tech_credits || 0) + 1;
-                    await db.updateRow(
+                try {
+                    const eventDoc = await db.getRow(
                         appwriteConfig.databaseId,
-                        appwriteConfig.usersCollectionId,
-                        userId,
-                        {
-                            tech_credits: newCredits
-                        }
+                        appwriteConfig.eventsCollectionId,
+                        itemId
                     );
-                    logs.push(`Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
-                    console.log(`[Webhook] Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
+
+                    const isTechOrWorkshop = eventDoc &&
+                        (eventDoc.type.toLowerCase() === 'tech' ||
+                            eventDoc.type.toLowerCase().includes('workshop'));
+
+                    if (isTechOrWorkshop) {
+                        const userDoc = await db.getRow(
+                            appwriteConfig.databaseId,
+                            appwriteConfig.usersCollectionId,
+                            userId
+                        );
+
+                        if (userDoc) {
+                            const newCredits = (userDoc.tech_credits || 0) + 1;
+                            await db.updateRow(
+                                appwriteConfig.databaseId,
+                                appwriteConfig.usersCollectionId,
+                                userId,
+                                {
+                                    tech_credits: newCredits
+                                }
+                            );
+                            logs.push(`Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
+                            console.log(`[Webhook] Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
+                        }
+                    } else {
+                        logs.push(`Event ${itemId} is ${eventDoc?.type}, skipping credit award.`);
+                    }
+                } catch (err) {
+                    console.error("Error fetching event for credit check:", err);
+                    logs.push("Failed to verify event type for credit award");
                 }
             }
 

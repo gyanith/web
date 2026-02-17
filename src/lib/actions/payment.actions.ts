@@ -73,7 +73,7 @@ export async function initiatePayment(
         if (payload.type === 'WORKSHOP') {
             payload.event_id = data.eventId;
         } else if (payload.type === 'EVENT') {
-            payload.event_id = data.eventId; // Handling for Fun Events
+            payload.event_id = data.eventId;
         } else if (payload.type === 'ACCOMM') {
             payload.hostel = data.hostel;
             payload.day = data.day;
@@ -88,7 +88,7 @@ export async function initiatePayment(
             payload.description = `Gyanith Ticket - Tier ${data.tier}`;
         }
 
-        console.log(`[initiatePayment] Calling Appwrite Function for ${type}`, payload);
+        console.log(`[initiatePayment] Calling Appwrite Function for ${type}`, JSON.stringify(payload, null, 2));
 
         const execution = await functions.createExecution({
             functionId: FUNCTION_ID,
@@ -98,6 +98,9 @@ export async function initiatePayment(
             method: ExecutionMethod.POST,
             headers: { 'Content-Type': 'application/json' }
         });
+
+        console.log(`[initiatePayment] Execution Status: ${execution.status}`);
+        console.log(`[initiatePayment] Raw Response Body:`, execution.responseBody);
 
         if (execution.status === 'completed') {
             const responseBody = JSON.parse(execution.responseBody);
@@ -122,7 +125,7 @@ export async function initiatePayment(
                 console.error("Function execution returned error:", responseBody);
                 await logAction(
                     "Payment Init Failed",
-                    `Failed to initiate ${type} payment for user ${userId}: ${responseBody.error}`,
+                    `Failed to initiate ${type} payment for user ${userId}: ${responseBody.error} | Payload: ${JSON.stringify(payload)}`,
                     userId,
                     'FAILED'
                 );
