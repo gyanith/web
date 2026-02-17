@@ -370,3 +370,25 @@ export async function getUserAccommodation(userId: string) {
         return null;
     }
 }
+
+export async function checkEventPaymentStatus(userId: string, eventId: string) {
+    try {
+        const { getTablesDB } = await createAdminClient();
+        const db = getTablesDB();
+
+        const list = await db.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.transactionsCollectionId,
+            [
+                Query.equal("user_id", userId),
+                Query.equal("item_id", eventId),
+                Query.equal("status", "SUCCESS")
+            ]
+        );
+
+        return list.total > 0;
+    } catch (error) {
+        console.error("Error checking payment status:", error);
+        return false;
+    }
+}

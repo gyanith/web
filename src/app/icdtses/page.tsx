@@ -22,6 +22,7 @@ import { getLoggedInUser } from "@/lib/actions/auth.actions";
 import {
   initiatePayment,
   verifyCashfreePayment,
+  checkEventPaymentStatus,
 } from "@/lib/actions/payment.actions"; // Generic Payment Actions
 
 // Components
@@ -62,6 +63,7 @@ export default function IcdtsesPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [loadingText, setLoadingText] = useState("INITIALIZING CONNECTION...");
+  const [hasPaid, setHasPaid] = useState(false);
 
   // Load Data
   useEffect(() => {
@@ -69,6 +71,14 @@ export default function IcdtsesPage() {
       try {
         const loggedInUser = await getLoggedInUser();
         setUser(loggedInUser);
+
+        if (loggedInUser) {
+          const status = await checkEventPaymentStatus(
+            loggedInUser.$id,
+            ICDTSES_EVENT_ID,
+          );
+          setHasPaid(status);
+        }
       } catch (error) {
         console.error("Failed to load user data", error);
       } finally {
@@ -131,6 +141,7 @@ export default function IcdtsesPage() {
             toast.success(
               "Payment Verified! Conference Registration Complete.",
             );
+            setHasPaid(true); // Update state immediately
             router.replace("/icdtses"); // Clear URL
           } else {
             toast.error(
@@ -335,19 +346,26 @@ export default function IcdtsesPage() {
                   certificate.
                 </p>
 
-                <Button
-                  onClick={handlePayment}
-                  disabled={loading}
-                  className="w-full bg-[#d4a574] text-black hover:bg-[#c49a6b] font-bold h-14 text-lg tracking-widest rounded-none mt-4 transition-all duration-300 hover:shadow-[0_0_15px_rgba(212,165,116,0.4)]"
-                >
-                  {loading ? (
-                    <Loader2 className="animate-spin" />
-                  ) : user ? (
-                    "[ PAY_&_REGISTER ]"
-                  ) : (
-                    "[ LOGIN_TO_REGISTER ]"
-                  )}
-                </Button>
+                {!hasPaid ? (
+                  <Button
+                    onClick={handlePayment}
+                    disabled={loading}
+                    className="w-full bg-[#d4a574] text-black hover:bg-[#c49a6b] font-bold h-14 text-lg tracking-widest rounded-none mt-4 transition-all duration-300 hover:shadow-[0_0_15px_rgba(212,165,116,0.4)]"
+                  >
+                    {loading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : user ? (
+                      "[ PAY_&_REGISTER ]"
+                    ) : (
+                      "[ LOGIN_TO_REGISTER ]"
+                    )}
+                  </Button>
+                ) : (
+                  <div className="p-4 bg-green-900/20 border border-green-500/40 text-green-500 text-sm flex items-center justify-center gap-2 mt-4 font-mono">
+                    <CheckCircle2 className="w-5 h-5" />[ REGISTRATION_COMPLETE
+                    ]
+                  </div>
+                )}
               </div>
             </div>
           </RetroCard>
