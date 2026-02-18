@@ -354,6 +354,34 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
             return { status: "success", message: "Orion fulfilled" };
         }
 
+        // --- CONFERENCE (ICDTSES) ---
+        else if (itemType === 'CONFERENCE') {
+            logs.push(`Checking Conference Registration ${itemId}`);
+
+            // itemId here is the Conference Document ID (set in initiatePayment)
+            const confReg = await db.getRow(
+                appwriteConfig.databaseId,
+                appwriteConfig.conferenceCollectionId, // Ensure this config exists
+                itemId
+            );
+
+            if (confReg && confReg.paid !== true) {
+                await db.updateRow(
+                    appwriteConfig.databaseId,
+                    appwriteConfig.conferenceCollectionId,
+                    itemId,
+                    { paid: true }
+                );
+                logs.push(`Conference registration ${itemId} marked PAID`);
+                console.log(`[Webhook] Conference registration ${itemId} marked PAID`);
+                await logAction("Payment Fulfilled", `Conference Registration ${itemId} fulfilled`, userId, 'SUCCESS');
+                return { status: "success", message: "Conference fulfilled" };
+            }
+
+            logs.push("Conference registration already paid or not found");
+            return { status: "ignored", message: "Conference already paid" };
+        }
+
         logs.push(`Unknown Item Type: ${itemType}`);
         return { status: "warning", message: `Unknown item type ${itemType}` };
 

@@ -15,4 +15,5 @@ export const appwriteConfig = {
     eventTeamsCollectionId: "697dcbd20035270f3d7a",
     teamMembersCollectionId: "697dce7e00040c4b84c1",
     logsCollectionId: process.env.NEXT_PUBLIC_LOGS_COLLECTION_ID!,
+    conferenceCollectionId: "69958e9000007bbf324d",
 };

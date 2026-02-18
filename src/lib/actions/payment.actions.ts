@@ -15,6 +15,10 @@ const cashfree = new Cashfree(
     process.env.CASHFREE_API_VERSION // Optional
 );
 
+import { ICDTSES_EVENT_ID } from "@/lib/constants";
+
+// export const ICDTSES_EVENT_ID = "tech_6994b818002154469eb4"; // Moved to constants.ts
+
 export type PaymentType = 'EVENT' | 'WORKSHOP' | 'MERCH' | 'ACCOMM' | 'TICKET';
 
 /**
@@ -26,10 +30,12 @@ export type PaymentType = 'EVENT' | 'WORKSHOP' | 'MERCH' | 'ACCOMM' | 'TICKET';
 export async function initiatePayment(
     type: PaymentType,
     data: any,
-    userId: string,
+    userId?: string, // Made optional for Guest checkout
 ) {
     try {
-        const { getFunctions } = await createSessionClient();
+        // Use Admin Client to invoke function (works for Guest or User)
+        // Previously used Session Client, but Admin is safer for server-side trigger ensuring execution
+        const { getFunctions } = await createAdminClient();
         const functions = getFunctions();
         const FUNCTION_ID = '697d1058001561c91266';
 
@@ -51,6 +57,8 @@ export async function initiatePayment(
             } else {
                 return { success: false, error: "Invalid hostel selected" };
             }
+
+            if (!userId) return { success: false, error: "User Login required for Accommodation" };
 
             // Check if user has already booked accommodation
             const userBookings = await db.listRows(
@@ -74,6 +82,12 @@ export async function initiatePayment(
             payload.event_id = data.eventId;
         } else if (payload.type === 'EVENT') {
             payload.event_id = data.eventId;
+            if (data.eventId === ICDTSES_EVENT_ID) {
+                payload.user_type = data.userType;
+                payload.paper_id = data.paperId;
+                payload.name = data.name;
+                payload.email = data.email;
+            }
         } else if (payload.type === 'ACCOMM') {
             payload.hostel = data.hostel;
             payload.day = data.day;
@@ -81,6 +95,7 @@ export async function initiatePayment(
             payload.quantity = data.quantity;
             payload.size = data.size;
         } else if (type === 'TICKET') {
+            if (!userId) return { success: false, error: "User ID required for Tickets" };
             payload.tier = data.tier;
             payload.quantity = data.quantity || 1;
             // Encode tier in item_id: ticket_USERID_TIER
@@ -106,12 +121,14 @@ export async function initiatePayment(
             const responseBody = JSON.parse(execution.responseBody);
 
             if (responseBody.success) {
-                await logAction(
-                    "Payment Initiated",
-                    `Initiated ${type} payment for user ${userId}. OrderID: ${responseBody.orderId}`,
-                    userId,
-                    'INFO'
-                );
+                if (userId) {
+                    await logAction(
+                        "Payment Initiated",
+                        `Initiated ${type} payment for user ${userId}. OrderID: ${responseBody.orderId}`,
+                        userId,
+                        'INFO'
+                    );
+                }
                 return {
                     success: true,
                     provider: "CASHFREE",
@@ -123,12 +140,14 @@ export async function initiatePayment(
                 };
             } else {
                 console.error("Function execution returned error:", responseBody);
-                await logAction(
-                    "Payment Init Failed",
-                    `Failed to initiate ${type} payment for user ${userId}: ${responseBody.error} | Payload: ${JSON.stringify(payload)}`,
-                    userId,
-                    'FAILED'
-                );
+                if (userId) {
+                    await logAction(
+                        "Payment Init Failed",
+                        `Failed to initiate ${type} payment for user ${userId}: ${responseBody.error} | Payload: ${JSON.stringify(payload)}`,
+                        userId,
+                        'FAILED'
+                    );
+                }
                 return { success: false, error: responseBody.error || "Payment initialization failed." };
             }
         } else {
@@ -151,7 +170,10 @@ export async function verifyCashfreePayment(orderId: string) {
         const list = await db.listRows(
             appwriteConfig.databaseId,
             appwriteConfig.transactionsCollectionId,
-            [Query.equal("status", "SUCCESS")]
+            [
+                Query.equal("cashfree_order_id", orderId),
+                Query.equal("status", "SUCCESS")
+            ]
         );
 
         if (list.total === 0) {
@@ -286,7 +308,7 @@ export async function cancelPayment(orderId: string) {
             await rollbackItem(db, transaction.item_type as PaymentType, transaction.item_id);
         }
 
-        await logAction("Payment Cancelled", `Cancelled payment order ${orderId}`, transaction.user_id, 'INFO');
+        await logAction("Payment Cancelled", `Cancelled payment order ${orderId}`, transaction.user, 'INFO');
 
         return { success: true };
 
@@ -380,7 +402,7 @@ export async function checkEventPaymentStatus(userId: string, eventId: string) {
             appwriteConfig.databaseId,
             appwriteConfig.transactionsCollectionId,
             [
-                Query.equal("user_id", userId),
+                Query.equal("user", userId),
                 Query.equal("item_id", eventId),
                 Query.equal("status", "SUCCESS")
             ]

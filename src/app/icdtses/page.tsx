@@ -27,10 +27,22 @@ import {
 
 // Components
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ICDTSES_EVENT_ID } from "@/lib/constants";
 
 // Data & Config
-const ICDTSES_EVENT_ID = "tech_6994b818002154469eb4";
-const CONFERENCE_FEE = 200;
+const CONFERENCE_FEES = {
+  STUDENT: 200,
+  FACULTY: 400,
+  ATTENDEE: 100,
+};
 
 // --- RETRO UI COMPONENTS (Copied from Orion) ---
 const RetroCard = ({
@@ -65,6 +77,14 @@ export default function IcdtsesPage() {
   const [loadingText, setLoadingText] = useState("INITIALIZING CONNECTION...");
   const [hasPaid, setHasPaid] = useState(false);
 
+  // Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    paperId: "",
+    userType: "",
+  });
+
   // Load Data
   useEffect(() => {
     const loadData = async () => {
@@ -73,6 +93,13 @@ export default function IcdtsesPage() {
         setUser(loggedInUser);
 
         if (loggedInUser) {
+          // Pre-fill email if available
+          setFormData((prev) => ({
+            ...prev,
+            email: loggedInUser.email,
+            name: loggedInUser.name,
+          }));
+
           const status = await checkEventPaymentStatus(
             loggedInUser.$id,
             ICDTSES_EVENT_ID,
@@ -89,7 +116,19 @@ export default function IcdtsesPage() {
   }, []);
 
   const handlePayment = async () => {
-    if (!user) return router.push("/auth/login");
+    // Guest checkout allowed - removed user check
+    // if (!user) return router.push("/auth/login");
+
+    // Validation
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.paperId ||
+      !formData.userType
+    ) {
+      toast.error("Please fill all required fields.");
+      return;
+    }
 
     setLoading(true);
     setLoadingText("PROCESSING TRANSACTION...");
@@ -99,6 +138,7 @@ export default function IcdtsesPage() {
         {
           eventId: ICDTSES_EVENT_ID,
           redirectUrl: `${window.location.origin}/icdtses`, // Return to this page
+          ...formData,
         },
         user.$id,
       );
@@ -131,7 +171,8 @@ export default function IcdtsesPage() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get("order_id");
-    if (orderId && user) {
+    if (orderId) {
+      // Removed '&& user' check for guest verification
       const verify = async () => {
         setLoading(true);
         setLoadingText("VERIFYING TRANSACTION...");
@@ -331,35 +372,85 @@ export default function IcdtsesPage() {
               </div>
 
               <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center p-4 bg-[#d4a574]/10 border border-[#d4a574]/30">
-                  <span className="text-[#d4a574]/80 text-sm uppercase tracking-wider">
-                    Conference Fee
-                  </span>
-                  <span
-                    className={`${unispace.className} text-3xl text-[#d4a574]`}
-                  >
-                    ₹{CONFERENCE_FEE}
-                  </span>
-                </div>
-                <p className="text-[#d4a574]/40 text-xs font-mono">
-                  * Includes access to all virtual sessions and digital
-                  certificate.
-                </p>
-
                 {!hasPaid ? (
-                  <Button
-                    onClick={handlePayment}
-                    disabled={loading}
-                    className="w-full bg-[#d4a574] text-black hover:bg-[#c49a6b] font-bold h-14 text-lg tracking-widest rounded-none mt-4 transition-all duration-300 hover:shadow-[0_0_15px_rgba(212,165,116,0.4)]"
-                  >
-                    {loading ? (
-                      <Loader2 className="animate-spin" />
-                    ) : user ? (
-                      "[ PAY_&_REGISTER ]"
-                    ) : (
-                      "[ LOGIN_TO_REGISTER ]"
-                    )}
-                  </Button>
+                  <>
+                    <div className="flex flex-col gap-3">
+                      <Input
+                        placeholder="Full Name"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        className="bg-black/50 border-[#d4a574]/30 text-[#d4a574] placeholder:text-[#d4a574]/30 focus:border-[#d4a574] rounded-none h-12"
+                      />
+                      <Input
+                        placeholder="Email Address"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        className="bg-black/50 border-[#d4a574]/30 text-[#d4a574] placeholder:text-[#d4a574]/30 focus:border-[#d4a574] rounded-none h-12"
+                      />
+                      <Input
+                        placeholder="Paper ID (e.g. 123)"
+                        value={formData.paperId}
+                        onChange={(e) =>
+                          setFormData({ ...formData, paperId: e.target.value })
+                        }
+                        className="bg-black/50 border-[#d4a574]/30 text-[#d4a574] placeholder:text-[#d4a574]/30 focus:border-[#d4a574] rounded-none h-12"
+                      />
+                      <Select
+                        onValueChange={(val) =>
+                          setFormData({ ...formData, userType: val })
+                        }
+                      >
+                        <SelectTrigger className="bg-black/50 border-[#d4a574]/30 text-[#d4a574] focus:ring-[#d4a574] rounded-none h-12">
+                          <SelectValue placeholder="Select User Type" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#111] border-[#d4a574]/30 text-[#d4a574]">
+                          <SelectItem value="STUDENT">
+                            Student (₹{CONFERENCE_FEES.STUDENT})
+                          </SelectItem>
+                          <SelectItem value="FACULTY">
+                            Faculty (₹{CONFERENCE_FEES.FACULTY})
+                          </SelectItem>
+                          <SelectItem value="ATTENDEE">
+                            Attendee (₹{CONFERENCE_FEES.ATTENDEE})
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex justify-between items-center p-4 bg-[#d4a574]/10 border border-[#d4a574]/30 mt-2">
+                      <span className="text-[#d4a574]/80 text-sm uppercase tracking-wider">
+                        Total Fee
+                      </span>
+                      <span
+                        className={`${unispace.className} text-3xl text-[#d4a574]`}
+                      >
+                        ₹
+                        {formData.userType
+                          ? CONFERENCE_FEES[
+                              formData.userType as keyof typeof CONFERENCE_FEES
+                            ]
+                          : 0}
+                      </span>
+                    </div>
+
+                    <Button
+                      onClick={handlePayment}
+                      disabled={loading}
+                      className="w-full bg-[#d4a574] text-black hover:bg-[#c49a6b] font-bold h-14 text-lg tracking-widest rounded-none mt-4 transition-all duration-300 hover:shadow-[0_0_15px_rgba(212,165,116,0.4)]"
+                    >
+                      {loading ? (
+                        <Loader2 className="animate-spin" />
+                      ) : user ? (
+                        "[ PAY_&_REGISTER ]"
+                      ) : (
+                        "[ LOGIN_TO_REGISTER ]"
+                      )}
+                    </Button>
+                  </>
                 ) : (
                   <div className="p-4 bg-green-900/20 border border-green-500/40 text-green-500 text-sm flex items-center justify-center gap-2 mt-4 font-mono">
                     <CheckCircle2 className="w-5 h-5" />[ REGISTRATION_COMPLETE

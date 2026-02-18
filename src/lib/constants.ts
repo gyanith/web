@@ -1,0 +1,1 @@
+export const ICDTSES_EVENT_ID = "tech_6994b818002154469eb4";
