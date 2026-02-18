@@ -19,7 +19,7 @@ import { ICDTSES_EVENT_ID } from "@/lib/constants";
 
 // export const ICDTSES_EVENT_ID = "tech_6994b818002154469eb4"; // Moved to constants.ts
 
-export type PaymentType = 'EVENT' | 'WORKSHOP' | 'MERCH' | 'ACCOMM' | 'TICKET';
+export type PaymentType = 'EVENT' | 'WORKSHOP' | 'MERCH' | 'ACCOMM' | 'TICKET' | 'CONFERENCE';
 
 /**
  * Initiates a payment process.

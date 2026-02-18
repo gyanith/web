@@ -134,7 +134,7 @@ export default function IcdtsesPage() {
     setLoadingText("PROCESSING TRANSACTION...");
     try {
       const res = await initiatePayment(
-        "EVENT",
+        "CONFERENCE",
         {
           eventId: ICDTSES_EVENT_ID,
           redirectUrl: `${window.location.origin}/icdtses`, // Return to this page
