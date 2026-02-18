@@ -157,6 +157,18 @@ export async function initiatePayment(
 
     } catch (error: any) {
         console.error("Error initiating payment via function:", error);
+
+        // Detailed Debug Logging for Server Side Issues
+        if (process.env.NODE_ENV === 'production') {
+            const hasApiKey = !!process.env.APPWRITE_API_KEY;
+            const hasProjectId = !!process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+            console.error(`[initiatePayment] Environment Check: API_KEY=${hasApiKey}, PROJECT_ID=${hasProjectId}`);
+
+            if (!hasApiKey) {
+                return { success: false, error: "Server Configuration Error: Missing API Key" };
+            }
+        }
+
         return { success: false, error: error.message || "Failed to initiate payment" };
     }
 }

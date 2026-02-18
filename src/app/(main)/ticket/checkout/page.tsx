@@ -3,6 +3,8 @@ import { createSessionClient } from "@/lib/appwrite/appwrite.server";
 import CheckoutClient from "./CheckoutClient";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 async function TicketCheckoutContent() {
   let user = null;
   try {
