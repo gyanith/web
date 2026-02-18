@@ -80,7 +80,7 @@ export async function initiatePayment(
 
         if (payload.type === 'WORKSHOP') {
             payload.event_id = data.eventId;
-        } else if (payload.type === 'EVENT') {
+        } else if (payload.type === 'CONFERENCE') {
             payload.event_id = data.eventId;
             if (data.eventId === ICDTSES_EVENT_ID) {
                 payload.user_type = data.userType;
