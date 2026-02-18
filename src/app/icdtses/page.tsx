@@ -140,7 +140,7 @@ export default function IcdtsesPage() {
           redirectUrl: `${window.location.origin}/icdtses`, // Return to this page
           ...formData,
         },
-        user.$id,
+        user?.$id, // Use optional chaining
       );
 
       if (res.success && res.paymentSessionId) {
