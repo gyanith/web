@@ -22,6 +22,16 @@ export const coreTeam = [
         imageId: "6985d042002e1d0d140b",
         phone: ""
     },
+
+    {
+        name: "Naufil",
+        team: "Core",
+        role: "External Coordinator",
+        imageId: "6985d042002e1d0d140b",
+        phone: ""
+    },
+
+
     {
         name: "A M Barath",
         team: "Core",

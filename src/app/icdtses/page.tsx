@@ -444,10 +444,8 @@ export default function IcdtsesPage() {
                     >
                       {loading ? (
                         <Loader2 className="animate-spin" />
-                      ) : user ? (
-                        "[ PAY_&_REGISTER ]"
                       ) : (
-                        "[ LOGIN_TO_REGISTER ]"
+                        "[ PAY_&_REGISTER ]"
                       )}
                     </Button>
                   </>
