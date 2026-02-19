@@ -75,7 +75,8 @@ export async function initiatePayment(
         // Prepare Payload
         let payload: any = {
             type: type,
-            return_url: data.redirectUrl // Pass redirectUrl as return_url
+            return_url: data.redirectUrl, // Pass redirectUrl as return_url
+            userId: userId // Explicitly pass userId for Admin Client calls
         };
 
         if (payload.type === 'WORKSHOP') {
