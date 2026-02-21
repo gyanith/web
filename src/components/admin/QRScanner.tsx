@@ -16,6 +16,14 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
   const containerId = "qr-reader-container";
 
   useEffect(() => {
+    // Check if browser is in a secure context (required for camera access)
+    if (!window.isSecureContext && window.location.hostname !== "localhost") {
+      setError(
+        "Camera access requires a secure connection (HTTPS). Please ensure you are using HTTPS.",
+      );
+      return;
+    }
+
     // Timeout to ensure DOM is ready
     const timer = setTimeout(() => {
       try {
@@ -26,6 +34,10 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
           rememberLastUsedCamera: true,
           showTorchButtonIfSupported: true,
+          // Explicitly prefer back camera for mobile
+          videoConstraints: {
+            facingMode: "environment",
+          },
         };
 
         const scanner = new Html5QrcodeScanner(containerId, config, false);
@@ -41,12 +53,21 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
           },
           (errorMessage) => {
             // Error callback (called frequently during scanning, usually safe to ignore)
-            // console.warn(errorMessage);
           },
         );
       } catch (err: any) {
         console.error("Scanner Initialization Error:", err);
-        setError("Could not start camera. Please check permissions.");
+        if (err.toString().includes("Permission denied")) {
+          setError(
+            "Camera permission was denied. Please reset permissions in your browser settings.",
+          );
+        } else if (err.toString().includes("NotFound")) {
+          setError("No camera found on this device.");
+        } else {
+          setError(
+            `Could not start camera: ${err.message || "Unknown error"}. Please check permissions and ensure no other app is using the camera.`,
+          );
+        }
       }
     }, 500);
 
@@ -98,13 +119,55 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
         </div>
 
         {/* Scanner Body */}
-        <div className="p-4 bg-zinc-950 min-h-[300px] flex items-center justify-center">
+        <div className="p-4 bg-zinc-950 min-h-[300px] flex items-center justify-center relative">
+          <style jsx global>{`
+            #qr-reader-container {
+              border: none !important;
+            }
+            #qr-reader-container__dashboard_section_csr button {
+              background-color: #ffffff !important;
+              color: #000000 !important;
+              padding: 8px 16px !important;
+              border-radius: 8px !important;
+              font-size: 14px !important;
+              font-weight: 500 !important;
+              border: none !important;
+              margin: 5px !important;
+              cursor: pointer !important;
+            }
+            #qr-reader-container__dashboard_section_csr button:hover {
+              background-color: #e2e8f0 !important;
+            }
+            #qr-reader-container__camera_selection {
+              background-color: #18181b !important;
+              color: #ffffff !important;
+              border: 1px border #27272a !important;
+              padding: 6px !important;
+              border-radius: 6px !important;
+              margin: 10px 0 !important;
+              width: 100% !important;
+            }
+            #qr-reader-container__status_span {
+              color: #a1a1aa !important;
+              font-size: 12px !important;
+              display: block !important;
+              margin-top: 10px !important;
+            }
+            #qr-reader-container__scan_region video {
+              border-radius: 12px !important;
+            }
+            #qr-reader-container img {
+              display: none !important;
+            }
+          `}</style>
           {error ? (
             <div className="text-center space-y-4 p-8">
               <div className="bg-red-500/10 border border-red-500/20 rounded-full p-3 w-fit mx-auto">
                 <X className="h-6 w-6 text-red-500" />
               </div>
-              <p className="text-red-400 text-sm font-medium">{error}</p>
+              <p className="text-red-400 text-sm font-medium whitespace-normal break-words">
+                {error}
+              </p>
               <Button
                 onClick={() => window.location.reload()}
                 variant="outline"
