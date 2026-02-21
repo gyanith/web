@@ -9,14 +9,23 @@ export async function getTotalRevenue() {
         const tablesDB = getTablesDB();
 
         let totalRevenue = 0;
+        const revenueByType: Record<string, number> = {
+            WORKSHOP: 0,
+            MERCH: 0,
+            ACCOMM: 0,
+            TICKET: 0,
+            ORION: 0,
+            EVENT: 0,
+            CONFERENCE: 0
+        };
+
         let hasNextPage = true;
         let lastId = null;
 
-        // Pagination loop to ensure we fetch ALL transactions
         while (hasNextPage) {
             const queries = [
-                Query.equal("status", "SUCCESS"), // Updated to filter by SUCCESS
-                Query.limit(100) // Max limit per request
+                Query.equal("status", "SUCCESS"),
+                Query.limit(100)
             ];
 
             if (lastId) {
@@ -34,28 +43,32 @@ export async function getTotalRevenue() {
                 break;
             }
 
-            // Sum amounts for the current page
-            const pageSum = response.rows.reduce((sum: number, doc: any) => {
-                // Ensure amount is treated as a number
+            response.rows.forEach((doc: any) => {
                 const amount = Number(doc.amount) || 0;
-                return sum + amount;
-            }, 0);
+                const type = doc.item_type || "UNKNOWN";
 
-            totalRevenue += pageSum;
+                totalRevenue += amount;
+                if (type in revenueByType) {
+                    revenueByType[type] += amount;
+                } else {
+                    revenueByType[type] = (revenueByType[type] || 0) + amount;
+                }
+            });
 
-            // Prepare for next page
             lastId = response.rows[response.rows.length - 1].$id;
 
-            // If we got fewer documents than limit, we are done
             if (response.rows.length < 100) {
                 hasNextPage = false;
             }
         }
 
-        return totalRevenue;
+        return {
+            total: totalRevenue,
+            ...revenueByType
+        };
     } catch (error) {
         console.error("Error calculating total revenue:", error);
-        return 0; // Return 0 on error so UI doesn't break
+        return { total: 0 };
     }
 }
 
@@ -64,7 +77,6 @@ export async function getTotalRegistrations() {
         const { getTablesDB } = await createAdminClient();
         const db = getTablesDB();
 
-        // Fetch totals from all registration-related collections
         const fetchCount = async (collectionId: string) => {
             if (!collectionId) return 0;
             try {
@@ -80,17 +92,29 @@ export async function getTotalRegistrations() {
             }
         };
 
-        const counts = await Promise.all([
+        const [events, conference, accommodation, merch] = await Promise.all([
             fetchCount(appwriteConfig.registrationsCollectionId),
             fetchCount(appwriteConfig.conferenceCollectionId),
             fetchCount(appwriteConfig.accommodationCollectionId),
             fetchCount(appwriteConfig.merchCollectionId)
         ]);
 
-        return counts.reduce((a: number, b: number) => a + b, 0);
+        return {
+            total: events + conference + accommodation + merch,
+            events,
+            conference,
+            accommodation,
+            merch
+        };
     } catch (error) {
         console.error("Error fetching total registrations:", error);
-        return 0;
+        return {
+            total: 0,
+            events: 0,
+            conference: 0,
+            accommodation: 0,
+            merch: 0
+        };
     }
 }
 

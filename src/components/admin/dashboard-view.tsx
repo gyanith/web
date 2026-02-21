@@ -30,6 +30,8 @@ import { RegistrationChart } from "@/components/admin/registration-chart";
 import { RefreshButton } from "@/components/admin/refresh-button";
 import { useState, useEffect } from "react";
 import { getCoordinators } from "@/lib/actions/events.actions";
+import { motion, AnimatePresence } from "framer-motion";
+import LoadingOverlay from "@/components/admin/LoadingOverlay";
 
 type EventSummary = {
   id: string;
@@ -49,8 +51,23 @@ interface Coordinator {
 interface DashboardViewProps {
   stats: {
     totalEvents: number;
-    totalRegistrations: number;
-    totalRevenue: number;
+    totalRegistrations: {
+      total: number;
+      events: number;
+      conference: number;
+      accommodation: number;
+      merch: number;
+    };
+    totalRevenue: {
+      total: number;
+      WORKSHOP?: number;
+      MERCH?: number;
+      ACCOMM?: number;
+      TICKET?: number;
+      ORION?: number;
+      EVENT?: number;
+      CONFERENCE?: number;
+    };
   };
   events: EventSummary[];
   initialCoordinators: Coordinator[];
@@ -67,6 +84,7 @@ export function DashboardView({
     useState<Coordinator[]>(initialCoordinators);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -74,25 +92,29 @@ export function DashboardView({
 
   const handleRefreshCoordinators = async () => {
     try {
+      setIsRefreshing(true);
       const freshCoordinators = await getCoordinators();
       setCoordinatorsList(freshCoordinators);
     } catch (error) {
       console.error("Failed to refresh coordinators:", error);
       setError("Failed to refresh coordinators");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
   if (!isMounted) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Loading...
+      <div className="flex justify-center items-center h-screen bg-black">
+        <LoadingOverlay />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* ... header ... */}
+    <div className="flex flex-col gap-4 relative">
+      <AnimatePresence>{isRefreshing && <LoadingOverlay />}</AnimatePresence>
+
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl text-white">
           Dashboard
@@ -101,42 +123,102 @@ export function DashboardView({
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        {/* Total Revenue - Spans 2 columns on desktop */}
+        <Card className="md:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <IndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ₹{stats.totalRevenue.toLocaleString()}
+            <div className="text-3xl font-bold text-white">
+              ₹{stats.totalRevenue.total.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% from last month
-            </p>
+
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-[10px] sm:text-xs">
+              <div className="space-y-1">
+                <span className="text-muted-foreground block">Events</span>
+                <span className="text-white font-mono font-bold">
+                  ₹{(stats.totalRevenue.EVENT || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground block">Workshops</span>
+                <span className="text-white font-mono font-bold">
+                  ₹{(stats.totalRevenue.WORKSHOP || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground block">Conference</span>
+                <span className="text-white font-mono font-bold">
+                  ₹{(stats.totalRevenue.CONFERENCE || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground block">
+                  Accommodation
+                </span>
+                <span className="text-white font-mono font-bold">
+                  ₹{(stats.totalRevenue.ACCOMM || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground block">Merch</span>
+                <span className="text-white font-mono font-bold">
+                  ₹{(stats.totalRevenue.MERCH || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground block">Tickets</span>
+                <span className="text-white font-mono font-bold">
+                  ₹{(stats.totalRevenue.TICKET || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground block">Orion</span>
+                <span className="text-white font-mono font-bold">
+                  ₹{(stats.totalRevenue.ORION || 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
+
+        {/* Registrations */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Registrations</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              +{stats.totalRegistrations}
+            <div className="text-3xl font-bold text-white">
+              {stats.totalRegistrations.total}
             </div>
-            <p className="text-xs text-muted-foreground">
-              +180 since last hour
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEvents}</div>
-            <p className="text-xs text-muted-foreground">+2 new this week</p>
+            <div className="mt-4 space-y-2 text-xs">
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Events</span>
+                <span className="text-white font-mono">
+                  {stats.totalRegistrations.events}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Conference</span>
+                <span className="text-white font-mono">
+                  {stats.totalRegistrations.conference}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Accommodation</span>
+                <span className="text-white font-mono">
+                  {stats.totalRegistrations.accommodation}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Merch Orders</span>
+                <span className="text-white font-mono">
+                  {stats.totalRegistrations.merch}
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

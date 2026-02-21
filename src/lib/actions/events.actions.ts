@@ -715,6 +715,35 @@ export async function getRecentEvents(): Promise<EventSummary[]> {
 }
 
 /**
+ * Fetches all events (limited to 100 for now) for dropdowns.
+ */
+export async function getAllEventsSummary(): Promise<EventSummary[]> {
+    try {
+        const { getTablesDB } = await createAdminClient();
+        const tablesDB = getTablesDB();
+
+        const response = await tablesDB.listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.eventsCollectionId,
+            queries: [Query.orderDesc("name"), Query.limit(100)],
+        });
+
+        return response.rows.map((doc: any) => ({
+            id: doc.$id,
+            name: doc.name,
+            date: doc.date,
+            type: doc.type,
+            fee: doc.fee,
+            day: doc.day || 1,
+            status: (doc.is_published ? "Published" : "Draft") as "Published" | "Draft",
+        }));
+    } catch (err) {
+        console.error("Failed to fetch all events:", err);
+        return [];
+    }
+}
+
+/**
  * Fetches a single event by ID.
  * @param eventId - The ID of the event to fetch.
  */

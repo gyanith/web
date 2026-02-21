@@ -25,7 +25,7 @@ const PRICES = {
         price: 350
     },
     accomm: {
-        price: 200,
+        price: 150,
         caution: 150
     },
     tier: {
