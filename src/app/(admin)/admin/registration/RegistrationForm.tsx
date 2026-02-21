@@ -192,7 +192,7 @@ export default function RegistrationForm() {
     <Card className="max-w-2xl mx-auto mt-8">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>Helpdesk Registration</span>
+          <span className="text-white">Helpdesk Registration</span>
           <div className="text-xl font-bold bg-green-900/20 text-green-400 px-4 py-1 rounded border border-green-500/30">
             ₹{price}
           </div>
