@@ -228,203 +228,202 @@ async function fulfillOrder(orderId: string, paymentId: string, logs: string[]) 
                 logs.push("Ticket tier verification failed (could not parse tier)");
                 return { status: "warning", message: "Ticket parse failed" };
             }
+        }
 
-            // --- MERCH ---
-            else if (itemType === 'MERCH') {
-                logs.push(`Checking Merch Order ${itemId}`);
-                const merchOrder = await db.getRow(
+        // --- MERCH ---
+        else if (itemType === 'MERCH') {
+            logs.push(`Checking Merch Order ${itemId}`);
+            const merchOrder = await db.getRow(
+                appwriteConfig.databaseId,
+                appwriteConfig.merchCollectionId,
+                itemId
+            );
+
+            if (merchOrder && merchOrder.status !== "SUCCESS") {
+                await db.updateRow(
                     appwriteConfig.databaseId,
                     appwriteConfig.merchCollectionId,
-                    itemId
+                    itemId,
+                    { status: "SUCCESS" }
                 );
-
-                if (merchOrder && merchOrder.status !== "SUCCESS") {
-                    await db.updateRow(
-                        appwriteConfig.databaseId,
-                        appwriteConfig.merchCollectionId,
-                        itemId,
-                        { status: "SUCCESS" }
-                    );
-                    logs.push(`Merch order ${itemId} marked SUCCESS`);
-                    console.log(`[Webhook] Merch order ${itemId} marked SUCCESS`);
-                    await logAction("Payment Fulfilled", `Merch Order ${itemId} fulfilled`, userId, 'SUCCESS');
-                    return { status: "success", message: "Merch fulfilled" };
-                }
-                logs.push("Merch order already success or not found");
-                return { status: "ignored", message: "Merch already success" };
+                logs.push(`Merch order ${itemId} marked SUCCESS`);
+                console.log(`[Webhook] Merch order ${itemId} marked SUCCESS`);
+                await logAction("Payment Fulfilled", `Merch Order ${itemId} fulfilled`, userId, 'SUCCESS');
+                return { status: "success", message: "Merch fulfilled" };
             }
+            logs.push("Merch order already success or not found");
+            return { status: "ignored", message: "Merch already success" };
+        }
 
-            // --- ACCOM ---
-            else if (itemType === 'ACCOMM') {
-                logs.push(`Checking Accom Order ${itemId}`);
-                const accomOrder = await db.getRow(
+        // --- ACCOM ---
+        else if (itemType === 'ACCOMM') {
+            logs.push(`Checking Accom Order ${itemId}`);
+            const accomOrder = await db.getRow(
+                appwriteConfig.databaseId,
+                appwriteConfig.accommodationCollectionId,
+                itemId
+            );
+
+            if (accomOrder && accomOrder.status !== "SUCCESS") {
+                await db.updateRow(
                     appwriteConfig.databaseId,
                     appwriteConfig.accommodationCollectionId,
-                    itemId
+                    itemId,
+                    { status: "SUCCESS" }
+                );
+                logs.push(`Accommodation order ${itemId} marked SUCCESS`);
+                console.log(`[Webhook] Accommodation order ${itemId} marked SUCCESS`);
+
+                // ⬇️ Decrement Slots
+                const hostel = accomOrder.hostel; // Assuming 'hostel' field exists
+                const slotList = await db.listRows(
+                    appwriteConfig.databaseId,
+                    appwriteConfig.accommDetailsCollectionId,
+                    [Query.equal("hostel", hostel)]
                 );
 
-                if (accomOrder && accomOrder.status !== "SUCCESS") {
+                if (slotList.total > 0) {
+                    const hostelDoc = slotList.rows[0];
+                    const newSlots = Math.max(0, hostelDoc.slots - 1);
                     await db.updateRow(
-                        appwriteConfig.databaseId,
-                        appwriteConfig.accommodationCollectionId,
-                        itemId,
-                        { status: "SUCCESS" }
-                    );
-                    logs.push(`Accommodation order ${itemId} marked SUCCESS`);
-                    console.log(`[Webhook] Accommodation order ${itemId} marked SUCCESS`);
-
-                    // ⬇️ Decrement Slots
-                    const hostel = accomOrder.hostel; // Assuming 'hostel' field exists
-                    const slotList = await db.listRows(
                         appwriteConfig.databaseId,
                         appwriteConfig.accommDetailsCollectionId,
-                        [Query.equal("hostel", hostel)]
+                        hostelDoc.$id,
+                        { slots: newSlots }
                     );
-
-                    if (slotList.total > 0) {
-                        const hostelDoc = slotList.rows[0];
-                        const newSlots = Math.max(0, hostelDoc.slots - 1);
-                        await db.updateRow(
-                            appwriteConfig.databaseId,
-                            appwriteConfig.accommDetailsCollectionId,
-                            hostelDoc.$id,
-                            { slots: newSlots }
-                        );
-                        logs.push(`Decremented slot for ${hostel}. New slots: ${newSlots}`);
-                        console.log(`[Webhook] Decremented slot for ${hostel}. New slots: ${newSlots}`);
-                    }
-
-                    // Log only after success
-                    await logAction("Payment Fulfilled", `Accommodation Order ${itemId} fulfilled`, userId, 'SUCCESS');
-                    return { status: "success", message: "Accommodation fulfilled" };
+                    logs.push(`Decremented slot for ${hostel}. New slots: ${newSlots}`);
+                    console.log(`[Webhook] Decremented slot for ${hostel}. New slots: ${newSlots}`);
                 }
-                logs.push("Accommodation order already success or not found");
-                return { status: "ignored", message: "Accommodation already success" };
+
+                // Log only after success
+                await logAction("Payment Fulfilled", `Accommodation Order ${itemId} fulfilled`, userId, 'SUCCESS');
+                return { status: "success", message: "Accommodation fulfilled" };
             }
+            logs.push("Accommodation order already success or not found");
+            return { status: "ignored", message: "Accommodation already success" };
+        }
 
 
-            // --- WORKSHOP & EVENT ---
-            else if (itemType === 'WORKSHOP' || itemType === 'EVENT') {
-                // Check if registration exists
-                const existingReg = await db.listRows(
+        // --- WORKSHOP & EVENT ---
+        else if (itemType === 'WORKSHOP' || itemType === 'EVENT') {
+            // Check if registration exists
+            const existingReg = await db.listRows(
+                appwriteConfig.databaseId,
+                appwriteConfig.registrationsCollectionId,
+                [
+                    Query.equal('event_id', itemId),
+                    Query.equal('user_id', userId)
+                ]
+            );
+
+            if (existingReg.total === 0) {
+                // Create Registration
+                await db.createRow(
                     appwriteConfig.databaseId,
                     appwriteConfig.registrationsCollectionId,
-                    [
-                        Query.equal('event_id', itemId),
-                        Query.equal('user_id', userId)
-                    ]
+                    ID.unique(),
+                    {
+                        event_id: itemId,
+                        user_id: userId
+                    }
                 );
+                logs.push(`Created registration for ${itemType} ${itemId}`);
+                console.log(`[Webhook] Created registration for ${itemType} ${itemId}`);
+            } else {
+                logs.push(`Registration already exists for ${itemType} ${itemId}`);
+                console.log(`[Webhook] Registration already exists for ${itemType} ${itemId}`);
+            }
 
-                if (existingReg.total === 0) {
-                    // Create Registration
-                    await db.createRow(
+            // Award Tech Credit ONLY for WORKSHOP (and ensure it's actually a tech/workshop event)
+            if (itemType === 'WORKSHOP') {
+                try {
+                    const eventDoc = await db.getRow(
                         appwriteConfig.databaseId,
-                        appwriteConfig.registrationsCollectionId,
-                        ID.unique(),
-                        {
-                            event_id: itemId,
-                            user_id: userId
-                        }
+                        appwriteConfig.eventsCollectionId,
+                        itemId
                     );
-                    logs.push(`Created registration for ${itemType} ${itemId}`);
-                    console.log(`[Webhook] Created registration for ${itemType} ${itemId}`);
-                } else {
-                    logs.push(`Registration already exists for ${itemType} ${itemId}`);
-                    console.log(`[Webhook] Registration already exists for ${itemType} ${itemId}`);
-                }
 
-                // Award Tech Credit ONLY for WORKSHOP (and ensure it's actually a tech/workshop event)
-                if (itemType === 'WORKSHOP') {
-                    try {
-                        const eventDoc = await db.getRow(
+                    const isTechOrWorkshop = eventDoc &&
+                        (eventDoc.type.toLowerCase() === 'tech' ||
+                            eventDoc.type.toLowerCase().includes('workshop'));
+
+                    if (isTechOrWorkshop) {
+                        const userDoc = await db.getRow(
                             appwriteConfig.databaseId,
-                            appwriteConfig.eventsCollectionId,
-                            itemId
+                            appwriteConfig.usersCollectionId,
+                            userId
                         );
 
-                        const isTechOrWorkshop = eventDoc &&
-                            (eventDoc.type.toLowerCase() === 'tech' ||
-                                eventDoc.type.toLowerCase().includes('workshop'));
-
-                        if (isTechOrWorkshop) {
-                            const userDoc = await db.getRow(
+                        if (userDoc) {
+                            const newCredits = (userDoc.tech_credits || 0) + 1;
+                            await db.updateRow(
                                 appwriteConfig.databaseId,
                                 appwriteConfig.usersCollectionId,
-                                userId
+                                userId,
+                                {
+                                    tech_credits: newCredits
+                                }
                             );
-
-                            if (userDoc) {
-                                const newCredits = (userDoc.tech_credits || 0) + 1;
-                                await db.updateRow(
-                                    appwriteConfig.databaseId,
-                                    appwriteConfig.usersCollectionId,
-                                    userId,
-                                    {
-                                        tech_credits: newCredits
-                                    }
-                                );
-                                logs.push(`Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
-                                console.log(`[Webhook] Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
-                            }
-                        } else {
-                            logs.push(`Event ${itemId} is ${eventDoc?.type}, skipping credit award.`);
+                            logs.push(`Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
+                            console.log(`[Webhook] Awarded Tech Credit to user ${userId}. New Total: ${newCredits}`);
                         }
-                    } catch (err) {
-                        console.error("Error fetching event for credit check:", err);
-                        logs.push("Failed to verify event type for credit award");
+                    } else {
+                        logs.push(`Event ${itemId} is ${eventDoc?.type}, skipping credit award.`);
                     }
+                } catch (err) {
+                    console.error("Error fetching event for credit check:", err);
+                    logs.push("Failed to verify event type for credit award");
                 }
-
-                await logAction("Payment Fulfilled", `${itemType} ${itemId} fulfilled for ${userId}`, userId, 'SUCCESS');
-                return { status: "success", message: `${itemType} fulfilled` };
             }
 
-            // --- ORION ---
-            else if (itemType === 'ORION') {
-                // Transaction is already marked SUCCESS above. 
-                // We just need to log it and ensure the team/user implementation is correct.
-                // Currently Orion doesn't need external DB updates other than Transaction status?
-                // The team creation and idea saving happen BEFORE payment. 
-                // So we just confirm payment.
-
-                logs.push(`Orion Payment Verified for Team ${itemId}`);
-                console.log(`[Webhook] Orion Payment Verified for Team ${itemId}`);
-                await logAction("Payment Fulfilled", `Orion Registration fulfilled for Team ${itemId}`, userId, 'SUCCESS');
-                return { status: "success", message: "Orion fulfilled" };
-            }
-
-            // --- CONFERENCE (ICDTSES) ---
-            else if (itemType === 'CONFERENCE') {
-                logs.push(`Checking Conference Registration ${itemId}`);
-
-                // itemId here is the Conference Document ID (set in initiatePayment)
-                const confReg = await db.getRow(
-                    appwriteConfig.databaseId,
-                    appwriteConfig.conferenceCollectionId, // Ensure this config exists
-                    itemId
-                );
-
-                if (confReg && confReg.paid !== true) {
-                    await db.updateRow(
-                        appwriteConfig.databaseId,
-                        appwriteConfig.conferenceCollectionId,
-                        itemId,
-                        { paid: true }
-                    );
-                    logs.push(`Conference registration ${itemId} marked PAID`);
-                    console.log(`[Webhook] Conference registration ${itemId} marked PAID`);
-                    await logAction("Payment Fulfilled", `Conference Registration ${itemId} fulfilled`, userId, 'SUCCESS');
-                    return { status: "success", message: "Conference fulfilled" };
-                }
-
-                logs.push("Conference registration already paid or not found");
-                return { status: "ignored", message: "Conference already paid" };
-            }
-
-            logs.push(`Unknown Item Type: ${itemType}`);
-            return { status: "warning", message: `Unknown item type ${itemType}` };
-
+            await logAction("Payment Fulfilled", `${itemType} ${itemId} fulfilled for ${userId}`, userId, 'SUCCESS');
+            return { status: "success", message: `${itemType} fulfilled` };
         }
+
+        // --- ORION ---
+        else if (itemType === 'ORION') {
+            // Transaction is already marked SUCCESS above. 
+            // We just need to log it and ensure the team/user implementation is correct.
+            // Currently Orion doesn't need external DB updates other than Transaction status?
+            // The team creation and idea saving happen BEFORE payment. 
+            // So we just confirm payment.
+
+            logs.push(`Orion Payment Verified for Team ${itemId}`);
+            console.log(`[Webhook] Orion Payment Verified for Team ${itemId}`);
+            await logAction("Payment Fulfilled", `Orion Registration fulfilled for Team ${itemId}`, userId, 'SUCCESS');
+            return { status: "success", message: "Orion fulfilled" };
+        }
+
+        // --- CONFERENCE (ICDTSES) ---
+        else if (itemType === 'CONFERENCE') {
+            logs.push(`Checking Conference Registration ${itemId}`);
+
+            // itemId here is the Conference Document ID (set in initiatePayment)
+            const confReg = await db.getRow(
+                appwriteConfig.databaseId,
+                appwriteConfig.conferenceCollectionId, // Ensure this config exists
+                itemId
+            );
+
+            if (confReg && confReg.paid !== true) {
+                await db.updateRow(
+                    appwriteConfig.databaseId,
+                    appwriteConfig.conferenceCollectionId,
+                    itemId,
+                    { paid: true }
+                );
+                logs.push(`Conference registration ${itemId} marked PAID`);
+                console.log(`[Webhook] Conference registration ${itemId} marked PAID`);
+                await logAction("Payment Fulfilled", `Conference Registration ${itemId} fulfilled`, userId, 'SUCCESS');
+                return { status: "success", message: "Conference fulfilled" };
+            }
+
+            logs.push("Conference registration already paid or not found");
+            return { status: "ignored", message: "Conference already paid" };
+        }
+
+        logs.push(`Unknown Item Type: ${itemType}`);
+        return { status: "warning", message: `Unknown item type ${itemType}` };
 
     } catch (fulfillErr: any) {
         console.error("[Webhook] Fulfillment Error Details:", fulfillErr.message);
