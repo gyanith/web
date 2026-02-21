@@ -747,13 +747,13 @@ function CompleteProfileModal({
               <option value="" className="bg-black">
                 SELECT_GENOTYPE
               </option>
-              <option value="male" className="bg-black">
+              <option value="MALE" className="bg-black">
                 MALE
               </option>
-              <option value="female" className="bg-black">
+              <option value="FEMALE" className="bg-black">
                 FEMALE
               </option>
-              <option value="other" className="bg-black">
+              <option value="OTHER" className="bg-black">
                 OTHER
               </option>
             </select>
