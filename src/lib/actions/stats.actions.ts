@@ -62,15 +62,32 @@ export async function getTotalRevenue() {
 export async function getTotalRegistrations() {
     try {
         const { getTablesDB } = await createAdminClient();
-        const tablesDB = getTablesDB();
+        const db = getTablesDB();
 
-        const response = await tablesDB.listRows({
-            databaseId: appwriteConfig.databaseId,
-            tableId: appwriteConfig.registrationsCollectionId,
-            queries: [Query.limit(1)] // We only need the total count
-        });
+        // Fetch totals from all registration-related collections
+        const fetchCount = async (collectionId: string) => {
+            if (!collectionId) return 0;
+            try {
+                const res = await db.listRows(
+                    appwriteConfig.databaseId,
+                    collectionId,
+                    [Query.limit(1)]
+                );
+                return res.total;
+            } catch (e) {
+                console.error(`Error fetching count for ${collectionId}:`, e);
+                return 0;
+            }
+        };
 
-        return response.total;
+        const counts = await Promise.all([
+            fetchCount(appwriteConfig.registrationsCollectionId),
+            fetchCount(appwriteConfig.conferenceCollectionId),
+            fetchCount(appwriteConfig.accommodationCollectionId),
+            fetchCount(appwriteConfig.merchCollectionId)
+        ]);
+
+        return counts.reduce((a: number, b: number) => a + b, 0);
     } catch (error) {
         console.error("Error fetching total registrations:", error);
         return 0;

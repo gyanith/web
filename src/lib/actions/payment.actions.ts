@@ -186,14 +186,11 @@ export async function verifyCashfreePayment(orderId: string) {
         const { getTablesDB } = await createAdminClient();
         const db = getTablesDB();
 
-        // 1. Fetch Transaction first to verify existence and type
+        // 1. Fetch Transaction (regardless of status to allow reconciliation)
         const list = await db.listRows(
             appwriteConfig.databaseId,
             appwriteConfig.transactionsCollectionId,
-            [
-                Query.equal("cashfree_order_id", orderId),
-                Query.equal("status", "SUCCESS")
-            ]
+            [Query.equal("cashfree_order_id", orderId)]
         );
 
         if (list.total === 0) {
@@ -202,11 +199,46 @@ export async function verifyCashfreePayment(orderId: string) {
         }
         const transaction = list.rows[0];
 
-        // Log success only if previously not logged? Or just log every verification?
-        // Let's log verification checks.
-        // await logAction("Payment Verified", `Verified payment for transaction ${transaction.$id}`, transaction.user, 'SUCCESS');
+        // 2. If already SUCCESS, just return
+        if (transaction.status === "SUCCESS") {
+            return { success: true, transactionId: transaction.$id };
+        }
 
-        return { success: true, transactionId: transaction.$id };
+        // 3. Reconciliation: Check Cashfree API if not SUCCESS in our DB
+        console.log(`[verifyCashfreePayment] Reconciling order ${orderId}...`);
+        try {
+            const response = await cashfree.PGOrderFetchPayments(orderId);
+            const payments = response.data; // Array of PaymentEntity
+
+            const successPayment = payments.find((p: any) => p.payment_status === "SUCCESS");
+
+            if (successPayment) {
+                console.log(`[verifyCashfreePayment] Found successful payment in Cashfree for ${orderId}. Updating DB...`);
+
+                // Update Transaction Status
+                await db.updateRow(
+                    appwriteConfig.databaseId,
+                    appwriteConfig.transactionsCollectionId,
+                    transaction.$id,
+                    {
+                        status: "SUCCESS",
+                        cashfree_payment_id: successPayment.cf_payment_id
+                    }
+                );
+
+                // Trigger Fulfillment
+                const { processFulfillment } = await import("@/lib/fulfillment");
+                await processFulfillment(db, transaction, transaction.user);
+
+                await logAction("Payment Reconciled", `Order ${orderId} verified and reconciled to SUCCESS`, transaction.user, 'SUCCESS');
+
+                return { success: true, transactionId: transaction.$id };
+            }
+        } catch (cfError: any) {
+            console.error("[verifyCashfreePayment] Reconciliation failed:", cfError.message);
+        }
+
+        return { success: false, error: "Transaction pending or failed" };
 
     } catch (error: any) {
         console.error("Error verifying Cashfree payment:", error);
@@ -217,82 +249,11 @@ export async function verifyCashfreePayment(orderId: string) {
 // Helper for post-payment actions
 // Helper for post-payment actions
 async function handlePostPaymentActions(db: any, transaction: any) {
-    if (transaction.item_type === 'TICKET') {
-        const tierMatch = transaction.description.match(/Tier (\d+)/);
-        if (tierMatch) {
-            const tier = parseInt(tierMatch[1]);
-            await db.updateRow(
-                appwriteConfig.databaseId,
-                appwriteConfig.usersCollectionId,
-                transaction.item_id.replace("ticket_", ""),
-                { tier: tier }
-            );
-        }
-        return;
-    }
-
-    // Handle MERCH, ACCOMM, WORKSHOP via Fulfilment Function
     try {
-        const { getFunctions } = await createSessionClient();
-        const functions = getFunctions();
-        const FUNCTION_ID = '697dc3e900397f2a6036';
-
-        console.log(`[handlePostPaymentActions] Calling fulfilment function for ${transaction.item_type}`);
-
-        const execution = await functions.createExecution({
-            functionId: FUNCTION_ID,
-            body: JSON.stringify({ transactionId: transaction.$id }),
-            async: false,
-            xpath: '/',
-            method: ExecutionMethod.POST,
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (execution.status === 'completed') {
-            const responseBody = JSON.parse(execution.responseBody);
-
-            // Check success OR "already fulfilled" error (Status 409 from function typically returns success: false)
-            const isSuccess = responseBody.success;
-            const isAlreadyFulfilled = !isSuccess && (responseBody.error === "Order already fulfilled" || responseBody.message === "Order already fulfilled");
-
-            if (isSuccess || isAlreadyFulfilled) {
-                console.log(`[handlePostPaymentActions] Order fulfilled for ${transaction.item_type} (Already Fulfilled: ${isAlreadyFulfilled})`);
-
-                // WORKSHOP SPECIFIC: Award Tech Credits
-                if (transaction.item_type === 'WORKSHOP') {
-                    try {
-                        const userId = transaction.user;
-                        const userDoc = await db.getDocument(
-                            appwriteConfig.databaseId,
-                            appwriteConfig.usersCollectionId,
-                            userId
-                        );
-
-                        if (userDoc) {
-                            await db.updateRow(
-                                appwriteConfig.databaseId,
-                                appwriteConfig.usersCollectionId,
-                                userId,
-                                {
-                                    credits: (userDoc.credits || 0) + 1
-                                }
-                            );
-                            console.log(`[handlePostPaymentActions] Awarded 1 credit to user ${userId} for workshop.`);
-                        }
-                    } catch (err) {
-                        console.error("[handlePostPaymentActions] Failed to award credit:", err);
-                    }
-                }
-
-            } else {
-                console.error("[handlePostPaymentActions] Fulfilment failed:", responseBody.error);
-            }
-        } else {
-            console.error("[handlePostPaymentActions] Fulfilment execution failed status:", execution.status);
-        }
-
+        const { processFulfillment } = await import("@/lib/fulfillment");
+        await processFulfillment(db, transaction, transaction.user);
     } catch (error) {
-        console.error("[handlePostPaymentActions] Error calling fulfilment function:", error);
+        console.error("[handlePostPaymentActions] Error:", error);
     }
 }
 

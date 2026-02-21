@@ -448,6 +448,30 @@ export async function signOut() {
   }
 }
 
+// 🚨 NEW: Complete Profile for Logged In User
+export async function completeProfileForLoggedInUser(data: {
+  phone: string;
+  gender: string;
+  collegeName: string;
+  isNITPY: boolean;
+}) {
+  try {
+    const user = await getLoggedInUser();
+    if (!user) return { success: false, error: "Not authenticated" };
+
+    const result = await createUserProfile({
+      userId: user.$id,
+      email: user.email,
+      ...data,
+    });
+
+    return result;
+  } catch (error: any) {
+    console.error("Complete Profile error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getLoggedInUser() {
   try {
     const cookieStore = await cookies();

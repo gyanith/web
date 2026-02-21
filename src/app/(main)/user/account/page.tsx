@@ -17,7 +17,11 @@ import {
 import { QRCodeGenerator } from "@/lib/helpers/qrcode.helper";
 
 import { unispace, blueScreen, garetBook } from "@/fonts/fonts";
-import { signOut, getLoggedInUser } from "@/lib/actions/auth.actions";
+import {
+  signOut,
+  getLoggedInUser,
+  completeProfileForLoggedInUser,
+} from "@/lib/actions/auth.actions";
 import { contactDetails } from "@/data/info";
 import {
   getCurrentUserDetails,
@@ -33,6 +37,8 @@ const Page = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("account");
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showCompleteProfileModal, setShowCompleteProfileModal] =
+    useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -205,6 +211,36 @@ const Page = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, staggerChildren: 0.1 }}
               >
+                {/* Profile Completion Warning */}
+                {!userDetails && !loading && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mb-8 p-4 bg-red-900/20 border border-red-500/50 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center text-red-500 shrink-0">
+                        <Shield size={20} />
+                      </div>
+                      <div>
+                        <h3
+                          className={`text-red-500 font-bold text-sm ${unispace.className}`}
+                        >
+                          PROFILE_INCOMPLETE
+                        </h3>
+                        <p className="text-white/60 text-xs">
+                          Access to events and downloads may be restricted.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowCompleteProfileModal(true)}
+                      className={`px-6 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold tracking-widest ${unispace.className} transition-colors`}
+                    >
+                      COMPLETE_NOW
+                    </button>
+                  </motion.div>
+                )}
                 {/* Basic Info Section */}
                 <Section title="IDENTITY_MATRIX" delay={0.1}>
                   <div className="grid gap-px bg-white/5 border border-white/5 w-full">
@@ -354,11 +390,26 @@ const Page = () => {
           />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showCompleteProfileModal && (
+          <CompleteProfileModal
+            userId={user?.$id}
+            onClose={() => setShowCompleteProfileModal(false)}
+            onSuccess={() => {
+              setShowCompleteProfileModal(false);
+              router.refresh();
+              window.location.reload(); // Hard refresh to ensure all data is re-fetched
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 // Sub-components
+
 function SidebarItem({
   icon,
   label,
@@ -584,6 +635,178 @@ function TeamGroup({
           </div>
         ))}
       </div>
+    </motion.div>
+  );
+}
+
+// --- Profile Completion Modal ---
+
+function CompleteProfileModal({
+  userId,
+  onClose,
+  onSuccess,
+}: {
+  userId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    phone: "",
+    gender: "",
+    collegeName: "",
+    isNITPY: false,
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const res = await completeProfileForLoggedInUser(formData);
+      if (res.success) {
+        onSuccess();
+      } else {
+        setError(res.error || "Failed to update profile");
+      }
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        className="bg-[#0a0a0a] border border-[#d4a574]/30 w-full max-w-md overflow-hidden relative"
+      >
+        {/* Header */}
+        <div className="bg-[#d4a574]/10 p-6 border-b border-[#d4a574]/20 relative">
+          <h2
+            className={`text-[#d4a574] text-xl ${blueScreen.className} tracking-widest`}
+          >
+            FINALIZE_UPLINK
+          </h2>
+          <p className="text-white/40 text-[10px] mt-1 tracking-widest">
+            USER_ID: {userId}
+          </p>
+          <button
+            onClick={onClose}
+            className="absolute top-6 right-6 text-[#d4a574] hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-900/20 border border-red-500/50 text-red-500 text-xs font-mono">
+              ERROR: {error}
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <label className="text-[#666] text-[10px] uppercase tracking-widest">
+              COMM_FREQUENCY (Phone)
+            </label>
+            <input
+              required
+              type="tel"
+              placeholder="10 digit mobile number"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+              className="w-full bg-white/5 border border-white/10 p-3 text-white text-sm focus:border-[#d4a574]/50 outline-none transition-colors"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[#666] text-[10px] uppercase tracking-widest">
+              BIOLOGICAL_ID (Gender)
+            </label>
+            <select
+              required
+              value={formData.gender}
+              onChange={(e) =>
+                setFormData({ ...formData, gender: e.target.value })
+              }
+              className="w-full bg-white/5 border border-white/10 p-3 text-white text-sm focus:border-[#d4a574]/50 outline-none transition-colors appearance-none"
+            >
+              <option value="" className="bg-black">
+                SELECT_GENOTYPE
+              </option>
+              <option value="male" className="bg-black">
+                MALE
+              </option>
+              <option value="female" className="bg-black">
+                FEMALE
+              </option>
+              <option value="other" className="bg-black">
+                OTHER
+              </option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[#666] text-[10px] uppercase tracking-widest">
+              AFFILIATION_HUB (College)
+            </label>
+            <input
+              required
+              type="text"
+              placeholder="College/University Name"
+              value={formData.collegeName}
+              onChange={(e) =>
+                setFormData({ ...formData, collegeName: e.target.value })
+              }
+              className="w-full bg-white/5 border border-white/10 p-3 text-white text-sm focus:border-[#d4a574]/50 outline-none transition-colors"
+            />
+          </div>
+
+          <div
+            className="flex items-center gap-3 py-2 cursor-pointer group"
+            onClick={() =>
+              setFormData({ ...formData, isNITPY: !formData.isNITPY })
+            }
+          >
+            <div
+              className={`w-5 h-5 border ${formData.isNITPY ? "bg-[#d4a574] border-[#d4a574]" : "border-white/20"} flex items-center justify-center transition-colors`}
+            >
+              {formData.isNITPY && <div className="w-2 h-2 bg-black" />}
+            </div>
+            <span className="text-white/60 text-[10px] uppercase tracking-widest group-hover:text-white transition-colors">
+              NITPY_RESIDENT_OPERATOR?
+            </span>
+          </div>
+
+          <button
+            disabled={submitting}
+            type="submit"
+            className="w-full h-14 bg-[#d4a574] text-black font-bold uppercase tracking-widest mt-4 hover:bg-[#b88654] disabled:opacity-50 transition-all shadow-[0_0_20px_rgba(212,165,116,0.2)]"
+          >
+            {submitting ? "SYNCHRONIZING..." : "EXECUTE_UPLINK"}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <div className="p-4 bg-white/5 border-t border-white/5 text-center">
+          <p className="text-[8px] text-[#666] tracking-[0.3em] font-mono">
+            ENCRYPTED_UPLINK_ESTABLISHED
+          </p>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
