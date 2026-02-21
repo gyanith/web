@@ -37,7 +37,7 @@ export default function RegistrationForm() {
     phone: "",
     // New fields
     password: "", // Add password field
-    gender: "male",
+    gender: "MALE",
     is_nitpy: false,
     college_name: "",
 
@@ -165,7 +165,7 @@ export default function RegistrationForm() {
           name: "",
           phone: "",
           password: "",
-          gender: "male",
+          gender: "MALE",
           is_nitpy: false,
           college_name: "",
           item_id: "TICKET_" + new Date().getTime(),
@@ -275,9 +275,9 @@ export default function RegistrationForm() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className={darkDropdownClass}>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="MALE">Male</SelectItem>
+                        <SelectItem value="FEMALE">Female</SelectItem>
+                        <SelectItem value="OTHER">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
