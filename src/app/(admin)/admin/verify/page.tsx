@@ -163,15 +163,26 @@ export default function VerifyPaymentsPage() {
         </h1>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-[1fr_400px]">
-        {/* Left Column: Search and User Info */}
+      <div className="grid gap-6">
+        {/* Search and User Info */}
         <div className="space-y-6">
           <Card className="bg-zinc-900 border-zinc-800">
-            <CardHeader>
-              <CardTitle className="text-white">Lookup User</CardTitle>
-              <CardDescription>
-                Search by User ID, Phone Number, or Email.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <div className="space-y-1">
+                <CardTitle className="text-white">Lookup User</CardTitle>
+                <CardDescription>
+                  Search by User ID, Phone Number, or Email.
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-700"
+                onClick={() => setIsScannerOpen(true)}
+                title="Scan QR Code"
+              >
+                <ScanLine className="h-5 w-5" />
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
@@ -418,42 +429,6 @@ export default function VerifyPaymentsPage() {
               </CardContent>
             </Card>
           )}
-        </div>
-
-        {/* Right Column: Scan QR Code */}
-        <div className="space-y-6">
-          <Card className="bg-zinc-900 border-zinc-800">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <ScanLine className="h-5 w-5 text-zinc-400" />
-                Scan QR Code
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-6 pb-6">
-              <div className="relative flex aspect-square w-full items-center justify-center rounded-xl border-2 border-dashed border-zinc-800 bg-zinc-950/50 overflow-hidden">
-                <AlertCircle className="h-12 w-16 text-zinc-700" />
-                <span className="absolute bottom-4 text-[10px] text-zinc-600 uppercase tracking-widest">
-                  {isScannerOpen ? "Camera Active" : "Ready for Input"}
-                </span>
-                {isScannerOpen && (
-                  <div className="absolute inset-0 bg-black flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-zinc-600" />
-                  </div>
-                )}
-              </div>
-              <Button
-                className="w-full bg-zinc-800 text-white hover:bg-zinc-700 border-zinc-700"
-                variant="outline"
-                onClick={() => setIsScannerOpen(true)}
-              >
-                <ScanLine className="mr-2 h-4 w-4" /> Start Camera
-              </Button>
-              <p className="text-[10px] text-center text-zinc-500 leading-relaxed uppercase tracking-tighter">
-                QR codes contain the attendee's unique identity hash for rapid
-                on-field verification.
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
