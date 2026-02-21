@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Gyanith Admin",
   description: "Admin Panel for Gyanith 2026",

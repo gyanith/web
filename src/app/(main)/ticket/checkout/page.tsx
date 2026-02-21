@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+
+export const dynamic = "force-dynamic";
 import { createSessionClient } from "@/lib/appwrite/appwrite.server";
 import CheckoutClient from "./CheckoutClient";
 import { redirect } from "next/navigation";

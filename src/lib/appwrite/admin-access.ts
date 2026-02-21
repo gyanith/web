@@ -59,8 +59,11 @@ export async function verifyAdminAccess() {
         console.log(`❌ Admin Access Denied for ${userId}`);
         return false;
 
-    } catch (error) {
-        console.error("Admin Access Check Failed:", error);
+    } catch (error: any) {
+        // Only log if it's NOT a dynamic server usage error (which is expected during builds)
+        if (!error?.message?.includes("Dynamic server usage") && error?.digest !== 'DYNAMIC_SERVER_USAGE') {
+            console.error("Admin Access Check Failed:", error);
+        }
         return false;
     }
 }
