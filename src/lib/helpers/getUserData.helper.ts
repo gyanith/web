@@ -16,17 +16,18 @@ export const getCurrentUserDetails = async (userId: string): Promise<User | null
         // Attempt to fetch the user document directly using the userId as the document ID.
         // This assumes the user document ID in 'users' collection matches the Auth user ID.
         try {
-            // Using 'getRow' as per pattern in events.actions.ts (wrapper for getDocument)
-            const userDoc = await tablesDB.getRow(
-                appwriteConfig.databaseId,
-                appwriteConfig.usersCollectionId, // Using config for collection ID
-                userId
-            );
+            const userDoc = await tablesDB.getRow({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.usersCollectionId,
+                rowId: userId
+            });
             return parseStringify(userDoc);
-        } catch (docError) {
-            // If direct fetch fails, we could try querying by email if we had it, but usually ID matches.
-            // Let's assume if it fails, user doesn't exist in that collection.
-            console.error(`User document not found for ID ${userId}:`, docError);
+        } catch (docError: any) {
+            // If direct fetch fails with 404, it means user hasn't completed profile yet.
+            // We return null and let the UI handle the "Complete Profile" flow.
+            if (docError.code !== 404) {
+                console.error(`Error fetching user document for ID ${userId}:`, docError);
+            }
             return null;
         }
     } catch (error) {
