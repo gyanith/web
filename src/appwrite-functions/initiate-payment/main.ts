@@ -1,5 +1,4 @@
 import { Client, Databases, ID, Query } from 'node-appwrite';
-import crypto from 'crypto';
 
 // helper function - get fee from events table
 async function getEventFee(event_id: string, databases: Databases) {
@@ -81,11 +80,11 @@ export default async ({ req, res, log, error }: any) => {
         // Allow guest for CONFERENCE (ICDTSES)
         if (!userId) {
             if (type === 'CONFERENCE') {
-                userId = `guest_${crypto.randomBytes(4).toString('hex')}`;
+                userId = `guest_${ID.unique().substring(0, 8)}`;
                 log(`[DEBUG] Created guest userId: ${userId}`);
             } else {
-                error(`[ERROR] Unauthorized attempt for type: ${type}`);
-                return res.json({ success: false, message: 'Unauthenticated' }, 401);
+                error(`[ERROR] Unauthenticated access attempt for type: ${type}`);
+                return res.json({ success: false, message: 'Unauthenticated - userId is missing' }, 401);
             }
         }
 
@@ -116,6 +115,7 @@ export default async ({ req, res, log, error }: any) => {
             const price = PRICES.merch.price;
             amount = quantity * price;
 
+            log(`[DEBUG] Creating Merch Record for ${userId}`);
             const merchOrder = await databases.createDocument(
                 process.env.DB_ID!,
                 process.env.MERCH_ORDERS_COLLECTION_ID!,
@@ -156,9 +156,10 @@ export default async ({ req, res, log, error }: any) => {
             customerEmail = email;
 
             // Duplicate Check (Email + Paper ID + Paid=true)
+            log(`[DEBUG] Checking duplicate for CONFERENCE ${email}`);
             const existing = await databases.listDocuments(
                 process.env.DB_ID!,
-                process.env.CONFERENCE_COLLECTION_ID!,
+                CONFERENCE_COLLECTION_ID,
                 [
                     Query.equal('email', email),
                     Query.equal('paper_id', paper_id),
@@ -177,9 +178,10 @@ export default async ({ req, res, log, error }: any) => {
             else return res.json({ success: false, message: 'Invalid user type' }, 400);
 
             // Create Conference Document
+            log(`[DEBUG] Creating Conference Document`);
             const confDoc = await databases.createDocument(
                 process.env.DB_ID!,
-                process.env.CONFERENCE_COLLECTION_ID!,
+                CONFERENCE_COLLECTION_ID,
                 ID.unique(),
                 {
                     name,
@@ -206,8 +208,9 @@ export default async ({ req, res, log, error }: any) => {
         /* ---------------- ACCOMM ---------------- */
         else if (type === 'ACCOMM') {
             returnUrl = `${baseUrl}/residence`;
-            const { hostel, day } = req.bodyJson;
+            let { hostel, day } = req.bodyJson;
 
+            log(`[DEBUG] Checking existing accommodation for ${userId}`);
             const existingAccomm = await databases.listDocuments(
                 process.env.DB_ID!,
                 process.env.ACCOMMODATION_COLLECTION_ID!,
@@ -221,6 +224,11 @@ export default async ({ req, res, log, error }: any) => {
                 return res.json({ success: false, message: "User has already booked accommodation" }, 409);
             }
 
+            // Ensure day is a single string if that's what the schema expects, 
+            // but log what we received. 
+            const finalDayValue = Array.isArray(day) ? String(day[0]) : String(day);
+            log(`[DEBUG] Creating Accomodation Record for ${userId} day: ${finalDayValue}`);
+
             const accommodation = await databases.createDocument(
                 process.env.DB_ID!,
                 process.env.ACCOMMODATION_COLLECTION_ID!,
@@ -228,14 +236,14 @@ export default async ({ req, res, log, error }: any) => {
                 {
                     user_id: userId,
                     transaction_id: null,
-                    day,
+                    day: finalDayValue,
                     hostel,
                     status: 'PENDING',
                 }
             );
 
             itemId = accommodation.$id;
-            amount = (PRICES.accomm.price * day.length) + PRICES.accomm.caution;
+            amount = (PRICES.accomm.price * (Array.isArray(day) ? day.length : 1)) + PRICES.accomm.caution;
         }
 
 
@@ -247,17 +255,24 @@ export default async ({ req, res, log, error }: any) => {
             if (!(tier in PRICES.tier)) return res.json({ success: false, message: 'Invalid tier' }, 400);
 
             //CHECK IF TIER ALREADY EXISTS - UPGRADE TIER CASE
-            const user = await databases.getDocument(
-                process.env.DB_ID!,
-                process.env.USERS_COLLECTION_ID!,
-                userId
-            );
+            log(`[DEBUG] Fetching user for TICKET tier check ${userId}`);
+            let existingTier: string | null = null;
+            try {
+                const user = await databases.getDocument(
+                    process.env.DB_ID!,
+                    process.env.USERS_COLLECTION_ID!,
+                    userId
+                );
+                existingTier = user.tier ? String(user.tier) : null;
+            } catch (e) {
+                log(`[DEBUG] User document not found for ${userId}, assuming first-time purchase.`);
+            }
 
-            if (!user.tier) { //FIRST TIME BUY TICKET
+            if (!existingTier) { //FIRST TIME BUY TICKET
                 amount = PRICES.tier[tier];
             }
             else {//UPGRADE CASE
-                const oldTier = String(user.tier) as Tier;
+                const oldTier = existingTier as Tier;
                 if (!(oldTier in PRICES.tier)) {
                     return res.json({ success: false, message: 'Invalid existing tier' }, 400);
                 }
@@ -272,6 +287,18 @@ export default async ({ req, res, log, error }: any) => {
         }
 
         /* ---------------- TRANSACTION ENTRY ---------------- */
+        const finalUserId = userId && !userId.startsWith('guest_') ? String(userId) : null;
+        const finalItemId = itemId ? String(itemId) : null;
+
+        log(`[DEBUG] Final Transaction Payload: ${JSON.stringify({
+            mode: 'CF',
+            amount,
+            item_type: itemType,
+            user: finalUserId,
+            item_id: finalItemId,
+            status: 'CREATED'
+        })}`);
+
         const transaction = await databases.createDocument(
             process.env.DB_ID!,
             process.env.TRANSACTIONS_COLLECTION_ID!,
@@ -279,9 +306,9 @@ export default async ({ req, res, log, error }: any) => {
             {
                 mode: 'CF',
                 amount,
-                item_type: itemType, // Uses 'CONFERENCE' for ICDTSES
-                user: userId && !userId.startsWith('guest_') ? userId : null, // Only set relationship if valid user
-                item_id: itemId,
+                item_type: itemType,
+                user: finalUserId,
+                item_id: finalItemId,
                 status: 'CREATED',
             }
         );
@@ -289,18 +316,20 @@ export default async ({ req, res, log, error }: any) => {
         const transactionId = transaction.$id;
 
         // Link transaction to item
+        log(`[DEBUG] Linking Transaction ${transactionId} to Item ${itemId}`);
         if (itemType === 'MERCH') {
             await databases.updateDocument(process.env.DB_ID!, process.env.MERCH_ORDERS_COLLECTION_ID!, itemId!, { transaction_id: transactionId });
         } else if (itemType === 'ACCOMM') {
             await databases.updateDocument(process.env.DB_ID!, process.env.ACCOMMODATION_COLLECTION_ID!, itemId!, { transaction_id: transactionId });
         } else if (itemType === 'CONFERENCE') {
             // Link to conference doc
-            await databases.updateDocument(process.env.DB_ID!, process.env.CONFERENCE_COLLECTION_ID!, itemId!, { payment_id: transactionId });
+            await databases.updateDocument(process.env.DB_ID!, CONFERENCE_COLLECTION_ID, itemId!, { payment_id: transactionId });
         }
 
         /* ---------------- CASHFREE ORDER ---------------- */
         let user: any = null;
         try {
+            log(`[DEBUG] Fetching user data for Cashfree payload ${userId}`);
             user = await databases.getDocument(
                 process.env.DB_ID!,
                 process.env.USERS_COLLECTION_ID!,
@@ -308,10 +337,10 @@ export default async ({ req, res, log, error }: any) => {
             );
             if (user) {
                 customerEmail = user.email;
-                customerPhone = user.phone.toString();
+                customerPhone = user.phone ? user.phone.toString() : "9999000000";
             }
         } catch (e) {
-            console.log("User fetch failed or user not found, proceeding with defaults/payload.");
+            log("[DEBUG] User fetch failed or user not found, proceeding with defaults/payload.");
         }
 
         const orderPayload = {
@@ -336,6 +365,7 @@ export default async ({ req, res, log, error }: any) => {
             }
         };
 
+        log(`[DEBUG] Creating Cashfree Order: ${transactionId}`);
         const cfResponse = await fetch(
             `${process.env.CASHFREE_API_BASE}/orders`,
             {
@@ -357,6 +387,7 @@ export default async ({ req, res, log, error }: any) => {
         }
 
         /* ---------------- UPDATE TRANSACTION ---------------- */
+        log(`[DEBUG] Updating Transaction to PENDING: ${transactionId}`);
         await databases.updateDocument(
             process.env.DB_ID!,
             process.env.TRANSACTIONS_COLLECTION_ID!,
@@ -377,7 +408,7 @@ export default async ({ req, res, log, error }: any) => {
         });
 
     } catch (err: any) {
-        error(err.message);
-        return res.json({ success: false, message: err.message }, 500);
+        error(`[FATAL ERROR] ${err.message}`);
+        return res.json({ success: false, message: `System Error: ${err.message}` }, 500);
     }
 };

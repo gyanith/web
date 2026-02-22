@@ -36,16 +36,9 @@ export async function initiatePayment(
         // Use Admin Client to invoke function (works for Guest or User)
         // Previously used Session Client, but Admin is safer for server-side trigger ensuring execution
 
-        let getFunctions: any;
-        // Modified: Always use Admin client for non-session types or when specifically needed.
-        // Actually, let's use Admin client for everything to be safe, as it's a server action.
-        getFunctions = (await createAdminClient()).getFunctions;
-
-        if (type === "CONFERENCE") {
-            getFunctions = (await createAdminClient()).getFunctions;
-        } else {
-            getFunctions = (await createSessionClient()).getFunctions;
-        }
+        // Always use Admin client for function execution to ensure sufficient privileges 
+        // and consistent userId passing via payload.
+        const { getFunctions } = await createAdminClient();
         const functions = getFunctions();
         const FUNCTION_ID = '697d1058001561c91266';
 
@@ -162,8 +155,11 @@ export async function initiatePayment(
                 return { success: false, error: responseBody.error || "Payment initialization failed." };
             }
         } else {
-            console.error("Function execution failed (status not completed):", execution);
-            return { success: false, error: "System busy, please try again." };
+            console.error("Function execution failed:", execution);
+            return {
+                success: false,
+                error: `Payment service error (Status: ${execution.status}). Please check admin logs.`
+            };
         }
 
     } catch (error: any) {

@@ -35,7 +35,7 @@ export async function processFulfillment(db: any, transaction: any, userId: stri
                     appwriteConfig.databaseId,
                     appwriteConfig.usersCollectionId,
                     userId
-                );
+                ).catch(() => null);
 
                 if (userDoc) {
                     const oldTier = userDoc.tier || 0;
