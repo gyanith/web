@@ -329,18 +329,19 @@ export default async ({ req, res, log, error }: any) => {
         /* ---------------- CASHFREE ORDER ---------------- */
         let user: any = null;
         try {
-            log(`[DEBUG] Fetching user data for Cashfree payload ${userId}`);
+            log(`[DEBUG] Fetching user data for Cashfree payload: ${userId}`);
             user = await databases.getDocument(
                 process.env.DB_ID!,
                 process.env.USERS_COLLECTION_ID!,
-                userId
+                String(userId)
             );
             if (user) {
                 customerEmail = user.email;
-                customerPhone = user.phone ? user.phone.toString() : "9999000000";
+                customerPhone = user.phone ? String(user.phone) : "9999000000";
+                log(`[DEBUG] User profile found: ${customerEmail}`);
             }
-        } catch (e) {
-            log("[DEBUG] User fetch failed or user not found, proceeding with defaults/payload.");
+        } catch (e: any) {
+            log(`[DEBUG] User profile document not found or fetch failed: ${e.message}. Using defaults.`);
         }
 
         const orderPayload = {
@@ -348,8 +349,8 @@ export default async ({ req, res, log, error }: any) => {
             order_amount: amount,
             order_currency: 'INR',
             customer_details: {
-                customer_id: userId,
-                customer_name: customerName,
+                customer_id: String(userId),
+                customer_name: String(customerName),
                 customer_email: customerEmail || `user_${userId}@gyanith.org`, // Fallback
                 customer_phone: customerPhone
             },
@@ -359,9 +360,9 @@ export default async ({ req, res, log, error }: any) => {
             },
             order_note: `Payment for ${itemType}`,
             order_tags: {
-                paymentType: itemType,
-                userId: userId,
-                itemId: itemId
+                paymentType: String(itemType),
+                userId: String(userId),
+                itemId: String(itemId)
             }
         };
 
@@ -383,22 +384,24 @@ export default async ({ req, res, log, error }: any) => {
         const cfData = await cfResponse.json();
 
         if (!cfResponse.ok) {
+            error(`[ERROR] Cashfree request failed: ${JSON.stringify(cfData)}`);
             throw new Error(cfData.message || 'Cashfree order creation failed');
         }
 
         /* ---------------- UPDATE TRANSACTION ---------------- */
-        log(`[DEBUG] Updating Transaction to PENDING: ${transactionId}`);
+        log(`[DEBUG] Updating Transaction status to PENDING: ${transactionId}`);
         await databases.updateDocument(
             process.env.DB_ID!,
             process.env.TRANSACTIONS_COLLECTION_ID!,
             transactionId,
             {
                 status: 'PENDING',
-                cashfree_order_id: cfData.order_id,
+                cashfree_order_id: String(cfData.order_id),
             }
         );
 
         /* ---------------- RESPONSE ---------------- */
+        log(`[SUCCESS] Payment initialization complete for type: ${itemType}`);
         return res.json({
             success: true,
             paymentSessionId: cfData.payment_session_id,
@@ -409,6 +412,7 @@ export default async ({ req, res, log, error }: any) => {
 
     } catch (err: any) {
         error(`[FATAL ERROR] ${err.message}`);
-        return res.json({ success: false, message: `System Error: ${err.message}` }, 500);
+        if (err.response) error(`[APPWRITE ERROR RESPONSE] ${JSON.stringify(err.response)}`);
+        return res.json({ success: false, message: err.message }, 500);
     }
 };

@@ -38,8 +38,8 @@ export async function initiatePayment(
 
         // Always use Admin client for function execution to ensure sufficient privileges 
         // and consistent userId passing via payload.
-        const { getFunctions } = await createAdminClient();
-        const functions = getFunctions();
+        const admin = await createAdminClient();
+        const functions = admin.getFunctions();
         const FUNCTION_ID = '697d1058001561c91266';
 
         // 🚨 PRE-CHECK: Slots for Accommodation
