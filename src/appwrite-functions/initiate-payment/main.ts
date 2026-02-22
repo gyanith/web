@@ -224,10 +224,10 @@ export default async ({ req, res, log, error }: any) => {
                 return res.json({ success: false, message: "User has already booked accommodation" }, 409);
             }
 
-            // Ensure day is a single string if that's what the schema expects, 
-            // but log what we received. 
-            const finalDayValue = Array.isArray(day) ? String(day[0]) : String(day);
-            log(`[DEBUG] Creating Accomodation Record for ${userId} day: ${finalDayValue}`);
+            // Ensure day is an array of Integers for the accommodation table
+            log(`[DEBUG] Raw day value: ${JSON.stringify(day)} (Type: ${typeof day})`);
+            const finalDayValue = Array.isArray(day) ? day.map((d: any) => Number(d)) : [Number(day)];
+            log(`[DEBUG] Creating Accomodation Record for ${userId} day: ${JSON.stringify(finalDayValue)}`);
 
             const accommodation = await databases.createDocument(
                 process.env.DB_ID!,
@@ -261,7 +261,7 @@ export default async ({ req, res, log, error }: any) => {
                 const user = await databases.getDocument(
                     process.env.DB_ID!,
                     process.env.USERS_COLLECTION_ID!,
-                    userId
+                    String(userId)
                 );
                 existingTier = user.tier ? String(user.tier) : null;
             } catch (e) {
@@ -290,27 +290,25 @@ export default async ({ req, res, log, error }: any) => {
         const finalUserId = userId && !userId.startsWith('guest_') ? String(userId) : null;
         const finalItemId = itemId ? String(itemId) : null;
 
-        log(`[DEBUG] Final Transaction Payload: ${JSON.stringify({
+        log(`[DEBUG] Creating Transaction Record. user: ${finalUserId} (Type: ${typeof finalUserId}), itemId: ${finalItemId} (Type: ${typeof finalItemId}), amount: ${amount} (Type: ${typeof amount})`);
+
+        const transactionData: any = {
             mode: 'CF',
-            amount,
-            item_type: itemType,
-            user: finalUserId,
+            amount: Number(amount),
+            item_type: String(itemType),
             item_id: finalItemId,
-            status: 'CREATED'
-        })}`);
+            status: 'CREATED',
+        };
+
+        if (finalUserId) {
+            transactionData.user = finalUserId;
+        }
 
         const transaction = await databases.createDocument(
             process.env.DB_ID!,
             process.env.TRANSACTIONS_COLLECTION_ID!,
             ID.unique(),
-            {
-                mode: 'CF',
-                amount,
-                item_type: itemType,
-                user: finalUserId,
-                item_id: finalItemId,
-                status: 'CREATED',
-            }
+            transactionData
         );
 
         const transactionId = transaction.$id;
@@ -318,12 +316,12 @@ export default async ({ req, res, log, error }: any) => {
         // Link transaction to item
         log(`[DEBUG] Linking Transaction ${transactionId} to Item ${itemId}`);
         if (itemType === 'MERCH') {
-            await databases.updateDocument(process.env.DB_ID!, process.env.MERCH_ORDERS_COLLECTION_ID!, itemId!, { transaction_id: transactionId });
+            await databases.updateDocument(process.env.DB_ID!, process.env.MERCH_ORDERS_COLLECTION_ID!, String(itemId), { transaction_id: transactionId });
         } else if (itemType === 'ACCOMM') {
-            await databases.updateDocument(process.env.DB_ID!, process.env.ACCOMMODATION_COLLECTION_ID!, itemId!, { transaction_id: transactionId });
+            await databases.updateDocument(process.env.DB_ID!, process.env.ACCOMMODATION_COLLECTION_ID!, String(itemId), { transaction_id: transactionId });
         } else if (itemType === 'CONFERENCE') {
             // Link to conference doc
-            await databases.updateDocument(process.env.DB_ID!, CONFERENCE_COLLECTION_ID, itemId!, { payment_id: transactionId });
+            await databases.updateDocument(process.env.DB_ID!, CONFERENCE_COLLECTION_ID, String(itemId), { payment_id: transactionId });
         }
 
         /* ---------------- CASHFREE ORDER ---------------- */
@@ -390,6 +388,7 @@ export default async ({ req, res, log, error }: any) => {
 
         /* ---------------- UPDATE TRANSACTION ---------------- */
         log(`[DEBUG] Updating Transaction status to PENDING: ${transactionId}`);
+        // We try updating only the absolutely necessary fields to avoid relationship validation conflicts
         await databases.updateDocument(
             process.env.DB_ID!,
             process.env.TRANSACTIONS_COLLECTION_ID!,
