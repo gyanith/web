@@ -1,6 +1,7 @@
 import { appwriteConfig } from "./appwrite/appwrite.config";
 import { ID, Query } from "node-appwrite";
 import { logAction } from "./logger";
+import { getRegistrationId } from "./helpers/registration.helper";
 
 export async function processFulfillment(db: any, transaction: any, userId: string) {
     const itemType = transaction.item_type;
@@ -140,25 +141,26 @@ export async function processFulfillment(db: any, transaction: any, userId: stri
 
         // --- WORKSHOP & EVENT ---
         else if (itemType === 'WORKSHOP' || itemType === 'EVENT') {
-            const existingReg = await db.listRows(
-                appwriteConfig.databaseId,
-                appwriteConfig.registrationsCollectionId,
-                [
-                    Query.equal('event_id', itemId),
-                    Query.equal('user_id', userId)
-                ]
-            );
+            const deterministicId = getRegistrationId(userId, itemId);
 
-            if (existingReg.total === 0) {
+            try {
                 await db.createRow(
                     appwriteConfig.databaseId,
                     appwriteConfig.registrationsCollectionId,
-                    ID.unique(),
+                    deterministicId,
                     {
                         event_id: itemId,
                         user_id: userId
                     }
                 );
+                console.log(`[Fulfillment] Created registration with ID: ${deterministicId}`);
+            } catch (createError: any) {
+                // If document already exists (409), then it's already fulfilled
+                if (createError.code === 409) {
+                    console.log(`[Fulfillment] Registration already exists for ID: ${deterministicId}`);
+                } else {
+                    throw createError;
+                }
             }
 
             if (itemType === 'WORKSHOP') {

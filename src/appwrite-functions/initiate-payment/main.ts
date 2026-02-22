@@ -61,6 +61,11 @@ export default async ({ req, res, log, error }: any) => {
         let userIdHeader = req.headers['x-appwrite-user-id'];
         let userId = Array.isArray(userIdHeader) ? userIdHeader[0] : userIdHeader;
 
+        // Fallback to bodyJson.userId if header is missing (e.g. Admin execution)
+        if (!userId) {
+            userId = req.bodyJson.userId;
+        }
+
         // Allow guest for ICDTSES
         if (!userId) {
             if (type === 'EVENT' && event_id === ICDTSES_EVENT_ID) {

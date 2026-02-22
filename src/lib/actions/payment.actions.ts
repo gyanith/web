@@ -37,12 +37,9 @@ export async function initiatePayment(
         // Previously used Session Client, but Admin is safer for server-side trigger ensuring execution
 
         let getFunctions: any;
-        if (type === "CONFERENCE") {
-            getFunctions = (await createAdminClient()).getFunctions;
-        }
-        else {
-            getFunctions = (await createSessionClient()).getFunctions;
-        }
+        // Modified: Always use Admin client for non-session types or when specifically needed.
+        // Actually, let's use Admin client for everything to be safe, as it's a server action.
+        getFunctions = (await createAdminClient()).getFunctions;
         const functions = getFunctions();
         const FUNCTION_ID = '697d1058001561c91266';
 

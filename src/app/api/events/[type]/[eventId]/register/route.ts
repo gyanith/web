@@ -3,6 +3,7 @@ import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
 import { createAdminClient } from "@/lib/appwrite/appwrite.server";
 import { ID, Query } from "node-appwrite";
 import { NextRequest, NextResponse } from "next/server";
+import { getRegistrationId } from "@/lib/helpers/registration.helper";
 
 export async function POST(
     request: NextRequest,
@@ -105,15 +106,23 @@ export async function POST(
         }
 
         // 7. Create Registration
-        await tablesDB.createRow(
-            appwriteConfig.databaseId,
-            appwriteConfig.registrationsCollectionId,
-            ID.unique(),
-            {
-                event_id: eventId,
-                user_id: user.$id,
+        const registrationId = getRegistrationId(user.$id, eventId);
+        try {
+            await tablesDB.createRow(
+                appwriteConfig.databaseId,
+                appwriteConfig.registrationsCollectionId,
+                registrationId,
+                {
+                    event_id: eventId,
+                    user_id: user.$id,
+                }
+            );
+        } catch (regError: any) {
+            if (regError.code === 409) {
+                return NextResponse.json({ message: "Already registered" }, { status: 200 });
             }
-        );
+            throw regError;
+        }
 
         // 8. Decrement num_seats
         if (event.num_seats > 0) {
