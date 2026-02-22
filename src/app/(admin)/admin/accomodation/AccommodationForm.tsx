@@ -64,9 +64,9 @@ export default function AccommodationForm() {
   // Calculate Price Effect
   useEffect(() => {
     let calculatedPrice = 0;
-    // 200/day + 150 caution
+    // 150/day + 150 caution
     if (formData.day.length > 0) {
-      calculatedPrice = formData.day.length * 200 + 150;
+      calculatedPrice = formData.day.length * 150 + 150;
     }
     setPrice(calculatedPrice);
   }, [formData.day]);
@@ -380,8 +380,8 @@ export default function AccommodationForm() {
                 </DropdownMenu>
               </div>
               <div className="col-span-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
-                Base: ₹{formData.day.length * 200} ({formData.day.length} days)
-                + Caution: ₹150. Total: ₹{formData.day.length * 200 + 150}
+                Base: ₹{formData.day.length * 150} ({formData.day.length} days)
+                + Caution: ₹150. Total: ₹{formData.day.length * 150 + 150}
               </div>
             </div>
           </div>

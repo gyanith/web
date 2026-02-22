@@ -209,10 +209,12 @@ export default async ({ req, res, log, error }: any) => {
                 return res.json({ success: false, message: "User has already booked accommodation" }, 409);
             }
 
+            const accommodationId = `accomm_${userId}`;
+
             const accommodation = await databases.createDocument(
                 process.env.DB_ID!,
                 process.env.ACCOMMODATION_COLLECTION_ID!,
-                ID.unique(),
+                accommodationId,
                 {
                     user_id: userId,
                     transaction_id: null,
