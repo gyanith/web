@@ -258,7 +258,7 @@ export default function AccommodationClient({
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative z-10 w-full max-w-md"
+        className="relative z-10 w-full max-w-md lg:max-w-5xl"
       >
         <div
           className="bg-[#070a10]/95 backdrop-blur-xl border border-[#d4a574]/30 p-1 shadow-[0_0_50px_rgba(212,165,116,0.1)]"
@@ -268,150 +268,186 @@ export default function AccommodationClient({
           }}
         >
           <div
-            className="border border-[#d4a574]/10 p-6 md:p-8 flex flex-col gap-8 bg-black/40 min-h-[400px]"
+            className="border border-[#d4a574]/10 p-6 md:p-10 flex flex-col gap-8 bg-black/40"
             style={{
               clipPath:
                 "polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)",
             }}
           >
-            {/* Header */}
-            <div className="text-center space-y-4">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Home className="w-5 h-5 text-[#d4a574]" />
-                <div
-                  className={`text-[#d4a574] text-xs tracking-[0.3em] uppercase ${unispace.className}`}
-                >
-                  Residence Access
-                </div>
-              </div>
-              <h1
-                className={`${pressStart2P.className} text-xl md:text-2xl text-white uppercase leading-relaxed`}
-              >
-                Book Stay
-              </h1>
-              <div className="h-[1px] w-full bg-linear-to-r from-transparent via-[#d4a574]/50 to-transparent" />
-            </div>
-
-            {/* Error Display */}
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="bg-red-900/20 border-l-2 border-red-500 p-3 text-red-400 text-xs font-mono"
-                >
-                  [ERROR]: {error}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Form Fields */}
-            <div className="space-y-6 shrink-0">
-              <div className="space-y-2 relative">
-                <label
-                  className={`block text-[#d4a574]/70 text-[10px] uppercase tracking-wider ${unispace.className}`}
-                >
-                  Assigned Hostel
-                </label>
-                <div className="w-full p-3 bg-black/50 border border-zinc-700 text-white font-mono text-sm">
-                  {formData.hostel}
-                  <span className="ml-2 text-xs text-zinc-500">
-                    (
-                    {gender.toLowerCase() === "female"
-                      ? "Bhavani"
-                      : "Bharani/Ganga"}
-                    )
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  className={`block text-[#d4a574]/70 text-[10px] uppercase tracking-wider mb-2 ${unispace.className}`}
-                >
-                  Select Days
-                </label>
-                <div className="flex gap-4">
-                  {[1, 2, 3].map((day) => (
-                    <button
-                      key={day}
-                      type="button"
-                      onClick={() => handleDayToggle(day)}
-                      className={`flex-1 py-3 border ${
-                        formData.day.includes(day)
-                          ? "border-[#d4a574] bg-[#d4a574]"
-                          : "border-zinc-700 bg-black/50 hover:border-[#d4a574]/50"
-                      } transition-all duration-300 relative group overflow-hidden`}
-                      style={{
-                        clipPath:
-                          "polygon(10px 0, 100% 0, 100% calc(100% - 10px), 0 100%, 0 0)", // customized slant
-                      }}
+            <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
+              {/* Left Column: Header & Information */}
+              <div className="space-y-8">
+                <div className="text-center lg:text-left space-y-4">
+                  <div className="flex items-center justify-center lg:justify-start gap-2 mb-2">
+                    <Home className="w-5 h-5 text-[#d4a574]" />
+                    <div
+                      className={`text-[#d4a574] text-xs tracking-[0.3em] uppercase ${unispace.className}`}
                     >
-                      <span
-                        className={`${unispace.className} text-sm ${
-                          formData.day.includes(day)
-                            ? "text-black font-bold"
-                            : "text-zinc-400 group-hover:text-white"
-                        }`}
-                      >
-                        DAY {day}
+                      Residence Access
+                    </div>
+                  </div>
+                  <h1
+                    className={`${pressStart2P.className} text-xl md:text-2xl lg:text-3xl text-white uppercase leading-relaxed`}
+                  >
+                    Book Stay
+                  </h1>
+                  <div className="h-[1px] w-full bg-linear-to-r from-transparent via-[#d4a574]/50 to-transparent lg:to-transparent" />
+                </div>
+
+                <div className="hidden lg:block space-y-6">
+                  <div className="p-4 bg-[#d4a574]/5 border border-[#d4a574]/20 rounded-sm space-y-3 font-mono text-[11px] leading-relaxed text-zinc-400">
+                    <p>
+                      <span className="text-[#d4a574]">SYSTEM NOTICE:</span> All
+                      registrations for accommodation are subject to room
+                      availability.
+                    </p>
+                    <p>
+                      Your hostel assignment is based on gender:
+                      <br />
+                      <span className="text-white">
+                        FEMALE → BHAVANI
+                        <br />
+                        MALE → BHARANI/GANGA
                       </span>
-                    </button>
-                  ))}
+                    </p>
+                    <p>
+                      Please ensure your selected days are correct. Extensions
+                      must be handled at the registration desk.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-[#d4a574]/60 text-[10px] tracking-widest uppercase">
+                    <div className="h-[1px] flex-1 bg-[#d4a574]/20" />
+                    <span>Security Protocol Active</span>
+                    <div className="h-[1px] flex-1 bg-[#d4a574]/20" />
+                  </div>
                 </div>
+
+                {/* Error Display (Injected here for visibility) */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-red-900/20 border-l-2 border-red-500 p-3 text-red-400 text-xs font-mono mb-4"
+                    >
+                      [ERROR]: {error}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-              <div className="p-4 bg-[#d4a574]/5 border border-[#d4a574]/20 rounded-sm">
-                <div className="flex justify-between items-center text-xs mb-2">
-                  <span className="text-zinc-400 font-mono">
-                    BASE PRICE (₹150 x{" "}
-                    {formData.day.length > 0 ? formData.day.length : 0})
-                  </span>
-                  <span className="text-[#d4a574] font-mono">
-                    ₹{formData.day.length * 150}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-xs mb-2">
-                  <span className="text-zinc-400 font-mono">
-                    CAUTION DEPOSIT [Refundable]
-                  </span>
-                  <span className="text-[#d4a574] font-mono">₹150</span>
-                </div>
-                <div className="h-[1px] w-full bg-[#d4a574]/20 my-2" />
-                <div className="flex justify-between items-center text-sm font-bold">
-                  <span className="text-white font-mono">TOTAL</span>
-                  <span className="text-[#d4a574] font-mono">
-                    ₹{formData.day.length * 150 + 150}
-                  </span>
-                </div>
-              </div>
+              {/* Right Column: Interaction Form */}
+              <div className="space-y-8 mt-8 lg:mt-0">
+                <div className="space-y-6">
+                  <div className="space-y-2 relative">
+                    <label
+                      className={`block text-[#d4a574]/70 text-[10px] uppercase tracking-wider ${unispace.className}`}
+                    >
+                      Assigned Hostel
+                    </label>
+                    <div className="w-full p-3 bg-black/50 border border-zinc-800 text-white font-mono text-sm">
+                      {formData.hostel}
+                      <span className="ml-2 text-xs text-zinc-500">
+                        (
+                        {gender.toLowerCase() === "female"
+                          ? "Bhavani"
+                          : "Bharani/Ganga"}
+                        )
+                      </span>
+                    </div>
+                  </div>
 
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className={`w-full bg-[#d4a574] text-black font-bold uppercase py-4 tracking-widest hover:bg-[#b88d5e] transition-colors relative overflow-hidden group disabled:opacity-50 disabled:cursor-wait cursor-pointer ${unispace.className}`}
-                style={{
-                  clipPath:
-                    "polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)",
-                }}
-              >
-                {isLoading ? (
-                  <span className="animate-pulse">PROCESSING...</span>
-                ) : (
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    INITIATE PAYMENT
-                    <ChevronRight className="w-4 h-4" />
-                  </span>
-                )}
-                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
-              </button>
+                  <div>
+                    <label
+                      className={`block text-[#d4a574]/70 text-[10px] uppercase tracking-wider mb-3 ${unispace.className}`}
+                    >
+                      Select Stay Days
+                    </label>
+                    <div className="flex gap-3">
+                      {[1, 2, 3].map((day) => (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => handleDayToggle(day)}
+                          className={`flex-1 py-4 border ${
+                            formData.day.includes(day)
+                              ? "border-[#d4a574] bg-[#d4a574]"
+                              : "border-zinc-800 bg-black/50 hover:border-[#d4a574]/50"
+                          } transition-all duration-300 relative group overflow-hidden`}
+                          style={{
+                            clipPath:
+                              "polygon(10px 0, 100% 0, 100% calc(100% - 10px), 0 100%, 0 0)",
+                          }}
+                        >
+                          <span
+                            className={`${unispace.className} text-sm ${
+                              formData.day.includes(day)
+                                ? "text-black font-bold"
+                                : "text-zinc-500 group-hover:text-white"
+                            }`}
+                          >
+                            DAY {day}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="p-3 bg-yellow-900/10 border border-yellow-500/20 text-yellow-500/80 text-[10px] font-mono text-center leading-relaxed">
-                NOTE: Updates to accommodation details (e.g. adding days) can
-                only be made in-person at the college registration desk upon
-                arrival. Please book carefully.
+                  <div className="p-4 bg-zinc-900/30 border border-zinc-800 rounded-sm">
+                    <div className="flex justify-between items-center text-[11px] mb-2 uppercase tracking-tighter">
+                      <span className="text-zinc-500 font-mono">
+                        Base (₹150 x{" "}
+                        {formData.day.length > 0 ? formData.day.length : 0})
+                      </span>
+                      <span className="text-white font-mono">
+                        ₹{formData.day.length * 150}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] mb-2 uppercase tracking-tighter">
+                      <span className="text-zinc-500 font-mono">
+                        Refundable Deposit
+                      </span>
+                      <span className="text-white font-mono">₹150</span>
+                    </div>
+                    <div className="h-[1px] w-full bg-zinc-800 my-3" />
+                    <div className="flex justify-between items-center text-sm font-bold">
+                      <span className="text-zinc-400 font-mono tracking-widest uppercase">
+                        Total
+                      </span>
+                      <span className="text-[#d4a574] font-mono text-lg">
+                        ₹{formData.day.length * 150 + 150}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                    className={`w-full bg-[#d4a574] text-black font-bold uppercase py-5 tracking-widest hover:bg-[#b88d5e] transition-colors relative overflow-hidden group disabled:opacity-50 disabled:cursor-wait cursor-pointer shadow-[0_4px_15px_rgba(212,165,116,0.3)] ${unispace.className}`}
+                    style={{
+                      clipPath:
+                        "polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 20px) 100%, 0 100%, 0 10px)",
+                    }}
+                  >
+                    {isLoading ? (
+                      <span className="animate-pulse">PROCESSING...</span>
+                    ) : (
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        INITIATE PAYMENT
+                        <ChevronRight className="w-5 h-5" />
+                      </span>
+                    )}
+                    <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
+                  </button>
+
+                  <div className="lg:hidden p-3 bg-yellow-900/10 border border-yellow-500/20 text-yellow-500/80 text-[10px] font-mono text-center leading-relaxed">
+                    NOTE: Updates to accommodation details can only be made
+                    in-person at the college registration desk.
+                  </div>
+                </div>
               </div>
             </div>
           </div>
