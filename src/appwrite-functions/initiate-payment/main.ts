@@ -1,4 +1,5 @@
 import { Client, Databases, ID, Query } from 'node-appwrite';
+import crypto from 'crypto';
 
 // helper function - get fee from events table
 async function getEventFee(event_id: string, databases: Databases) {
@@ -53,39 +54,53 @@ export default async ({ req, res, log, error }: any) => {
             throw new Error('Request body missing');
         }
 
-        const { type, event_id } = req.bodyJson; // Extract event_id early for check
+        const { type } = req.bodyJson; // Extract event_id early for check
 
         // ICDTSES Configuration
         const ICDTSES_EVENT_ID = "tech_6994b818002154469eb4";
 
         let userIdHeader = req.headers['x-appwrite-user-id'];
-        let userId = Array.isArray(userIdHeader) ? userIdHeader[0] : userIdHeader;
+        let userId = Array.isArray(userIdHeader)
+            ? userIdHeader[0]
+            : userIdHeader;
 
-        // Fallback to bodyJson.userId if header is missing (e.g. Admin execution)
-        if (!userId) {
+        // Log the raw body and headers for debugging
+        log(`[DEBUG] Headers: ${JSON.stringify(req.headers)}`);
+        log(`[DEBUG] Body: ${JSON.stringify(req.bodyJson)}`);
+
+        // Fallback to bodyJson.userId if header is missing
+        if (!userId && req.bodyJson && req.bodyJson.userId) {
             userId = req.bodyJson.userId;
+            log(`[DEBUG] Using userId from payload: ${userId}`);
         }
 
-        // Allow guest for ICDTSES
         if (!userId) {
-            if (type === 'EVENT' && event_id === ICDTSES_EVENT_ID) {
-                // Generate a guest ID (using a consistent prefix might help, but for now unique)
-                // We'll use "guest_" + random string, but verify if ID constraints allow.
-                // Cashfree customer_id allows alphanumeric, underscores.
-                userId = `guest_${ID.unique()}`;
+            log(`[ERROR] userId is missing after all attempts.`);
+        }
+
+        // Allow guest for CONFERENCE (ICDTSES)
+        if (!userId) {
+            if (type === 'CONFERENCE') {
+                userId = `guest_${crypto.randomBytes(4).toString('hex')}`;
+                log(`[DEBUG] Created guest userId: ${userId}`);
             } else {
+                error(`[ERROR] Unauthorized attempt for type: ${type}`);
                 return res.json({ success: false, message: 'Unauthenticated' }, 401);
             }
         }
+
         let amount = 0;
         let itemId: string | null = null;
         let itemType = type; // Default to incoming type
         let baseUrl: string = "https://gyanith.org";
         let returnUrl: string = "";
 
+        // Standardize itemType: Map EVENT to FUN for consistent internal handling
+        if (type === 'EVENT') itemType = 'FUN';
+
         let customerName = `User_${userId}`;
         let customerEmail = "";
-        let customerPhone = "9999999999";
+        let customerPhone = "9999000000";
 
         // Using Env var or fallback for Conference Collection
         const CONFERENCE_COLLECTION_ID = process.env.CONFERENCE_COLLECTION_ID || "69958e9000007bbf324d";
@@ -126,69 +141,66 @@ export default async ({ req, res, log, error }: any) => {
         }
 
         /* ---------------- EVENT ---------------- */
-        else if (type === 'EVENT') {
-            // event_id already extracted above
+        else if (type === 'CONFERENCE') {
+            const { event_id } = req.bodyJson;
 
-            // --- ICDTSES SPECIAL HANDLING ---
-            if (event_id === ICDTSES_EVENT_ID) {
-                const { user_type, name, email, paper_id } = req.bodyJson;
+            const { user_type, name, email, paper_id } = req.bodyJson;
 
-                // Validate required fields
-                if (!user_type || !name || !email || !paper_id) {
-                    return res.json({ success: false, message: 'Missing fields: name, email, paper_id, user_type' }, 400);
-                }
-
-                // Set Customer Details from Form
-                customerName = name;
-                customerEmail = email;
-
-                // Duplicate Check (Email + Paper ID + Paid=true)
-                const existing = await databases.listDocuments(
-                    process.env.DB_ID!,
-                    CONFERENCE_COLLECTION_ID,
-                    [
-                        Query.equal('email', email),
-                        Query.equal('paper_id', paper_id),
-                        Query.equal('paid', true)
-                    ]
-                );
-
-                if (existing.total > 0) {
-                    return res.json({ success: false, message: "Registration already exists for this Paper ID and Email." }, 409);
-                }
-
-                // Calculate Amount
-                if (user_type === 'STUDENT') amount = PRICES.conference.student;
-                else if (user_type === 'FACULTY') amount = PRICES.conference.faculty;
-                else if (user_type === 'ATTENDEE') amount = PRICES.conference.attendee; // Added ATTENDEE as per user
-                else return res.json({ success: false, message: 'Invalid user type' }, 400);
-
-                // Create Conference Document
-                const confDoc = await databases.createDocument(
-                    process.env.DB_ID!,
-                    CONFERENCE_COLLECTION_ID,
-                    ID.unique(),
-                    {
-                        name,
-                        email,
-                        paper_id,
-                        user_type,
-                        // user_id: userId, // Removed: Not in schema
-                        paid: false,
-                        payment_id: null // Will update with transaction ID
-                    }
-                );
-
-                itemId = confDoc.$id;
-                itemType = 'CONFERENCE'; // Override type for Transaction and Webhook
-                returnUrl = `${baseUrl}/icdtses`;
-
-            } else {
-                // Standard Event
-                returnUrl = `${baseUrl}/events/fun/${event_id}`;
-                amount = await getEventFee(event_id, databases);
-                itemId = event_id;
+            // Validate required fields
+            if (!user_type || !name || !email || !paper_id) {
+                return res.json({ success: false, message: 'Missing fields: name, email, paper_id, user_type' }, 400);
             }
+
+            // Set Customer Details from Form
+            customerName = name;
+            customerEmail = email;
+
+            // Duplicate Check (Email + Paper ID + Paid=true)
+            const existing = await databases.listDocuments(
+                process.env.DB_ID!,
+                process.env.CONFERENCE_COLLECTION_ID!,
+                [
+                    Query.equal('email', email),
+                    Query.equal('paper_id', paper_id),
+                    Query.equal('paid', true)
+                ]
+            );
+
+            if (existing.total > 0) {
+                return res.json({ success: false, message: "Registration already exists for this Paper ID and Email." }, 409);
+            }
+
+            // Calculate Amount
+            if (user_type === 'STUDENT') amount = PRICES.conference.student;
+            else if (user_type === 'FACULTY') amount = PRICES.conference.faculty;
+            else if (user_type === 'ATTENDEE') amount = PRICES.conference.attendee; // Added ATTENDEE as per user
+            else return res.json({ success: false, message: 'Invalid user type' }, 400);
+
+            // Create Conference Document
+            const confDoc = await databases.createDocument(
+                process.env.DB_ID!,
+                process.env.CONFERENCE_COLLECTION_ID!,
+                ID.unique(),
+                {
+                    name,
+                    email,
+                    paper_id,
+                    user_type,
+                    paid: false,
+                    payment_id: null // Will update with transaction ID
+                }
+            );
+
+            itemId = confDoc.$id;
+            returnUrl = `${baseUrl}/icdtses`;
+        }
+
+        /*------------------ FUN / EVENT -----------------*/
+        else if (type === "FUN" || type === "EVENT") {
+            const { event_id } = req.bodyJson;
+            returnUrl = `${baseUrl}/events/fun/${event_id}`;
+            amount = await getEventFee(event_id, databases);
+            itemId = event_id;
         }
 
         /* ---------------- ACCOMM ---------------- */
@@ -209,12 +221,10 @@ export default async ({ req, res, log, error }: any) => {
                 return res.json({ success: false, message: "User has already booked accommodation" }, 409);
             }
 
-            const accommodationId = `accomm_${userId}`;
-
             const accommodation = await databases.createDocument(
                 process.env.DB_ID!,
                 process.env.ACCOMMODATION_COLLECTION_ID!,
-                accommodationId,
+                ID.unique(),
                 {
                     user_id: userId,
                     transaction_id: null,
@@ -236,8 +246,25 @@ export default async ({ req, res, log, error }: any) => {
             if (!item_id) return res.json({ success: false, message: 'item_id required' }, 400);
             if (!(tier in PRICES.tier)) return res.json({ success: false, message: 'Invalid tier' }, 400);
 
+            //CHECK IF TIER ALREADY EXISTS - UPGRADE TIER CASE
+            const user = await databases.getDocument(
+                process.env.DB_ID!,
+                process.env.USERS_COLLECTION_ID!,
+                userId
+            );
+
+            if (!user.tier) { //FIRST TIME BUY TICKET
+                amount = PRICES.tier[tier];
+            }
+            else {//UPGRADE CASE
+                const oldTier = String(user.tier) as Tier;
+                if (!(oldTier in PRICES.tier)) {
+                    return res.json({ success: false, message: 'Invalid existing tier' }, 400);
+                }
+                amount = PRICES.tier[tier] - PRICES.tier[oldTier];
+            }
+
             itemId = item_id;
-            amount = PRICES.tier[tier];
         }
 
         else {
@@ -268,7 +295,7 @@ export default async ({ req, res, log, error }: any) => {
             await databases.updateDocument(process.env.DB_ID!, process.env.ACCOMMODATION_COLLECTION_ID!, itemId!, { transaction_id: transactionId });
         } else if (itemType === 'CONFERENCE') {
             // Link to conference doc
-            await databases.updateDocument(process.env.DB_ID!, CONFERENCE_COLLECTION_ID, itemId!, { payment_id: transactionId });
+            await databases.updateDocument(process.env.DB_ID!, process.env.CONFERENCE_COLLECTION_ID!, itemId!, { payment_id: transactionId });
         }
 
         /* ---------------- CASHFREE ORDER ---------------- */
@@ -280,8 +307,8 @@ export default async ({ req, res, log, error }: any) => {
                 userId
             );
             if (user) {
-                if (!customerEmail) customerEmail = user.email;
-                if (user.phone) customerPhone = user.phone.toString();
+                customerEmail = user.email;
+                customerPhone = user.phone.toString();
             }
         } catch (e) {
             console.log("User fetch failed or user not found, proceeding with defaults/payload.");

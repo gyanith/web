@@ -40,6 +40,12 @@ export async function initiatePayment(
         // Modified: Always use Admin client for non-session types or when specifically needed.
         // Actually, let's use Admin client for everything to be safe, as it's a server action.
         getFunctions = (await createAdminClient()).getFunctions;
+
+        if (type === "CONFERENCE") {
+            getFunctions = (await createAdminClient()).getFunctions;
+        } else {
+            getFunctions = (await createSessionClient()).getFunctions;
+        }
         const functions = getFunctions();
         const FUNCTION_ID = '697d1058001561c91266';
 
@@ -83,7 +89,7 @@ export async function initiatePayment(
             userId: userId // Explicitly pass userId for Admin Client calls
         };
 
-        if (payload.type === 'WORKSHOP') {
+        if (payload.type === 'WORKSHOP' || payload.type === 'EVENT') {
             payload.event_id = data.eventId;
         } else if (payload.type === 'CONFERENCE') {
             payload.event_id = data.eventId;
