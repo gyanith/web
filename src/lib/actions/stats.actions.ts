@@ -75,48 +75,79 @@ export async function getTotalRevenue() {
 export async function getTotalRegistrations() {
     try {
         const { getTablesDB } = await createAdminClient();
-        const db = getTablesDB();
+        const tablesDB = getTablesDB();
 
-        const fetchCount = async (collectionId: string) => {
-            if (!collectionId) return 0;
-            try {
-                const res = await db.listRows(
-                    appwriteConfig.databaseId,
-                    collectionId,
-                    [Query.limit(1)]
-                );
-                return res.total;
-            } catch (e) {
-                console.error(`Error fetching count for ${collectionId}:`, e);
-                return 0;
-            }
+        // Count by item_type from transactions table (status = SUCCESS only)
+        const countByType: Record<string, number> = {
+            WORKSHOP: 0,
+            MERCH: 0,
+            ACCOMM: 0,
+            TICKET: 0,
+            ORION: 0,
+            EVENT: 0,
+            FUN: 0,
+            CONFERENCE: 0,
         };
 
-        const [events, conference, accommodation, merch] = await Promise.all([
-            fetchCount(appwriteConfig.registrationsCollectionId),
-            fetchCount(appwriteConfig.conferenceCollectionId),
-            fetchCount(appwriteConfig.accommodationCollectionId),
-            fetchCount(appwriteConfig.merchCollectionId)
-        ]);
+        let hasNextPage = true;
+        let lastId: string | null = null;
+
+        while (hasNextPage) {
+            const queries = [
+                Query.equal("status", "SUCCESS"),
+                Query.limit(100),
+            ];
+            if (lastId) queries.push(Query.cursorAfter(lastId));
+
+            const response = await tablesDB.listRows({
+                databaseId: appwriteConfig.databaseId,
+                tableId: appwriteConfig.transactionsCollectionId,
+                queries,
+            });
+
+            if (response.rows.length === 0) break;
+
+            response.rows.forEach((doc: any) => {
+                const type: string = doc.item_type || "UNKNOWN";
+                if (type in countByType) {
+                    countByType[type]++;
+                }
+            });
+
+            lastId = response.rows[response.rows.length - 1].$id;
+            if (response.rows.length < 100) hasNextPage = false;
+        }
+
+        // 'events' bucket = workshops + events + fun events (all create registrations)
+        const events = countByType.WORKSHOP + countByType.EVENT + countByType.FUN;
 
         return {
-            total: events + conference + accommodation + merch,
+            total: Object.values(countByType).reduce((a, b) => a + b, 0),
             events,
-            conference,
-            accommodation,
-            merch
+            workshop: countByType.WORKSHOP,
+            event: countByType.EVENT + countByType.FUN,
+            conference: countByType.CONFERENCE,
+            accommodation: countByType.ACCOMM,
+            merch: countByType.MERCH,
+            ticket: countByType.TICKET,
+            orion: countByType.ORION,
         };
     } catch (error) {
         console.error("Error fetching total registrations:", error);
         return {
             total: 0,
             events: 0,
+            workshop: 0,
+            event: 0,
             conference: 0,
             accommodation: 0,
-            merch: 0
+            merch: 0,
+            ticket: 0,
+            orion: 0,
         };
     }
 }
+
 
 export async function getRegistrationGraphData() {
     try {

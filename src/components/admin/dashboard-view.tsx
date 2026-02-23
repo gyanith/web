@@ -53,10 +53,14 @@ interface DashboardViewProps {
     totalEvents: number;
     totalRegistrations: {
       total: number;
-      events: number;
+      events: number; // workshops + events + fun (all create registrations)
+      workshop: number;
+      event: number; // EVENT + FUN
       conference: number;
       accommodation: number;
       merch: number;
+      ticket: number;
+      orion: number;
     };
     totalRevenue: {
       total: number;
@@ -183,10 +187,11 @@ export function DashboardView({
           </CardContent>
         </Card>
 
-        {/* Registrations */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Registrations</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Successful Payments
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -195,9 +200,15 @@ export function DashboardView({
             </div>
             <div className="mt-4 space-y-2 text-xs">
               <div className="flex justify-between items-center text-muted-foreground">
-                <span>Events</span>
+                <span>Workshops</span>
                 <span className="text-white font-mono">
-                  {stats.totalRegistrations.events}
+                  {stats.totalRegistrations.workshop}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Events (Fun)</span>
+                <span className="text-white font-mono">
+                  {stats.totalRegistrations.event}
                 </span>
               </div>
               <div className="flex justify-between items-center text-muted-foreground">
@@ -216,6 +227,18 @@ export function DashboardView({
                 <span>Merch Orders</span>
                 <span className="text-white font-mono">
                   {stats.totalRegistrations.merch}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Tickets</span>
+                <span className="text-white font-mono">
+                  {stats.totalRegistrations.ticket}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Orion</span>
+                <span className="text-white font-mono">
+                  {stats.totalRegistrations.orion}
                 </span>
               </div>
             </div>
