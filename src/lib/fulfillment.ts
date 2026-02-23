@@ -139,8 +139,8 @@ export async function processFulfillment(db: any, transaction: any, userId: stri
             return { success: true, message: "Accommodation already success" };
         }
 
-        // --- WORKSHOP & EVENT ---
-        else if (itemType === 'WORKSHOP' || itemType === 'EVENT') {
+        // --- WORKSHOP & EVENT (FUN is the internal alias for EVENT set in main.ts) ---
+        else if (itemType === 'WORKSHOP' || itemType === 'EVENT' || itemType === 'FUN') {
             const deterministicId = getRegistrationId(userId, itemId);
 
             try {
@@ -154,6 +154,25 @@ export async function processFulfillment(db: any, transaction: any, userId: stri
                     }
                 );
                 console.log(`[Fulfillment] Created registration with ID: ${deterministicId}`);
+
+                // Decrement num_seats on the event
+                try {
+                    const eventForSeats = await db.getRow(
+                        appwriteConfig.databaseId,
+                        appwriteConfig.eventsCollectionId,
+                        itemId
+                    );
+                    if (eventForSeats && eventForSeats.num_seats > 0) {
+                        await db.updateRow(
+                            appwriteConfig.databaseId,
+                            appwriteConfig.eventsCollectionId,
+                            itemId,
+                            { num_seats: eventForSeats.num_seats - 1 }
+                        );
+                    }
+                } catch (seatErr) {
+                    console.error('[Fulfillment] Failed to decrement num_seats:', seatErr);
+                }
             } catch (createError: any) {
                 // If document already exists (409), then it's already fulfilled
                 if (createError.code === 409) {
