@@ -146,8 +146,6 @@ export default function EventDetailsClient({
     setShowConfirmModal(false);
 
     try {
-      const amount = Number(eventData.fee);
-
       // Step 1: Initiate Payment
       const initResult = await initiatePayment(
         isWorkshop ? "WORKSHOP" : "EVENT",
@@ -162,7 +160,9 @@ export default function EventDetailsClient({
         throw new Error(initResult.error || "Failed to initiate payment");
       }
 
-      // Cashfree Flow (Default)
+      const orderId = initResult.orderId;
+
+      // Step 2: Open Cashfree modal
       const cashfree = await load({
         mode:
           process.env.NEXT_PUBLIC_PAYMENT_ENV === "PRODUCTION"
@@ -172,22 +172,36 @@ export default function EventDetailsClient({
 
       await cashfree.checkout({
         paymentSessionId: initResult.paymentSessionId || "",
-        // returnUrl: window.location.href,
         redirectTarget: "_modal",
       });
 
-      // Verify payment status after modal closes or redirects
-      // Note: Cashfree modal redirect usually reloads the page or hits the returnUrl.
-      // If using '_modal' with correct setup, it might just close.
-      // However, usually returnURL handles the verification via useEffect.
+      // Step 3: Verify payment after modal closes (modal doesn't add ?order_id to URL)
+      toast.success("Verifying payment...");
+      const verifyResult = await verifyCashfreePayment(orderId);
 
-      setLoading(false);
-      router.refresh();
+      if (verifyResult.success) {
+        setIsRegistered(true);
+        if (isWorkshop) {
+          toast.success(
+            "Successfully registered for the workshop! 1 Tech Credit added.",
+          );
+        } else {
+          toast.success("Successfully registered!");
+        }
+        router.refresh();
+      } else {
+        toast.error(
+          verifyResult.error ||
+            "Payment could not be verified. Please contact support if you were charged.",
+        );
+        router.refresh();
+      }
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(error.message || "Failed to initiate payment");
-      setLoading(false);
       router.refresh();
+    } finally {
+      setLoading(false);
     }
   };
 
