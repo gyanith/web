@@ -46,7 +46,7 @@ export default function Home() {
             </GlassSurface>
           </Link>
           <Link
-            href="https://gyanith-conference.vercel.app/"
+            href="https://gyanith-conference-pi.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
           >
