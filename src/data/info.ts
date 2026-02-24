@@ -5,7 +5,7 @@ export const coreTeam = [
         name: "Lokesh",
         team: "Core",
         role: "General Secretary",
-        imageId: "",
+        imageId: "699d86980011862b1a01",
         phone: ""
     },
     {
