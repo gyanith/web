@@ -24,10 +24,10 @@ export const coreTeam = [
     },
 
     {
-        name: "Naufil",
+        name: "Nofel Ahmed",
         team: "Core",
         role: "External Coordinator",
-        imageId: "6985d042002e1d0d140b",
+        imageId: "699d852b003bd5e9af49",
         phone: ""
     },
 
@@ -108,7 +108,7 @@ export const allTeam = [
         name: "Jayasoorya K",
         team: "Stalls & Infra",
         role: "Co-Lead",
-        imageId: "",
+        imageId: "699d83770033ce7563e1",
         phone: ""
     },
 
@@ -140,7 +140,23 @@ export const allTeam = [
         name: "Arunkumar M",
         team: "Printing",
         role: "Team Lead",
-        imageId: "6984ea05003b9d3d7ce7",
+        imageId: "699d8427000b71a1d13d",
+        phone: ""
+    },
+
+    {
+        name: "Karthigeyan",
+        team: "Printing",
+        role: "Member",
+        imageId: "699d847700145aeb001a",
+        phone: ""
+    },
+
+    {
+        name: "Dhanyesh",
+        team: "Printing",
+        role: "Member",
+        imageId: "699d849500344eb48526",
         phone: ""
     },
 
@@ -148,7 +164,7 @@ export const allTeam = [
         name: "A Avinash",
         team: "Refreshment",
         role: "Team Lead",
-        imageId: "6984e655001ab3a93afa",
+        imageId: "699d85060000ef960677",
         phone: ""
     },
 
@@ -172,7 +188,7 @@ export const allTeam = [
         name: "M M Nidhipa",
         team: "Publicity",
         role: "Team Lead",
-        imageId: "696d1fbd00335f2484c2",
+        imageId: "699d858a003196950323",
         phone: ""
     },
 
@@ -233,7 +249,7 @@ export const allTeam = [
         name: "Sayima Aafreen M",
         team: "Decorations",
         role: "Team Lead",
-        imageId: "696d20180023ff7afa1c",
+        imageId: "699d826f001b6f1f52bd",
         phone: ""
     },
     {
@@ -289,11 +305,13 @@ export const allTeam = [
         phone: ""
     },
 
+
+
     {
         name: "Sumbul Ansari",
         team: "Anchoring & Event Management",
         role: "Team Lead",
-        imageId: "696d20350001f67d3558",
+        imageId: "699d84dc003aa97f2714",
         phone: ""
     },
     {
@@ -338,7 +356,7 @@ export const contactDetails: Record<string, { name: string; contact: string }[]>
     ],
     "Marketing": [
         {
-            name: "Naufil",
+            name: "Nofel Ahmed",
             contact: "+91 82206 24493"
         }
     ],
