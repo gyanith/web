@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -31,17 +31,28 @@ type Props = {
   eventId: string;
 };
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export default function RegistrationsTableClient({
   registrations,
   eventName,
   eventId,
 }: Props) {
   const [downloading, setDownloading] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const toggleExpand = (id: string) =>
+    setExpandedId((prev) => (prev === id ? null : id));
 
   const handleDownload = () => {
     setDownloading(true);
     try {
-      // Define CSV headers
       const headers = [
         "Sl.No",
         "Name",
@@ -52,30 +63,24 @@ export default function RegistrationsTableClient({
         "Registered On",
         "Check-in Status",
       ];
-
-      // Map data to rows
       const rows = registrations.map((reg, index) => [
         index + 1,
-        `"${reg.user.name || ""}"`, // Quote strings to handle commas
+        `"${reg.user.name || ""}"`,
         `"${reg.user.email || ""}"`,
         `"${reg.user.phone || ""}"`,
         `"${reg.user.college || ""}"`,
         `"${reg.user.gender || ""}"`,
         `"${new Date(reg.$createdAt).toLocaleString()}"`,
-        "Pending", // Placeholder for now
+        "Pending",
       ]);
-
-      // Combine headers and rows
       const csvContent = [
         headers.join(","),
-        ...rows.map((row) => row.join(",")),
+        ...rows.map((r) => r.join(",")),
       ].join("\n");
-
-      // Create Blob
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob(["\uFEFF" + csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
       const url = URL.createObjectURL(blob);
-
-      // Create download link
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute(
@@ -85,6 +90,7 @@ export default function RegistrationsTableClient({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Download failed:", error);
       alert("Failed to download CSV");
@@ -118,22 +124,84 @@ export default function RegistrationsTableClient({
           disabled={downloading || registrations.length === 0}
           className="bg-blue-800 hover:bg-blue-900 text-white cursor-pointer"
         >
-          <Download className="w-4 h-4 mr-2 " />
-          {downloading ? "Exporting..." : "Download Excel"}
+          <Download className="w-4 h-4 mr-2" />
+          {downloading ? "Exporting..." : "Download CSV"}
         </Button>
       </div>
 
-      <div className="border rounded-lg bg-black/50 backdrop-blur-md border-white/10 w-full overflow-hidden">
-        <div className="overflow-x-auto overflow-y-auto max-h-[70vh] md:max-h-none">
+      {/* ── MOBILE: tap-to-expand card list ─────────────────────────────── */}
+      <div className="flex flex-col gap-2 lg:hidden">
+        {registrations.length === 0 ? (
+          <p className="text-center py-10 text-white/50">
+            No registrations found for this event.
+          </p>
+        ) : (
+          registrations.map((reg, index) => {
+            const isOpen = expandedId === reg.$id;
+            return (
+              <div
+                key={reg.$id}
+                className="border border-white/10 rounded-lg bg-black/50 overflow-hidden"
+              >
+                {/* Summary row — always visible */}
+                <button
+                  onClick={() => toggleExpand(reg.$id)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-white/40 text-xs w-5 shrink-0">
+                      {index + 1}
+                    </span>
+                    <span className="font-medium text-white truncate">
+                      {reg.user.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <span className="text-xs text-white/50">
+                      {formatDate(reg.$createdAt)}
+                    </span>
+                    {isOpen ? (
+                      <ChevronUp className="w-4 h-4 text-white/40" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-white/40" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Expanded detail panel */}
+                {isOpen && (
+                  <div className="px-4 pb-4 pt-1 border-t border-white/10 grid grid-cols-1 gap-2 text-sm">
+                    {[
+                      { label: "Email", value: reg.user.email },
+                      { label: "Phone", value: reg.user.phone || "—" },
+                      { label: "College", value: reg.user.college || "—" },
+                      { label: "Gender", value: reg.user.gender || "—" },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex gap-2">
+                        <span className="text-white/40 w-16 shrink-0">
+                          {label}
+                        </span>
+                        <span className="text-white/80 break-all">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* ── DESKTOP: full table ──────────────────────────────────────────── */}
+      <div className="hidden lg:block border rounded-lg bg-black/50 backdrop-blur-md border-white/10 w-full overflow-hidden">
+        <div className="overflow-x-auto overflow-y-auto max-h-[70vh]">
           <Table className="w-full">
             <TableHeader className="bg-white/5">
               <TableRow className="border-white/10 hover:bg-white/5">
-                <TableHead className="w-[80px] text-white/70">Sl.No</TableHead>
+                <TableHead className="w-[60px] text-white/70">Sl.No</TableHead>
                 <TableHead className="text-white/70">Name</TableHead>
                 <TableHead className="text-white/70">College</TableHead>
-                <TableHead className="text-white/70 hidden md:table-cell">
-                  Contact
-                </TableHead>
+                <TableHead className="text-white/70">Contact</TableHead>
                 <TableHead className="text-white/70">Registered On</TableHead>
               </TableRow>
             </TableHeader>
@@ -144,7 +212,7 @@ export default function RegistrationsTableClient({
                     key={reg.$id}
                     className="border-white/10 hover:bg-white/5"
                   >
-                    <TableCell className="font-medium text-white text-right">
+                    <TableCell className="font-medium text-white/50 text-right">
                       {index + 1}
                     </TableCell>
                     <TableCell>
@@ -160,7 +228,7 @@ export default function RegistrationsTableClient({
                     <TableCell className="text-white/80">
                       {reg.user.college || "N/A"}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell>
                       <div className="flex flex-col">
                         <span className="text-white/80">{reg.user.email}</span>
                         <span className="text-xs text-white/50">
@@ -169,11 +237,7 @@ export default function RegistrationsTableClient({
                       </div>
                     </TableCell>
                     <TableCell className="text-white/80">
-                      {new Date(reg.$createdAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(reg.$createdAt)}
                     </TableCell>
                   </TableRow>
                 ))

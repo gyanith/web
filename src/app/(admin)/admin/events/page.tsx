@@ -23,7 +23,7 @@ export default async function AdminEventsPage() {
       queries: [Query.orderDesc("$createdAt"), Query.limit(100)],
     });
 
-    events = response.rows.map((doc: any) => ({
+    const rawEvents = response.rows.map((doc: any) => ({
       id: doc.$id,
       name: doc.name,
       date: doc.date,
@@ -32,7 +32,26 @@ export default async function AdminEventsPage() {
       status: doc.is_published ? "Published" : "Draft",
       is_published: doc.is_published,
       day: doc.day || 1,
+      fee: doc.fee ?? 0,
+      start_time: doc.start_time,
+      end_time: doc.end_time,
     }));
+
+    // Fetch registration counts in parallel
+    const counts = await Promise.all(
+      rawEvents.map((e) =>
+        tablesDB
+          .listRows({
+            databaseId: appwriteConfig.databaseId,
+            tableId: appwriteConfig.registrationsCollectionId,
+            queries: [Query.equal("event_id", e.id), Query.limit(1)],
+          })
+          .then((r) => r.total)
+          .catch(() => 0),
+      ),
+    );
+
+    events = rawEvents.map((e, i) => ({ ...e, registrationCount: counts[i] }));
 
     // Fetch coordinators
     coordinatorsList = await getCoordinators();

@@ -180,3 +180,97 @@ export async function searchUser(query: string) {
         return { success: false, message: error.message || "Search failed" };
     }
 }
+
+/**
+ * Fetches all event/workshop registrations for a given user, with event names.
+ */
+export async function getUserRegistrations(userId: string) {
+    try {
+        const { getTablesDB } = await createAdminClient();
+        const db = getTablesDB();
+
+        // 1. Get all registrations for the user
+        const regResult = await db.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.registrationsCollectionId,
+            [Query.equal("user_id", userId), Query.limit(100)]
+        );
+
+        if (regResult.total === 0) return [];
+
+        // 2. Fetch event names in parallel
+        const rows = await Promise.all(
+            regResult.rows.map(async (reg: any) => {
+                let eventName = reg.event_id ?? "Unknown Event";
+                let eventType = "EVENT";
+                try {
+                    const event = await db.getRow(
+                        appwriteConfig.databaseId,
+                        appwriteConfig.eventsCollectionId,
+                        reg.event_id
+                    );
+                    eventName = event?.name ?? eventName;
+                    eventType = event?.type ?? "EVENT";
+                } catch { /* proceed with ID as name */ }
+                return { id: reg.$id, eventName, eventType, registeredAt: reg.$createdAt };
+            })
+        );
+
+        return rows;
+    } catch (error: any) {
+        console.error("getUserRegistrations error:", error);
+        return [];
+    }
+}
+
+/**
+ * Checks if a user qualifies for a gate pass:
+ * - Has a paid TICKET (transactions: item_type=TICKET, status=SUCCESS), OR
+ * - Has at least one workshop registration
+ */
+export async function checkGatePass(userId: string): Promise<{
+    granted: boolean;
+    reason: string;
+    hasTicket: boolean;
+    hasWorkshop: boolean;
+}> {
+    try {
+        const { getTablesDB } = await createAdminClient();
+        const db = getTablesDB();
+
+        // 1. Check for paid ticket
+        const ticketResult = await db.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.transactionsCollectionId,
+            [
+                Query.equal("user", userId),
+                Query.equal("item_type", "TICKET"),
+                Query.equal("status", "SUCCESS"),
+                Query.limit(1),
+            ]
+        );
+        const hasTicket = ticketResult.total > 0;
+
+        // 2. Check for any workshop registration
+        const workshopResult = await db.listRows(
+            appwriteConfig.databaseId,
+            appwriteConfig.registrationsCollectionId,
+            [Query.equal("user_id", userId), Query.limit(1)]
+        );
+        const hasWorkshop = workshopResult.total > 0;
+
+        const granted = hasTicket || hasWorkshop;
+        const reason = granted
+            ? hasTicket && hasWorkshop
+                ? "Ticket + Workshop registration found"
+                : hasTicket
+                    ? "Paid ticket found"
+                    : "Workshop registration found"
+            : "No ticket or workshop registration found";
+
+        return { granted, reason, hasTicket, hasWorkshop };
+    } catch (error: any) {
+        console.error("checkGatePass error:", error);
+        return { granted: false, reason: "Verification error", hasTicket: false, hasWorkshop: false };
+    }
+}

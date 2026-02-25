@@ -28,8 +28,6 @@ import {
   Search,
   CheckCircle2,
   XCircle,
-  AlertCircle,
-  User,
   Loader2,
   Calendar,
   CreditCard,
@@ -37,11 +35,16 @@ import {
   Home,
   Check,
   ChevronsUpDown,
+  User,
+  DoorOpen,
+  Tag,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   searchUser,
   verifyUserEntitlements,
+  getUserRegistrations,
+  checkGatePass,
 } from "@/lib/actions/admin.actions";
 import { getAllEventsSummary } from "@/lib/actions/events.actions";
 import { useToast } from "@/hooks/use-toast";
@@ -51,7 +54,6 @@ import { EventSummary } from "@/types/db";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 
-// Dynamically import QR Scanner to avoid SSR issues with window/navigator
 const QRScanner = dynamic(() => import("@/components/admin/QRScanner"), {
   ssr: false,
   loading: () => (
@@ -70,24 +72,28 @@ export default function VerifyPaymentsPage() {
   const [category, setCategory] = useState<
     "TICKET" | "ACCOMM" | "MERCH" | "EVENT"
   >("TICKET");
-  const [events, setEvents] = useState<EventSummary[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string>("");
-  const [open, setOpen] = useState(false);
 
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
+  // Registered events list
+  const [userRegistrations, setUserRegistrations] = useState<any[]>([]);
+  const [loadingRegs, setLoadingRegs] = useState(false);
+
+  // Gate pass
+  const [gatePassResult, setGatePassResult] = useState<any>(null);
+  const [checkingGatePass, setCheckingGatePass] = useState(false);
+
+  // When user is found and category is EVENT, load their registrations
   useEffect(() => {
-    async function loadEvents() {
-      const allEvents = await getAllEventsSummary();
-      setEvents(allEvents);
-      if (allEvents.length > 0) {
-        setSelectedEventId(allEvents[0].id);
-      }
+    if (foundUser && category === "EVENT") {
+      setLoadingRegs(true);
+      getUserRegistrations(foundUser.$id)
+        .then(setUserRegistrations)
+        .finally(() => setLoadingRegs(false));
     }
-    loadEvents();
-  }, []);
+  }, [foundUser, category]);
 
   const handleSearch = async (forcedQuery?: string) => {
     const searchQuery = (forcedQuery || query).trim();
@@ -96,6 +102,8 @@ export default function VerifyPaymentsPage() {
     setIsSearching(true);
     setFoundUser(null);
     setVerificationResult(null);
+    setGatePassResult(null);
+    setUserRegistrations([]);
 
     try {
       const res = await searchUser(searchQuery);
@@ -106,7 +114,6 @@ export default function VerifyPaymentsPage() {
         addToast(res.message, "error");
       }
     } catch (err: any) {
-      console.error("Search error:", err);
       addToast(err.message || "Failed to search user", "error");
     } finally {
       setIsSearching(false);
@@ -116,29 +123,21 @@ export default function VerifyPaymentsPage() {
   const handleScan = (data: string) => {
     setIsScannerOpen(false);
     setQuery(data);
-    handleSearch(data); // Auto-search after scan
+    handleSearch(data);
   };
 
   const handleVerify = async () => {
     if (!foundUser) return;
-
     setIsVerifying(true);
     setVerificationResult(null);
-
     try {
       const res = await verifyUserEntitlements(
         foundUser.$id,
         category,
-        category === "EVENT" ? selectedEventId : undefined,
+        undefined,
       );
-
       setVerificationResult(res);
-
-      if (res.success && res.verified) {
-        addToast(res.message, "success");
-      } else {
-        addToast(res.message, "error");
-      }
+      addToast(res.message, res.success && res.verified ? "success" : "error");
     } catch (err: any) {
       addToast(err.message || "Failed to verify entitlement", "error");
     } finally {
@@ -146,7 +145,25 @@ export default function VerifyPaymentsPage() {
     }
   };
 
-  const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const handleGatePass = async () => {
+    if (!foundUser) return;
+    setCheckingGatePass(true);
+    setGatePassResult(null);
+    try {
+      const res = await checkGatePass(foundUser.$id);
+      setGatePassResult(res);
+      addToast(
+        res.granted
+          ? `Gate Pass GRANTED — ${res.reason}`
+          : `Gate Pass DENIED — ${res.reason}`,
+        res.granted ? "success" : "error",
+      );
+    } catch (err: any) {
+      addToast(err.message || "Gate pass check failed", "error");
+    } finally {
+      setCheckingGatePass(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
@@ -164,8 +181,8 @@ export default function VerifyPaymentsPage() {
       </div>
 
       <div className="grid gap-6">
-        {/* Search and User Info */}
         <div className="space-y-6">
+          {/* ── Search card ───────────────────────────────────────────── */}
           <Card className="bg-zinc-900 border-zinc-800">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <div className="space-y-1">
@@ -230,7 +247,6 @@ export default function VerifyPaymentsPage() {
                       NITPY: {foundUser.is_nitpy ? "Yes" : "No"}
                     </Badge>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4 text-sm mt-4">
                     <div className="space-y-1">
                       <span className="text-muted-foreground text-xs block">
@@ -254,6 +270,7 @@ export default function VerifyPaymentsPage() {
             </CardContent>
           </Card>
 
+          {/* ── Verify card (only when user found) ────────────────────── */}
           {foundUser && (
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
@@ -263,145 +280,97 @@ export default function VerifyPaymentsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Category buttons */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <Button
-                    variant={category === "TICKET" ? "default" : "outline"}
-                    className={`flex flex-col gap-2 h-auto py-4 ${
-                      category === "TICKET"
-                        ? "bg-white text-black"
-                        : "border-zinc-800 text-zinc-400"
-                    }`}
-                    onClick={() => {
-                      setCategory("TICKET");
-                      setVerificationResult(null);
-                    }}
-                  >
-                    <CreditCard className="h-5 w-5" />
-                    <span className="text-xs">Ticket</span>
-                  </Button>
-                  <Button
-                    variant={category === "ACCOMM" ? "default" : "outline"}
-                    className={`flex flex-col gap-2 h-auto py-4 ${
-                      category === "ACCOMM"
-                        ? "bg-white text-black"
-                        : "border-zinc-800 text-zinc-400"
-                    }`}
-                    onClick={() => {
-                      setCategory("ACCOMM");
-                      setVerificationResult(null);
-                    }}
-                  >
-                    <Home className="h-5 w-5" />
-                    <span className="text-xs">Accomm</span>
-                  </Button>
-                  <Button
-                    variant={category === "MERCH" ? "default" : "outline"}
-                    className={`flex flex-col gap-2 h-auto py-4 ${
-                      category === "MERCH"
-                        ? "bg-white text-black"
-                        : "border-zinc-800 text-zinc-400"
-                    }`}
-                    onClick={() => {
-                      setCategory("MERCH");
-                      setVerificationResult(null);
-                    }}
-                  >
-                    <Package className="h-5 w-5" />
-                    <span className="text-xs">Merch</span>
-                  </Button>
-                  <Button
-                    variant={category === "EVENT" ? "default" : "outline"}
-                    className={`flex flex-col gap-2 h-auto py-4 ${
-                      category === "EVENT"
-                        ? "bg-white text-black"
-                        : "border-zinc-800 text-zinc-400"
-                    }`}
-                    onClick={() => {
-                      setCategory("EVENT");
-                      setVerificationResult(null);
-                    }}
-                  >
-                    <Calendar className="h-5 w-5" />
-                    <span className="text-xs">Event</span>
-                  </Button>
+                  {(["TICKET", "ACCOMM", "MERCH", "EVENT"] as const).map(
+                    (cat) => {
+                      const Icon =
+                        cat === "TICKET"
+                          ? CreditCard
+                          : cat === "ACCOMM"
+                            ? Home
+                            : cat === "MERCH"
+                              ? Package
+                              : Calendar;
+                      return (
+                        <Button
+                          key={cat}
+                          variant={category === cat ? "default" : "outline"}
+                          className={`flex flex-col gap-2 h-auto py-4 ${
+                            category === cat
+                              ? "bg-white text-black"
+                              : "border-zinc-800 text-zinc-400"
+                          }`}
+                          onClick={() => {
+                            setCategory(cat);
+                            setVerificationResult(null);
+                          }}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="text-xs capitalize">
+                            {cat === "ACCOMM"
+                              ? "Accomm"
+                              : cat.charAt(0) + cat.slice(1).toLowerCase()}
+                          </span>
+                        </Button>
+                      );
+                    },
+                  )}
                 </div>
 
+                {/* Registered events list — shown when EVENT selected */}
                 {category === "EVENT" && (
                   <div className="space-y-2">
-                    <Label className="text-zinc-400">Select Event</Label>
-                    <Popover open={open} onOpenChange={setOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={open}
-                          className="w-full h-auto min-h-10 py-2 justify-between bg-zinc-950 border-zinc-800 text-white hover:bg-zinc-900"
-                        >
-                          <span className="text-left whitespace-normal break-words">
-                            {selectedEvent
-                              ? selectedEvent.name
-                              : "Choose an event..."}
-                          </span>
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="p-0 bg-zinc-950 border-zinc-800 w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-32px)]"
-                        align="start"
-                      >
-                        <Command className="bg-zinc-950 text-white">
-                          <CommandInput
-                            placeholder="Search event..."
-                            className="text-white"
-                          />
-                          <CommandList className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
-                            <CommandEmpty className="text-zinc-500 py-4 text-center text-sm">
-                              No event found.
-                            </CommandEmpty>
-                            <CommandGroup>
-                              {events.map((evt) => (
-                                <CommandItem
-                                  key={evt.id}
-                                  value={evt.name}
-                                  onSelect={() => {
-                                    setSelectedEventId(evt.id);
-                                    setOpen(false);
-                                  }}
-                                  className="text-white hover:bg-zinc-900 cursor-pointer flex items-start justify-between py-3"
-                                >
-                                  <span className="flex-1 mr-2 whitespace-normal break-words">
-                                    {evt.name}
-                                  </span>
-                                  <Check
-                                    className={cn(
-                                      "h-4 w-4 shrink-0 mt-0.5",
-                                      selectedEventId === evt.id
-                                        ? "opacity-100"
-                                        : "opacity-0",
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    <p className="text-xs text-zinc-500">
+                      Registered events / workshops for this user:
+                    </p>
+                    {loadingRegs ? (
+                      <div className="flex items-center gap-2 text-zinc-400 text-sm py-2">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Loading...
+                      </div>
+                    ) : userRegistrations.length === 0 ? (
+                      <p className="text-zinc-600 text-sm italic">
+                        No registrations found.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {userRegistrations.map((reg) => (
+                          <div
+                            key={reg.id}
+                            className="flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm"
+                          >
+                            <Tag className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-zinc-200 truncate">
+                                {reg.eventName}
+                              </p>
+                              <p className="text-zinc-600 text-xs">
+                                {reg.eventType}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12"
-                  onClick={handleVerify}
-                  disabled={isVerifying}
-                >
-                  {isVerifying ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    "Verify Access"
-                  )}
-                </Button>
+                {/* Verify Access button — hidden for EVENT (list is sufficient) */}
+                {category !== "EVENT" && (
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12"
+                    onClick={handleVerify}
+                    disabled={isVerifying}
+                  >
+                    {isVerifying ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      "Verify Access"
+                    )}
+                  </Button>
+                )}
 
+                {/* Verification result */}
                 {verificationResult && (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                     {verificationResult.verified ? (
@@ -426,6 +395,68 @@ export default function VerifyPaymentsPage() {
                     )}
                   </div>
                 )}
+
+                {/* ── Gate Pass ────────────────────────────────────────── */}
+                <div className="border-t border-zinc-800 pt-4">
+                  <p className="text-xs text-zinc-500 mb-3">
+                    Gate pass is granted if the user has a paid ticket OR any
+                    workshop registration.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      className="col-span-2 h-12 bg-amber-600/20 border border-amber-500/40 text-amber-400 hover:bg-amber-600/30"
+                      variant="outline"
+                      onClick={handleGatePass}
+                      disabled={checkingGatePass}
+                    >
+                      {checkingGatePass ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <DoorOpen className="mr-2 h-5 w-5" />
+                      )}
+                      {checkingGatePass
+                        ? "Checking Gate Pass…"
+                        : "Check Gate Pass"}
+                    </Button>
+                  </div>
+
+                  {gatePassResult && (
+                    <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                      {gatePassResult.granted ? (
+                        <Alert className="bg-green-900/20 border-green-800 text-green-400">
+                          <DoorOpen className="h-4 w-4" />
+                          <AlertTitle>Gate Pass GRANTED</AlertTitle>
+                          <AlertDescription className="space-y-1">
+                            <span>{gatePassResult.reason}</span>
+                            <div className="flex gap-2 mt-1">
+                              {gatePassResult.hasTicket && (
+                                <Badge className="bg-green-800/40 text-green-300 border-green-700">
+                                  🎫 Ticket
+                                </Badge>
+                              )}
+                              {gatePassResult.hasWorkshop && (
+                                <Badge className="bg-blue-800/40 text-blue-300 border-blue-700">
+                                  🔧 Workshop
+                                </Badge>
+                              )}
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <Alert
+                          variant="destructive"
+                          className="bg-red-900/20 border-red-800 text-red-500"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          <AlertTitle>Gate Pass DENIED</AlertTitle>
+                          <AlertDescription>
+                            {gatePassResult.reason}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}

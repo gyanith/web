@@ -30,7 +30,11 @@ export async function getTicket() {
 
         return userProfile;
 
-    } catch (error) {
+    } catch (error: any) {
+        // 404 = user profile row doesn't exist yet (normal for new accounts)
+        if (error?.code === 404 || error?.type === "row_not_found" || error?.type === "document_not_found") {
+            return null;
+        }
         console.error("Error fetching ticket:", error);
         return null;
     }

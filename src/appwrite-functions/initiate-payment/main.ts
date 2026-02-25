@@ -94,9 +94,6 @@ export default async ({ req, res, log, error }: any) => {
         let baseUrl: string = "https://gyanith.org";
         let returnUrl: string = "";
 
-        // Standardize itemType: Map EVENT to FUN for consistent internal handling
-        if (type === 'EVENT') itemType = 'FUN';
-
         let customerName = `User_${userId}`;
         let customerEmail = "";
         let customerPhone = "9999000000";

@@ -27,6 +27,8 @@ import {
   Gamepad2,
   Loader2,
   Clock,
+  Users,
+  IndianRupee,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { togglePublishStatus, deleteEvent } from "@/lib/actions/events.actions";
@@ -55,6 +57,7 @@ export interface EventData {
   end_time?: string;
   g_form_link?: string;
   image_id?: string;
+  registrationCount?: number;
 }
 
 interface EventCardProps {
@@ -267,6 +270,17 @@ export function EventCard({ event }: EventCardProps) {
           <div className="flex items-center gap-2">
             <MapPin className="h-3 w-3" />
             <span className="truncate">{event.location}</span>
+          </div>
+          {/* Price and registration count */}
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+            <div className="flex items-center gap-1 text-xs">
+              <IndianRupee className="h-3 w-3" />
+              <span>{event.fee ? `₹${event.fee}` : "Free"}</span>
+            </div>
+            <div className="flex items-center gap-1 text-xs">
+              <Users className="h-3 w-3" />
+              <span>{event.registrationCount ?? 0} registered</span>
+            </div>
           </div>
         </div>
       </CardContent>

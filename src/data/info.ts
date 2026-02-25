@@ -1,4 +1,13 @@
 
+export type Proshow = {
+    id: string;
+    title: string;
+    description: string;
+    day: 1 | 2 | 3;
+    imageId: string; // path or URL
+    accentColor?: string; // optional per-show accent (default: #d4a574)
+};
+
 
 export const coreTeam = [
     {
@@ -48,15 +57,15 @@ export const coreTeam = [
     },
     {
         name: "Srihari Selvam",
-        team: "Event Coordination",
-        role: "Technical Head",
+        team: "Core",
+        role: "Event Coordinator",
         imageId: "6984e3c7002274ec09d6",
         phone: ""
     },
     {
         name: "Nidhish",
-        team: "Event Coordination",
-        role: "Technical Head",
+        team: "Core",
+        role: "Event Coordinator",
         imageId: "6984e349001be3d14f84",
         phone: ""
     },
@@ -88,13 +97,13 @@ export const allTeam = [
         phone: ""
     },
 
-    {
+    /* {
         name: "Yugeshwaran D",
         team: "Marketing",
         role: "Co-Lead",
         imageId: "696d20ef0026abb0e0de",
         phone: ""
-    },
+    }, */
 
     {
         name: "Hariharan K",
@@ -292,7 +301,7 @@ export const allTeam = [
     {
         name: "Anurodh Pandey",
         team: "Web & App",
-        role: "Co-Lead",
+        role: "Member",
         imageId: "698ae373001d491a2e6b",
         phone: ""
     },
@@ -367,3 +376,33 @@ export const contactDetails: Record<string, { name: string; contact: string }[]>
         }
     ]
 }
+
+export const proshows: Proshow[] = [
+    {
+        id: "proshow-1",
+        title: "AUTO SHOW",
+        description:
+            "Gear up for an adrenaline-pumping experience as we bring you the most awaited Auto Show! Witness a stunning display of automotive marvels, from vintage classics to the latest supercars. Feel the roar of engines, admire sleek designs, and immerse yourself in the world of automobiles. Don't miss this thrilling showcase of power, precision, and automotive excellence!",
+        day: 1,
+        imageId: "699ed9cc0023664ec0bd",
+        accentColor: "#d4a574",
+    },
+    {
+        id: "proshow-2",
+        title: "STARGAZING NIGHT",
+        description:
+            "Prepare to be mesmerized as we transform the night sky into a celestial wonderland! Join us for an enchanting Stargazing Night, where you'll journey through galaxies, constellations, and cosmic wonders like never before. Equipped with state-of-the-art telescopes and guided by expert astronomers, you'll explore the universe's hidden gems and witness the magic of the cosmos up close. Don't miss this stellar opportunity to gaze at the stars and create memories that will last a lifetime!",
+        day: 2,
+        imageId: "699ed9ff000c7b3dcf32",
+        accentColor: "#7dd4fc",
+    },
+    {
+        id: "proshow-3",
+        title: "MOBILE PLANETARIUM",
+        description:
+            "Step into a universe of wonder with our Mobile Planetarium! This immersive, dome-shaped theater brings the cosmos to life with stunning 360-degree projections of stars, planets, and galaxies. Explore the mysteries of space, witness celestial events, and embark on a cosmic journey like never before. Perfect for all ages, our Mobile Planetarium offers an awe-inspiring educational experience that will leave you starstruck. Don't miss this stellar attraction that brings the universe right to your fingertips!",
+        day: 3,
+        imageId: "699ed9e4000271470290",
+        accentColor: "#a78bfa",
+    },
+];
