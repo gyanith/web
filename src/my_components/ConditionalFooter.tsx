@@ -20,9 +20,14 @@ export default function ConditionalFooter() {
   const isSponsorsPage = pathname === "/sponsors";
   const isConferencePage =
     pathname === "/icdtses" || pathname === "/conference";
+  const isCore = pathname === "/core";
 
   const shouldShowFooter =
-    isEventsPage || isPartnersPage || isSponsorsPage || isConferencePage;
+    isEventsPage ||
+    isPartnersPage ||
+    isSponsorsPage ||
+    isConferencePage ||
+    isCore;
 
   if (!shouldShowFooter) {
     return null;

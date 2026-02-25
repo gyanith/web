@@ -17,13 +17,9 @@ import { getImageUrl } from "@/lib/helpers/imageStorage.helper";
 
 export default function CorePage() {
   return (
-    <motion.div
-      className="w-screen h-fit overflow-x-hidden relative"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 2, ease: "circInOut" }}
-    >
-      <div className="w-screen h-screen absolute inset-0">
+    <div className="w-full min-h-screen relative">
+      {/* Sparkles — fixed so they don't affect page scroll layout */}
+      <div className="fixed inset-0 pointer-events-none z-0">
         <SparklesCore
           id="tsparticlesfullpa"
           speed={5}
@@ -128,7 +124,10 @@ export default function CorePage() {
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{
+                  duration: 0.5,
+                  delay: Math.min(index * 0.05, 0.4),
+                }}
               >
                 <SpotlightCard
                   glowRadius={250}
@@ -200,7 +199,10 @@ export default function CorePage() {
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{
+                  duration: 0.5,
+                  delay: Math.min(index * 0.05, 0.4),
+                }}
               >
                 <SpotlightCard
                   glowRadius={250}
@@ -248,6 +250,6 @@ export default function CorePage() {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

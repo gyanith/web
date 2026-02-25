@@ -446,7 +446,9 @@ export default function EventDetailsClient({
               </p>
             )}
             <p className="text-xs text-center text-white/30 uppercase tracking-widest border-b border-[#d4a574]/20 pb-0.5">
-              *Exclusive to Combos
+              {isSoldOut
+                ? "*On-spot registrations are subject to availability"
+                : "*Exclusive to Combos"}
             </p>
           </motion.div>
         </motion.div>
