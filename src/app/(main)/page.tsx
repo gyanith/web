@@ -1,8 +1,8 @@
 "use client";
 import CRTMonitor from "@/my_components/crt/TestCRT";
-import GlassSurface from "@/my_components/GlassSurface";
+// import GlassSurface from "@/my_components/GlassSurface";
 import { motion } from "framer-motion";
-import Link from "next/link";
+// import Link from "next/link";
 
 export default function Home() {
   return (
@@ -31,7 +31,7 @@ export default function Home() {
       }}
     >
       <div className="w-screen h-screen flex items-center overflow-hidden justify-center ">
-        <div className="w-fit z-10 h-auto absolute flex flex-col gap-4 top-24 lg:bottom-52 lg:top-auto items-center">
+        {/* <div className="w-fit z-10 h-auto absolute flex flex-col gap-4 top-24 lg:bottom-52 lg:top-auto items-center">
           <Link href="/orion">
             <GlassSurface
               borderRadius={10}
@@ -62,7 +62,7 @@ export default function Home() {
               </span>
             </GlassSurface>
           </Link>
-        </div>
+        </div> */}
         <CRTMonitor />
         <div className="z-50  absolute top-[50%]"></div>
       </div>
