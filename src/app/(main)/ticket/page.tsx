@@ -14,6 +14,7 @@ import TierCard from "@/components/TierCard";
 import { motion } from "framer-motion";
 import { getTicket } from "@/lib/actions/ticket.actions";
 import { pressStart2P, unispace } from "@/fonts/fonts";
+import { ComingSoon } from "@/components/ui/coming-soon";
 
 export default function TicketPage() {
   const router = useRouter();
@@ -61,15 +62,22 @@ export default function TicketPage() {
     : TIERS;
 
   return (
-    <motion.div
+    <ComingSoon
+      title="Registrations Closed"
+      message="Thank you for the overwhelming response! Registrations for all events have closed after reaching full capacity."
+      showBackButton={false}
+    />
+  );
+}
+
+/*
+
+<motion.div
       className="w-screen min-h-screen flex flex-col relative overflow-x-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 2, ease: "circInOut" }}
     >
-      {/* Background Prism */}
-
-      {/* Main Content */}
       <main className="flex-grow flex min-h-screen pb-32 lg:pb-auto items-center justify-center z-10 w-full p-4 md:p-8 md:pt-10">
         {visibleTiers.length === 0 && userTier ? (
           <div className="flex flex-col items-center justify-center p-8 text-center space-y-6 animate-in fade-in zoom-in duration-700">
@@ -169,5 +177,5 @@ export default function TicketPage() {
         onBuy={() => handleBuy()}
       />
     </motion.div>
-  );
-}
+
+*/
