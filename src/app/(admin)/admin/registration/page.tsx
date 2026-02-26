@@ -1,4 +1,5 @@
 import RegistrationForm from "./RegistrationForm";
+import RegistrationsExport from "./RegistrationsExport";
 
 export default function RegistrationsPage() {
   return (
@@ -6,7 +7,10 @@ export default function RegistrationsPage() {
       <h1 className="text-2xl font-bold mb-6 text-white">
         Helpdesk Registration & Payment
       </h1>
-      <RegistrationForm />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+        <RegistrationForm />
+        <RegistrationsExport />
+      </div>
     </div>
   );
 }
