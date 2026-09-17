@@ -50,10 +50,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { cn } from "@/backup/lib/utils";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { createEvent, updateEvent } from "@/lib/actions/events.actions";
+import { createEvent, updateEvent } from "@/backup/lib/actions/events.actions";
 import { useToast } from "@/components/ui/toast-provider";
 
 // Initialize Appwrite services

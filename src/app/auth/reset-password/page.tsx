@@ -1,8 +1,22 @@
+import { ComingSoon } from "@/components/ui/coming-soon";
+
+export default function ResetPasswordPage() {
+  return (
+    <ComingSoon
+      title="Reset Offline"
+      message="Password reset is disabled for this static archive."
+      showBackButton={true}
+    />
+  );
+}
+
+/*
+// Latent dynamic implementation:
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { account } from "@/lib/appwrite/appwrite.client";
+import { account } from "@/backup/lib/appwrite/appwrite.client";
 import { unispace, pressStart2P } from "@/fonts/fonts";
 import {
   Loader2,
@@ -222,3 +236,4 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
+*/

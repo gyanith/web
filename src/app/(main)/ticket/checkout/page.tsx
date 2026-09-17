@@ -1,7 +1,20 @@
-import { Suspense } from "react";
+import { ComingSoon } from "@/components/ui/coming-soon";
 
-export const dynamic = "force-dynamic";
-import { createSessionClient } from "@/lib/appwrite/appwrite.server";
+export default function TicketCheckoutPage() {
+  return (
+    <ComingSoon
+      title="Checkout Offline"
+      message="Ticket purchasing is closed for this static archive."
+      showBackButton={true}
+    />
+  );
+}
+
+/*
+// Latent dynamic implementation:
+import { Suspense } from "react";
+// export const dynamic = "force-dynamic";
+import { createSessionClient } from "@/backup/lib/appwrite/appwrite.server";
 import CheckoutClient from "./CheckoutClient";
 import { redirect } from "next/navigation";
 
@@ -14,28 +27,12 @@ async function TicketCheckoutContent() {
     console.log("Server User ID:", user.$id);
   } catch (error) {
     console.error("No session found or error fetching user:", error);
-    // Redirecting might be too aggressive if we want to allow guests,
-    // but the checkout needs a user ID.
-    // For now, let's redirect to login.
     redirect("/auth?mode=login&redirect=/ticket/checkout");
   }
 
   return <CheckoutClient user={user} />;
 }
-
-export default function TicketCheckoutPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen min-w-screen bg-black text-white flex items-center justify-center">
-          Loading...
-        </div>
-      }
-    >
-      <TicketCheckoutContent />
-    </Suspense>
-  );
-}
+*/
 
 /*
 import { Button } from "@/components/ui/button";

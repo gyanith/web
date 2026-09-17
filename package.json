@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:github": "set GITHUB_PAGES=true&& next build",
     "start": "next start",
     "lint": "eslint",
     "prod": "npm run build && npm run start"

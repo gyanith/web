@@ -1,3 +1,17 @@
+import { ComingSoon } from "@/components/ui/coming-soon";
+
+export default function OrionPage() {
+  return (
+    <ComingSoon
+      title="Orion Ideathon"
+      message="Registrations for Orion AI Ideathon have concluded. Thank you for participating!"
+      showBackButton={true}
+    />
+  );
+}
+
+/*
+// Latent dynamic implementation:
 "use client";
 
 import { useState, useEffect } from "react";
@@ -17,16 +31,16 @@ import { unispace, garetBook, superRetro } from "@/fonts/fonts";
 import { useToast } from "@/my_components/Toast";
 
 // Actions
-import { getLoggedInUser } from "@/lib/actions/auth.actions";
+import { getLoggedInUser } from "@/backup/lib/actions/auth.actions";
 import {
   createTeam,
   getUserTeam,
   addTeamMemberByEmail,
-} from "@/lib/actions/team.actions"; // Import new action
+} from "@/backup/lib/actions/team.actions"; // Import new action
 import {
   initiateOrionPayment,
   saveOrionIdea,
-} from "@/lib/actions/orion.actions";
+} from "@/backup/lib/actions/orion.actions";
 
 // Components
 import { Input } from "@/components/ui/input";
@@ -49,13 +63,13 @@ const RetroCard = ({
   <div
     className={`relative bg-black/80 border border-[#d4a574]/30 p-1 ${className}`}
   >
-    {/* Corner Accents */}
+    {/* Corner Accents * /}
     <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#d4a574]" />
     <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[#d4a574]" />
     <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-[#d4a574]" />
     <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#d4a574]" />
 
-    {/* Inner Content */}
+    {/* Inner Content * /}
     <div className="bg-[#111]/90 backdrop-blur-sm p-6 h-full relative z-10">
       {children}
     </div>
@@ -251,7 +265,7 @@ export default function OrionPage() {
         setLoading(true);
         setLoadingText("PROCESSING PAYMENT...");
         const { verifyOrionPayment } =
-          await import("@/lib/actions/orion.actions");
+          await import("@/backup/lib/actions/orion.actions");
         const res = await verifyOrionPayment(orderId);
         if (res.success) {
           toast.success("Payment Verified! Registration Complete.");
@@ -285,9 +299,9 @@ export default function OrionPage() {
 
   return (
     <div className="min-h-screen w-full bg-black text-[#d4a574] relative overflow-x-hidden selection:bg-[#d4a574] selection:text-black font-mono">
-      {/* --- RETRO BACKGROUND --- */}
+      {/* --- RETRO BACKGROUND --- * /}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Grid */}
+        {/* Grid * /}
         <div
           className="absolute inset-0 opacity-[0.1]"
           style={{
@@ -295,13 +309,13 @@ export default function OrionPage() {
             backgroundSize: "40px 40px",
           }}
         />
-        {/* Scanlines */}
+        {/* Scanlines * /}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[1] bg-[length:100%_4px,3px_100%] pointer-events-none" />
-        {/* Vignette */}
+        {/* Vignette * /}
         <div className="absolute inset-0 bg-radial-gradient(circle, transparent 60%, black 100%) opacity-80" />
       </div>
 
-      {/* Navbar Placeholder / Back Button */}
+      {/* Navbar Placeholder / Back Button * /}
       <div className="absolute top-6 left-6 z-50">
         <Button
           variant="outline"
@@ -313,7 +327,7 @@ export default function OrionPage() {
       </div>
 
       <main className="relative z-10 container mx-auto px-4 py-20 flex flex-col gap-12">
-        {/* Hero Section */}
+        {/* Hero Section * /}
         <section className="text-center flex flex-col items-center gap-6 mt-10">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -364,9 +378,9 @@ export default function OrionPage() {
           </motion.p>
         </section>
 
-        {/* Event Details Section */}
+        {/* Event Details Section * /}
         <section className="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Round 1 */}
+          {/* Round 1 * /}
           <RetroCard className="h-full hover:bg-[#d4a574]/5 transition-colors duration-300">
             <div className="flex flex-col h-full gap-4">
               <div className="flex justify-between items-start">
@@ -392,7 +406,7 @@ export default function OrionPage() {
             </div>
           </RetroCard>
 
-          {/* Round 2 */}
+          {/* Round 2 * /}
           <RetroCard className="h-full hover:bg-[#d4a574]/5 transition-colors duration-300">
             <div className="flex flex-col h-full gap-4">
               <div className="flex justify-between items-start">
@@ -418,7 +432,7 @@ export default function OrionPage() {
             </div>
           </RetroCard>
 
-          {/* Round 3 */}
+          {/* Round 3 * /}
           <RetroCard className="h-full hover:bg-[#d4a574]/5 transition-colors duration-300">
             <div className="flex flex-col h-full gap-4">
               <div className="flex justify-between items-start">
@@ -445,12 +459,12 @@ export default function OrionPage() {
           </RetroCard>
         </section>
 
-        {/* Main Content Area */}
+        {/* Main Content Area * /}
         <div className="flex flex-col gap-8 max-w-6xl mx-auto w-full">
           {!team ? (
-            /* No Team - Show Create/Join Options */
+            /* No Team - Show Create/Join Options * /
             <div className="grid lg:grid-cols-2 gap-8">
-              {/* LEFT: Create Team Card */}
+              {/* LEFT: Create Team Card * /}
               <RetroCard>
                 <div className="flex flex-col gap-6">
                   <div className="flex items-center gap-4 border-b border-[#d4a574]/20 pb-4">
@@ -477,7 +491,7 @@ export default function OrionPage() {
                 </div>
               </RetroCard>
 
-              {/* RIGHT: Registration Fee Card */}
+              {/* RIGHT: Registration Fee Card * /}
               <RetroCard>
                 <div className="flex flex-col gap-6">
                   <div className="flex items-center gap-4 border-b border-[#d4a574]/20 pb-4">
@@ -505,9 +519,9 @@ export default function OrionPage() {
               </RetroCard>
             </div>
           ) : (
-            /* Has Team - Show Team Details & Payment */
+            /* Has Team - Show Team Details & Payment * /
             <div className="grid lg:grid-cols-2 gap-8">
-              {/* LEFT: Team Details Card */}
+              {/* LEFT: Team Details Card * /}
               <RetroCard>
                 <div className="flex flex-col gap-6">
                   <div className="flex justify-between items-start border-b border-[#d4a574]/20 pb-4">
@@ -527,7 +541,7 @@ export default function OrionPage() {
                     </div>
                   </div>
 
-                  {/* Members List */}
+                  {/* Members List * /}
                   <div className="flex flex-col gap-3">
                     {team.members.map((m: any) => (
                       <div
@@ -556,7 +570,7 @@ export default function OrionPage() {
                     ))}
                   </div>
 
-                  {/* Add Member Action (Leader Only) */}
+                  {/* Add Member Action (Leader Only) * /}
                   {isLeader && !isTeamFull && (
                     <div className="mt-2 pt-4 border-t border-[#d4a574]/20 flex flex-col gap-3">
                       <Label className="text-xs text-[#d4a574]/60 uppercase tracking-widest">
@@ -583,7 +597,7 @@ export default function OrionPage() {
                 </div>
               </RetroCard>
 
-              {/* RIGHT: Registration & Payment Card */}
+              {/* RIGHT: Registration & Payment Card * /}
               <RetroCard>
                 <div className="flex flex-col gap-6 h-full">
                   <div className="flex items-center gap-4 border-b border-[#d4a574]/20 pb-4">
@@ -631,7 +645,7 @@ export default function OrionPage() {
             </div>
           )}
 
-          {/* BOTTOM WIDE: Project Idea Section (Only if team exists) */}
+          {/* BOTTOM WIDE: Project Idea Section (Only if team exists) * /}
           {team && (
             <RetroCard>
               <h3
@@ -672,7 +686,7 @@ export default function OrionPage() {
         </div>
       </main>
 
-      {/* CREATE TEAM MODAL */}
+      {/* CREATE TEAM MODAL * /}
       <AnimatePresence>
         {showCreateTeam && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
@@ -724,3 +738,4 @@ export default function OrionPage() {
     </div>
   );
 }
+*/

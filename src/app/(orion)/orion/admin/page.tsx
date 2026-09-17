@@ -1,9 +1,23 @@
+import { ComingSoon } from "@/components/ui/coming-soon";
+
+export default function OrionAdminPage() {
+  return (
+    <ComingSoon
+      title="Admin Portal"
+      message="Admin portal is restricted and offline in the static archive."
+      showBackButton={true}
+    />
+  );
+}
+
+/*
+// Latent dynamic implementation:
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { verifyOrionAccess } from "@/lib/appwrite/orion-access";
-import { createSessionClient } from "@/lib/appwrite/appwrite.server";
+import { verifyOrionAccess } from "@/backup/lib/appwrite/orion-access";
+// import { createSessionClient } from "@/backup/lib/appwrite/appwrite.server";
 import { Models } from "node-appwrite";
 
 // Components
@@ -34,10 +48,10 @@ import {
 import { Loader2, RefreshCcw, Eye } from "lucide-react";
 
 // Server Actions
-import { createAdminClient } from "@/lib/appwrite/appwrite.server";
-import { appwriteConfig } from "@/lib/appwrite/appwrite.config";
+// import { createAdminClient } from "@/backup/lib/appwrite/appwrite.server";
+import { appwriteConfig } from "@/backup/lib/appwrite/appwrite.config";
 import { Query } from "node-appwrite";
-import { getOrionAdminData } from "@/lib/actions/orion.admin.actions";
+import { getOrionAdminData } from "@/backup/lib/actions/orion.admin.actions";
 
 interface OrionTeam extends Models.Document {
   name: string;
@@ -50,7 +64,7 @@ interface OrionTeam extends Models.Document {
   paymentStatus?: string;
 }
 
-export default function OrionAdminPage() {
+function LatentOrionAdminPage() {
   const router = useRouter();
   const [teams, setTeams] = useState<OrionTeam[]>([]);
   const [loading, setLoading] = useState(true);
@@ -240,7 +254,7 @@ export default function OrionAdminPage() {
                           </DialogHeader>
 
                           <div className="flex flex-col gap-6 mt-4">
-                            {/* Mobile Only Details */}
+                            {/* Mobile Only Details * /}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="bg-white/5 p-3 rounded border border-white/10">
                                 <p className="text-xs text-white/40 uppercase mb-1">
@@ -271,7 +285,7 @@ export default function OrionAdminPage() {
                               </div>
                             </div>
 
-                            {/* Members List */}
+                            {/* Members List * /}
                             <div>
                               <p className="text-xs text-white/40 uppercase mb-2">
                                 Team Members
@@ -304,7 +318,7 @@ export default function OrionAdminPage() {
                               </div>
                             </div>
 
-                            {/* Project Idea */}
+                            {/* Project Idea * /}
                             <div>
                               <p className="text-xs text-white/40 uppercase mb-2">
                                 Project Idea
@@ -331,3 +345,4 @@ export default function OrionAdminPage() {
     </div>
   );
 }
+*/

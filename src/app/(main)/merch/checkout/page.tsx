@@ -1,8 +1,21 @@
-import { Suspense } from "react";
+import { ComingSoon } from "@/components/ui/coming-soon";
 
-export const dynamic = "force-dynamic";
+export default function MerchCheckoutPage() {
+  return (
+    <ComingSoon
+      title="Store Offline"
+      message="Merchandise checkout is currently closed."
+      showBackButton={true}
+    />
+  );
+}
+
+/*
+// Latent dynamic implementation:
+import { Suspense } from "react";
+// export const dynamic = "force-dynamic";
 import CheckoutPage from "./CheckoutPage";
-import { createSessionClient } from "@/lib/appwrite/appwrite.server";
+import { createSessionClient } from "@/backup/lib/appwrite/appwrite.server";
 import { redirect } from "next/navigation";
 
 const page = async () => {
@@ -20,5 +33,4 @@ const page = async () => {
     </Suspense>
   );
 };
-
-export default page;
+*/

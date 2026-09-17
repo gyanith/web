@@ -31,7 +31,10 @@ import {
   IndianRupee,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { togglePublishStatus, deleteEvent } from "@/lib/actions/events.actions";
+import {
+  togglePublishStatus,
+  deleteEvent,
+} from "@/backup/lib/actions/events.actions";
 import { DeleteConfirmationModal } from "@/components/ui/delete-confirmation-modal";
 import { useToast } from "@/components/ui/toast-provider";
 

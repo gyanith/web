@@ -29,7 +29,7 @@ import { EventFormDialog } from "@/components/admin/event-form-dialog";
 import { RegistrationChart } from "@/components/admin/registration-chart";
 import { RefreshButton } from "@/components/admin/refresh-button";
 import { useState, useEffect } from "react";
-import { getCoordinators } from "@/lib/actions/events.actions";
+import { getCoordinators } from "@/backup/lib/actions/events.actions";
 import { motion, AnimatePresence } from "framer-motion";
 import LoadingOverlay from "@/components/admin/LoadingOverlay";
 

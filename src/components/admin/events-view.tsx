@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Laptop, Music, GraduationCap } from "lucide-react";
 import { EventCard, EventData } from "@/components/admin/event-card";
 import { EventFormDialog } from "@/components/admin/event-form-dialog";
-import { getCoordinators } from "@/lib/actions/events.actions";
+import { getCoordinators } from "@/backup/lib/actions/events.actions";
 
 interface Coordinator {
   id: string;

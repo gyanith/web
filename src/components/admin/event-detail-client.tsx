@@ -7,7 +7,7 @@ import { EventFormDialog } from "@/components/admin/event-form-dialog";
 import {
   getCoordinators,
   togglePublishStatus,
-} from "@/lib/actions/events.actions";
+} from "@/backup/lib/actions/events.actions";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast-provider";
 

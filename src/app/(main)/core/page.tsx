@@ -13,7 +13,7 @@ import SpotlightCard from "@/components/SpotlightCard";
 
 import SparklesCore from "@/my_components/SparklesCore";
 import { allTeam, coreTeam } from "@/data/info";
-import { getImageUrl } from "@/lib/helpers/imageStorage.helper";
+import { getImageUrl } from "@/backup/lib/helpers/imageStorage.helper";
 
 export default function CorePage() {
   return (

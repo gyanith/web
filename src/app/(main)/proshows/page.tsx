@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { proshows, Proshow } from "@/data/info";
 import { unispace, superRetro, garetBook } from "@/fonts/fonts";
-import { getImageUrl } from "@/lib/helpers/imageStorage.helper";
+import { getImageUrl } from "@/backup/lib/helpers/imageStorage.helper";
 
 const PROSHOW_BUCKET_ID = process.env.NEXT_PUBLIC_APPWRITE_PROSHOWS_BUCKET_ID;
 

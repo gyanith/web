@@ -11,8 +11,7 @@ import tier3Pic from "@/assets/tier3.gif";
 
 import { TIERS } from "@/data/tiers";
 import TierCard from "@/components/TierCard";
-import { motion } from "framer-motion";
-import { getTicket } from "@/lib/actions/ticket.actions";
+// import { getTicket } from "@/backup/lib/actions/ticket.actions";
 import { pressStart2P, unispace } from "@/fonts/fonts";
 import { ComingSoon } from "@/components/ui/coming-soon";
 
@@ -35,15 +34,16 @@ export default function TicketPage() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  React.useEffect(() => {
-    const fetchUserTicket = async () => {
-      const ticket = await getTicket();
-      if (ticket && ticket.tier) {
-        setUserTier(ticket.tier);
-      }
-    };
-    fetchUserTicket();
-  }, []);
+  // Latent for static export:
+  // React.useEffect(() => {
+  //   const fetchUserTicket = async () => {
+  //     const ticket = await getTicket();
+  //     if (ticket && ticket.tier) {
+  //       setUserTier(ticket.tier);
+  //     }
+  //   };
+  //   fetchUserTicket();
+  // }, []);
 
   const handleBuy = (tier?: (typeof TIERS)[0]) => {
     const targetTier = tier || selectedTier;

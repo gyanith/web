@@ -7,7 +7,7 @@ import { z } from "zod";
 import { unispace, pressStart2P } from "@/fonts/fonts";
 import { ChevronRight, Home, CheckCircle } from "lucide-react";
 import RetroSelect from "@/my_components/RetroSelect";
-import { initiatePayment } from "@/lib/actions/payment.actions";
+import { initiatePayment } from "@/backup/lib/actions/payment.actions";
 import { useToast } from "@/my_components/Toast";
 
 const accommodationSchema = z.object({
@@ -46,7 +46,7 @@ export default function AccommodationClient({
       if (status === "SUCCESS" && orderId) {
         setIsLoading(true);
         const { verifyCashfreePayment } =
-          await import("@/lib/actions/payment.actions");
+          await import("@/backup/lib/actions/payment.actions");
         const result = await verifyCashfreePayment(orderId);
 
         if (result.success) {

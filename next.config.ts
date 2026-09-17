@@ -1,12 +1,22 @@
 import type { NextConfig } from "next";
 
+
+const isGithubPages =
+  process.env.GITHUB_PAGES === "true" || process.env.GITHUB_ACTIONS === "true";
+const repo = isGithubPages ? "web" : "";
+
 const nextConfig: NextConfig = {
   /* config options here */
   compiler: {
     styledJsx: true
   },
 
+  output: "export",
+  basePath: repo ? `/${repo}` : undefined,
+  assetPrefix: repo ? `/${repo}/` : undefined,
+
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -25,12 +35,6 @@ const nextConfig: NextConfig = {
         pathname: '**',
       },
     ],
-  },
-
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb', // Increase limit to 10MB for image uploads
-    },
   },
 
   allowedDevOrigins: ['*'],

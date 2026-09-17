@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn } from "@/backup/lib/utils";
 import {
   LayoutDashboard,
   Calendar,
@@ -14,7 +14,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { signOut } from "@/lib/actions/auth.actions";
+import { signOut } from "@/backup/lib/actions/auth.actions";
 
 const sidebarLinks = [
   {

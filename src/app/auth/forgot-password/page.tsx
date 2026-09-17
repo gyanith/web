@@ -1,13 +1,27 @@
+import { ComingSoon } from "@/components/ui/coming-soon";
+
+export default function ForgotPasswordPage() {
+  return (
+    <ComingSoon
+      title="Recovery Offline"
+      message="Account recovery is disabled for this static archive."
+      showBackButton={true}
+    />
+  );
+}
+
+/*
+// Latent dynamic implementation:
 "use client";
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { account } from "@/lib/appwrite/appwrite.client";
+import { account } from "@/backup/lib/appwrite/appwrite.client";
 import { unispace, pressStart2P } from "@/fonts/fonts";
 import { ChevronRight, Activity, Mail } from "lucide-react";
 import Link from "next/link";
 
-export default function ForgotPasswordPage() {
+function LatentForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,7 +54,7 @@ export default function ForgotPasswordPage() {
   if (success) {
     return (
       <div className="min-h-screen w-screen flex items-center justify-center relative overflow-hidden bg-black text-white p-4">
-        {/* Background SVGs */}
+        {/* Background SVGs * /}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <svg
             className="absolute top-0 left-0 w-full h-full opacity-20"
@@ -121,7 +135,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen w-screen flex items-center justify-center relative overflow-hidden bg-black text-white p-4">
-      {/* Background SVGs */}
+      {/* Background SVGs * /}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <svg
           className="absolute top-0 left-0 w-full h-full opacity-20"
@@ -165,7 +179,7 @@ export default function ForgotPasswordPage() {
                 "polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)",
             }}
           >
-            {/* Header */}
+            {/* Header * /}
             <div className="text-center space-y-4">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Activity className="w-5 h-5 text-[#d4a574]" />
@@ -188,7 +202,7 @@ export default function ForgotPasswordPage() {
               <div className="h-[1px] w-full bg-linear-to-r from-transparent via-[#d4a574]/50 to-transparent" />
             </div>
 
-            {/* Error Display */}
+            {/* Error Display * /}
             <AnimatePresence>
               {errors.general && (
                 <motion.div
@@ -202,7 +216,7 @@ export default function ForgotPasswordPage() {
               )}
             </AnimatePresence>
 
-            {/* Form */}
+            {/* Form * /}
             <div onKeyDown={handleKeyDown} className="space-y-6">
               <div className="group">
                 <label
@@ -250,7 +264,7 @@ export default function ForgotPasswordPage() {
               </button>
             </div>
 
-            {/* Footer */}
+            {/* Footer * /}
             <div className="pt-6 border-t border-[#d4a574]/20">
               <Link
                 href="/auth/login"
@@ -265,3 +279,4 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+*/

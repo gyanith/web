@@ -9,9 +9,9 @@ import {
   signUpWithEmail,
   completeOAuthSignup,
   setSessionCookie,
-} from "@/lib/actions/auth.actions";
+} from "@/backup/lib/actions/auth.actions";
 
-import { account } from "@/lib/appwrite/appwrite.client";
+import { account } from "@/backup/lib/appwrite/appwrite.client";
 import { OAuthProvider } from "appwrite";
 import { z } from "zod";
 
@@ -302,7 +302,8 @@ const AuthClient = ({
       }
 
       if (signupStep === 1 && !isOAuthComplete) {
-        const { checkUserExists } = await import("@/lib/actions/auth.actions");
+        const { checkUserExists } =
+          await import("@/backup/lib/actions/auth.actions");
         const existsResult = await checkUserExists(formData.email);
 
         if (existsResult.exists) {
@@ -341,7 +342,7 @@ const AuthClient = ({
         }
 
         const { completeSignupWithOtp } =
-          await import("@/lib/actions/auth.actions");
+          await import("@/backup/lib/actions/auth.actions");
         const result = await completeSignupWithOtp(userId, otp, {
           ...formData,
           isNITPY,

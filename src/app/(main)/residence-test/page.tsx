@@ -1,13 +1,27 @@
-import { createSessionClient } from "@/lib/appwrite/appwrite.server";
+import { ComingSoon } from "@/components/ui/coming-soon";
+
+export default function ResidenceTestPage() {
+  return (
+    <ComingSoon
+      title="Accommodation Closed"
+      message="Accommodation registrations are closed."
+      showBackButton={true}
+    />
+  );
+}
+
+/*
+// Latent dynamic implementation:
+import { createSessionClient } from "@/backup/lib/appwrite/appwrite.server";
 import { redirect } from "next/navigation";
 import AccommodationClient from "./AccommodationClient";
 
-export default async function ResidencePage() {
+export async function ResidencePage() {
   const { getAccount } = await createSessionClient();
   const account = getAccount();
 
   const { getUserAccommodation } =
-    await import("@/lib/actions/payment.actions");
+    await import("@/backup/lib/actions/payment.actions");
 
   let user = null;
   let accommodation = null;
@@ -18,7 +32,8 @@ export default async function ResidencePage() {
     accommodation = await getUserAccommodation(user.$id);
 
     // Fetch user profile for gender
-    const { checkUserProfile } = await import("@/lib/actions/auth.actions");
+    const { checkUserProfile } =
+      await import("@/backup/lib/actions/auth.actions");
     const profileResult = await checkUserProfile(user.$id);
     if (profileResult.exists) {
       userProfile = profileResult.profile;
@@ -32,7 +47,8 @@ export default async function ResidencePage() {
     <AccommodationClient
       userId={user.$id}
       initialAccommodation={accommodation}
-      gender={userProfile?.gender || "male"} // Default to male if not found, or handle error
+      gender={userProfile?.gender || "male"}
     />
   );
 }
+*/

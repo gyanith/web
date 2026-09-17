@@ -1,3 +1,17 @@
+import { ComingSoon } from "@/components/ui/coming-soon";
+
+export default function GibberishPage() {
+  return (
+    <ComingSoon
+      title="Conference Portal"
+      message="Conference registration is closed for this static archive."
+      showBackButton={true}
+    />
+  );
+}
+
+/*
+// Latent dynamic implementation:
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -18,12 +32,12 @@ import { unispace, garetBook, superRetro } from "@/fonts/fonts";
 import { useToast } from "@/my_components/Toast";
 
 // Actions
-import { getLoggedInUser } from "@/lib/actions/auth.actions";
+import { getLoggedInUser } from "@/backup/lib/actions/auth.actions";
 import {
   initiatePayment,
   verifyCashfreePayment,
   checkEventPaymentStatus,
-} from "@/lib/actions/payment.actions"; // Generic Payment Actions
+} from "@/backup/lib/actions/payment.actions"; // Generic Payment Actions
 
 // Components
 import { Button } from "@/components/ui/button";
@@ -35,7 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ICDTSES_EVENT_ID } from "@/lib/constants";
+import { ICDTSES_EVENT_ID } from "@/backup/lib/constants";
 
 // Data & Config
 const CONFERENCE_FEES = {
@@ -55,13 +69,13 @@ const RetroCard = ({
   <div
     className={`relative bg-black/80 border border-[#d4a574]/30 p-1 ${className}`}
   >
-    {/* Corner Accents */}
+    {/* Corner Accents * /}
     <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#d4a574]" />
     <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[#d4a574]" />
     <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-[#d4a574]" />
     <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#d4a574]" />
 
-    {/* Inner Content */}
+    {/* Inner Content * /}
     <div className="bg-[#111]/90 backdrop-blur-sm p-6 h-full relative z-10">
       {children}
     </div>
@@ -215,9 +229,9 @@ export default function IcdtsesPage() {
 
   return (
     <div className="min-h-screen w-full bg-black text-[#d4a574] relative overflow-x-hidden selection:bg-[#d4a574] selection:text-black font-mono">
-      {/* --- RETRO BACKGROUND --- */}
+      {/* --- RETRO BACKGROUND --- * /}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Grid */}
+        {/* Grid * /}
         <div
           className="absolute inset-0 opacity-[0.1]"
           style={{
@@ -225,13 +239,13 @@ export default function IcdtsesPage() {
             backgroundSize: "40px 40px",
           }}
         />
-        {/* Scanlines */}
+        {/* Scanlines * /}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[1] bg-[length:100%_4px,3px_100%] pointer-events-none" />
-        {/* Vignette */}
+        {/* Vignette * /}
         <div className="absolute inset-0 bg-radial-gradient(circle, transparent 60%, black 100%) opacity-80" />
       </div>
 
-      {/* Navbar Placeholder / Back Button */}
+      {/* Navbar Placeholder / Back Button * /}
       <div className="absolute top-6 left-6 z-50">
         <Button
           variant="outline"
@@ -243,7 +257,7 @@ export default function IcdtsesPage() {
       </div>
 
       <main className="relative z-10 container mx-auto px-4 py-20 flex flex-col gap-12">
-        {/* Hero Section */}
+        {/* Hero Section * /}
         <section className="text-center flex flex-col items-center gap-6 mt-10">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -294,9 +308,9 @@ export default function IcdtsesPage() {
           </motion.p>
         </section>
 
-        {/* Event Details Section */}
+        {/* Event Details Section * /}
         <section className="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Feature 1 */}
+          {/* Feature 1 * /}
           <RetroCard className="h-full hover:bg-[#d4a574]/5 transition-colors duration-300">
             <div className="flex flex-col h-full gap-4">
               <div className="flex justify-between items-start">
@@ -317,7 +331,7 @@ export default function IcdtsesPage() {
             </div>
           </RetroCard>
 
-          {/* Feature 2 */}
+          {/* Feature 2 * /}
           <RetroCard className="h-full hover:bg-[#d4a574]/5 transition-colors duration-300">
             <div className="flex flex-col h-full gap-4">
               <div className="flex justify-between items-start">
@@ -338,7 +352,7 @@ export default function IcdtsesPage() {
             </div>
           </RetroCard>
 
-          {/* Feature 3 */}
+          {/* Feature 3 * /}
           <RetroCard className="h-full hover:bg-[#d4a574]/5 transition-colors duration-300">
             <div className="flex flex-col h-full gap-4">
               <div className="flex justify-between items-start">
@@ -360,7 +374,7 @@ export default function IcdtsesPage() {
           </RetroCard>
         </section>
 
-        {/* Main Connect / Payment Action */}
+        {/* Main Connect / Payment Action * /}
         <div className="max-w-2xl mx-auto w-full">
           <RetroCard>
             <div className="flex flex-col gap-6">
@@ -463,3 +477,4 @@ export default function IcdtsesPage() {
     </div>
   );
 }
+*/

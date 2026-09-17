@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { account } from "@/lib/appwrite/appwrite.client";
+import { account } from "@/backup/lib/appwrite/appwrite.client";
 import { z } from "zod";
 import { unispace, pressStart2P } from "@/fonts/fonts";
 import { ChevronRight, Activity } from "lucide-react";
@@ -107,7 +107,8 @@ export default function SignupClient() {
 
     try {
       if (signupStep === 1) {
-        const { checkUserExists } = await import("@/lib/actions/auth.actions");
+        const { checkUserExists } =
+          await import("@/backup/lib/actions/auth.actions");
         const existsResult = await checkUserExists(formData.email);
 
         if (existsResult.exists) {
@@ -146,7 +147,7 @@ export default function SignupClient() {
         }
 
         const { completeSignupWithOtp } =
-          await import("@/lib/actions/auth.actions");
+          await import("@/backup/lib/actions/auth.actions");
         const result = await completeSignupWithOtp(userId, otp, {
           ...formData,
           isNITPY,

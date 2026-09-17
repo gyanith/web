@@ -1,3 +1,17 @@
+import { ComingSoon } from "@/components/ui/coming-soon";
+
+export default function AccountPage() {
+  return (
+    <ComingSoon
+      title="User Portal Offline"
+      message="User account access and registration records are offline for this static archive."
+      showBackButton={true}
+    />
+  );
+}
+
+/*
+// Latent dynamic implementation:
 "use client";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,19 +28,19 @@ import {
   QrCode,
   X,
 } from "lucide-react";
-import { QRCodeGenerator } from "@/lib/helpers/qrcode.helper";
+import { QRCodeGenerator } from "@/backup/lib/helpers/qrcode.helper";
 
 import { unispace, blueScreen, garetBook } from "@/fonts/fonts";
 import {
   signOut,
   getLoggedInUser,
   completeProfileForLoggedInUser,
-} from "@/lib/actions/auth.actions";
+} from "@/backup/lib/actions/auth.actions";
 import { contactDetails } from "@/data/info";
 import {
   getCurrentUserDetails,
   getUserRegisteredEvents,
-} from "@/lib/helpers/getUserData.helper";
+} from "@/backup/lib/helpers/getUserData.helper";
 import { TIERS } from "@/data/tiers";
 
 const Page = () => {
@@ -86,7 +100,7 @@ const Page = () => {
 
   return (
     <div className="min-h-screen w-screen bg-black text-white px-0 md:px-2 md:p-8 md:pt-32 relative overflow-x-hidden flex items-start md:items-end justify-center font-mono">
-      {/* Background Grid */}
+      {/* Background Grid * /}
       <div
         className="fixed inset-0 pointer-events-none opacity-20"
         style={{
@@ -102,7 +116,7 @@ const Page = () => {
         transition={{ duration: 0.4, ease: "anticipate" }}
         className="relative z-10 flex flex-col md:flex-row w-full h-auto md:h-[80vh] min-h-[600px] bg-black/80 md:backdrop-blur-md md:border border-[#d4a574]/30 md:shadow-[0_0_50px_-10px_rgba(212,165,116,0.1)] overflow-hidden mb-20 md:mb-0"
       >
-        {/* Sidebar */}
+        {/* Sidebar * /}
         <div className="w-full md:w-64 lg:w-72 bg-[#0a0a0a] border-b md:border-b-0 md:border-r border-[#d4a574]/20 flex flex-col p-4 md:p-6 shrink-0">
           <div
             className={`text-xl md:text-2xl md:mb-12 text-[#d4a574] tracking-widest ${blueScreen.className} border-b border-[#d4a574]/20 pb-4 text-center md:text-left`}
@@ -117,7 +131,7 @@ const Page = () => {
               active={activeTab === "account"}
               onClick={() => setActiveTab("account")}
             />
-            {/* Divider */}
+            {/* Divider * /}
             <div className="hidden md:block h-px bg-[#d4a574]/10 my-4 mx-2" />
 
             <SidebarItem
@@ -147,10 +161,10 @@ const Page = () => {
           </button>
         </div>
 
-        {/* Main Content */}
+        {/* Main Content * /}
         <div className="flex-1 overflow-y-auto p-4 md:p-10 lg:p-12 scrollbar-thin scrollbar-thumb-[#d4a574]/20 scrollbar-track-black w-full">
           <div className="max-w-3xl mx-auto">
-            {/* Header */}
+            {/* Header * /}
             <div className="flex flex-row items-start md:items-center justify-between mb-8 md:mb-12 border-b border-white/10 pb-6 gap-4">
               <div className="w-full">
                 <h1
@@ -169,7 +183,7 @@ const Page = () => {
                 </p>
               </div>
 
-              {/* Initials Avatar + Tier Badge - Sharp (Only show on Account tab) */}
+              {/* Initials Avatar + Tier Badge - Sharp (Only show on Account tab) * /}
               {activeTab === "account" && user && (
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <button
@@ -178,7 +192,7 @@ const Page = () => {
                   >
                     <QrCode size={32} />
                   </button>
-                  {/* Tier Badge */}
+                  {/* Tier Badge * /}
                   {userDetails?.tier && (
                     <div
                       className={`px-3 py-1 text-[10px] md:text-xs font-bold tracking-widest ${unispace.className} ${
@@ -211,7 +225,7 @@ const Page = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, staggerChildren: 0.1 }}
               >
-                {/* Profile Completion Warning */}
+                {/* Profile Completion Warning * /}
                 {!userDetails && !loading && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -241,10 +255,10 @@ const Page = () => {
                     </button>
                   </motion.div>
                 )}
-                {/* Basic Info Section */}
+                {/* Basic Info Section * /}
                 <Section title="IDENTITY_MATRIX" delay={0.1}>
                   <div className="grid gap-px bg-white/5 border border-white/5 w-full">
-                    {/* Display real user details if available, else fall back to auth user data or N/A */}
+                    {/* Display real user details if available, else fall back to auth user data or N/A * /}
                     <InfoRow
                       label="DISPLAY_NAME"
                       value={userDetails?.name || user?.name || "N/A"}
@@ -268,7 +282,7 @@ const Page = () => {
                   </div>
                 </Section>
 
-                {/* Registered Events Section */}
+                {/* Registered Events Section * /}
                 <Section title="ACTIVE_MISSIONS" delay={0.2}>
                   {registeredEvents.length > 0 ? (
                     <div className="space-y-2">
@@ -346,7 +360,7 @@ const Page = () => {
                 </Section>
               </motion.div>
             ) : (
-              /* CONTACTS TAB CONTENT */
+              /* CONTACTS TAB CONTENT * /
               <motion.div
                 key="contacts-content"
                 initial={{ opacity: 0, y: 20 }}
@@ -367,7 +381,7 @@ const Page = () => {
               </motion.div>
             )}
 
-            {/* Mobile Logout Button */}
+            {/* Mobile Logout Button * /}
             <button
               onClick={handleLogout}
               className={`md:hidden w-full flex items-center justify-center gap-3 px-4 py-4 text-red-500 border border-red-500/30 bg-red-900/10 mt-8 mb-4 ${unispace.className}`}
@@ -519,7 +533,7 @@ const QrModal = ({
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
       className="fixed inset-0 z-[200] flex flex-col bg-[#ff4600] max-w-md  text-black overflow-hidden font-sans"
     >
-      {/* Top Bar */}
+      {/* Top Bar * /}
       <div className="flex justify-between items-start p-6 pt-12 md:p-8">
         <div>
           <p className="font-bold text-sm tracking-wide mb-1">YOUR PASS</p>
@@ -527,7 +541,7 @@ const QrModal = ({
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content * /}
       <div className="flex-1 flex flex-col items-center justify-center -mt-10 px-6">
         <h1 className="font-black text-5xl md:text-7xl tracking-tighter leading-none text-center mb-2 uppercase">
           GYANITH <br /> 2026
@@ -537,7 +551,7 @@ const QrModal = ({
         </p>
 
         <div className="relative p-4 bg-white/20 backdrop-blur-sm rounded-xl">
-          {/* QR Code */}
+          {/* QR Code * /}
           <div className="relative">
             <QRCodeGenerator
               value={userId}
@@ -546,9 +560,9 @@ const QrModal = ({
               fgColor="#000000"
               className="w-64 h-64 md:w-80 md:h-80 opacity-90"
             />
-            {/* Center Logo/Icon Placeholder */}
+            {/* Center Logo/Icon Placeholder * /}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              {/*  <div className="w-10 h-10 bg-black rounded-full" /> */}
+              {/*  <div className="w-10 h-10 bg-black rounded-full" /> * /}
             </div>
           </div>
         </div>
@@ -563,7 +577,7 @@ const QrModal = ({
         </div>
       </div>
 
-      {/* Footer Actions */}
+      {/* Footer Actions * /}
       <div className="p-6 pb-12 md:p-10 flex gap-4">
         <button
           onClick={onClose}
@@ -573,7 +587,7 @@ const QrModal = ({
         </button>
       </div>
 
-      {/* Close Button (Absolute) */}
+      {/* Close Button (Absolute) * /}
     </motion.div>
   );
 };
@@ -594,14 +608,14 @@ function TeamGroup({
       transition={{ delay: index * 0.1, duration: 0.5 }}
       className="w-full flex flex-col gap-4"
     >
-      {/* Team Header */}
+      {/* Team Header * /}
       <div
         className={`text-[#d4a574] text-sm md:text-lg uppercase tracking-widest border-b border-[#d4a574]/30 pb-2 ${unispace.className}`}
       >
         {teamName}
       </div>
 
-      {/* Members List */}
+      {/* Members List * /}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {members.map((member, i) => (
           <div
@@ -690,7 +704,7 @@ function CompleteProfileModal({
         animate={{ scale: 1, y: 0 }}
         className="bg-[#0a0a0a] border border-[#d4a574]/30 w-full max-w-md overflow-hidden relative"
       >
-        {/* Header */}
+        {/* Header * /}
         <div className="bg-[#d4a574]/10 p-6 border-b border-[#d4a574]/20 relative">
           <h2
             className={`text-[#d4a574] text-xl ${blueScreen.className} tracking-widest`}
@@ -708,7 +722,7 @@ function CompleteProfileModal({
           </button>
         </div>
 
-        {/* Form */}
+        {/* Form * /}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
             <div className="p-3 bg-red-900/20 border border-red-500/50 text-red-500 text-xs font-mono">
@@ -800,7 +814,7 @@ function CompleteProfileModal({
           </button>
         </form>
 
-        {/* Footer */}
+        {/* Footer * /}
         <div className="p-4 bg-white/5 border-t border-white/5 text-center">
           <p className="text-[8px] text-[#666] tracking-[0.3em] font-mono">
             ENCRYPTED_UPLINK_ESTABLISHED
@@ -811,4 +825,5 @@ function CompleteProfileModal({
   );
 }
 
-export default Page;
+// export default Page;
+*/
